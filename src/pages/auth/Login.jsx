@@ -62,7 +62,7 @@ export default function Login() {
         }}
       >
         <Typography variant="h4" sx={{ mb: 1 }}>
-          Job Portal Login
+          Google Dashboard Login
         </Typography>
         <Typography color="text.secondary" sx={{ mb: 3 }}>
           Sign in to continue to your workspace.

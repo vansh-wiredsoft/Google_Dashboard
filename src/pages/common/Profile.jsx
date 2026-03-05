@@ -1,17 +1,40 @@
-import { Avatar, Grid, Paper, Stack, Typography } from "@mui/material";
+import { useState } from "react";
+import {
+  Alert,
+  Avatar,
+  Button,
+  Divider,
+  Grid,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import Layout from "../../layouts/commonLayout/Layout";
 import { getUserProfile } from "../../utils/roleHelper";
 
 export default function Profile() {
   const profile = getUserProfile();
   const role = profile?.role || "admin";
-  const name = profile?.name || "Portal User";
-  const email = profile?.email || "user@example.com";
+  const [name, setName] = useState(profile?.name || "Portal User");
+  const [email, setEmail] = useState(profile?.email || "user@example.com");
+  const [message, setMessage] = useState("");
+
+  const handleSave = () => {
+    const updated = {
+      ...(profile || {}),
+      name: name.trim(),
+      email: email.trim(),
+      role,
+    };
+    localStorage.setItem("userProfile", JSON.stringify(updated));
+    setMessage("Profile updated successfully.");
+  };
 
   return (
     <Layout role={role} title="My Profile">
       <Grid container spacing={2.5}>
-        <Grid size={{ xs: 12, md: 8 }}>
+        <Grid size={{ xs: 12, lg: 8 }}>
           <Paper
             elevation={0}
             sx={{
@@ -33,6 +56,60 @@ export default function Profile() {
                   Role: {role}
                 </Typography>
               </Stack>
+            </Stack>
+
+            <Divider sx={{ my: 2.5 }} />
+
+            <Stack spacing={2}>
+              {!!message && <Alert severity="success">{message}</Alert>}
+              <TextField
+                label="Full Name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                fullWidth
+              />
+              <TextField
+                label="Email Address"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                fullWidth
+              />
+              <Stack direction="row" justifyContent="flex-end">
+                <Button variant="contained" onClick={handleSave}>
+                  Save Changes
+                </Button>
+              </Stack>
+            </Stack>
+          </Paper>
+        </Grid>
+
+        <Grid size={{ xs: 12, lg: 4 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 3 },
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: "rgba(255,255,255,0.86)",
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 1.5 }}>
+              Account Summary
+            </Typography>
+            <Stack spacing={1}>
+              <Typography variant="body2" color="text.secondary">
+                Current Role
+              </Typography>
+              <Typography sx={{ textTransform: "capitalize", fontWeight: 700 }}>
+                {role}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Auth Token
+              </Typography>
+              <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
+                {profile?.token || "No token"}
+              </Typography>
             </Stack>
           </Paper>
         </Grid>
