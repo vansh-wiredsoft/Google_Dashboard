@@ -7,6 +7,7 @@ export default function CompanyData() {
       <ExcelUploadGrid
         title="Upload Company Data"
         description="Upload a company master file in Excel/CSV format and review records in the grid."
+        uploadPath="/config/api/v1/companies/upload"
       />
     </Layout>
   );

@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
-import { Box, Button, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Paper, Stack, Typography } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { DataGrid } from "@mui/x-data-grid";
+import api from "../../services/api";
 
 const getColumns = (rows) => {
   if (!rows.length) return [];
@@ -14,14 +15,22 @@ const getColumns = (rows) => {
   }));
 };
 
-export default function ExcelUploadGrid({ title, description }) {
+export default function ExcelUploadGrid({ title, description, uploadPath }) {
   const [rows, setRows] = useState([]);
+  const [uploadStatus, setUploadStatus] = useState(null);
+  const [uploadError, setUploadError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [responseData, setResponseData] = useState(null);
 
   const columns = useMemo(() => getColumns(rows), [rows]);
 
-  const handleUpload = (event) => {
+  const handleUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    setUploadStatus(null);
+    setUploadError("");
+    setResponseData(null);
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -38,6 +47,36 @@ export default function ExcelUploadGrid({ title, description }) {
       setRows(normalized);
     };
     reader.readAsArrayBuffer(file);
+
+    if (!uploadPath) return;
+
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await api.post(uploadPath, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const payload = response.data || {};
+      setUploadStatus(payload.success ? "success" : "error");
+      setResponseData(payload.data || null);
+      if (!payload.success) {
+        setUploadError(payload.message || "Upload failed.");
+      }
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.detail ||
+        "Upload failed due to server/network error.";
+      setUploadStatus("error");
+      setUploadError(message);
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -63,10 +102,33 @@ export default function ExcelUploadGrid({ title, description }) {
         component="label"
         startIcon={<UploadFileIcon />}
         sx={{ mb: 2 }}
+        disabled={uploading}
       >
-        Upload Excel
+        {uploading ? "Uploading..." : "Upload Excel"}
         <input hidden type="file" accept=".xlsx,.xls,.csv" onChange={handleUpload} />
       </Button>
+
+      {uploadStatus === "success" && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          File uploaded successfully.
+        </Alert>
+      )}
+      {uploadStatus === "error" && !!uploadError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {uploadError}
+        </Alert>
+      )}
+
+      {!!responseData && (
+        <Paper variant="outlined" sx={{ mb: 2, p: 1.5, borderRadius: 2 }}>
+          <Typography variant="subtitle2" sx={{ mb: 0.8 }}>
+            Upload Summary
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+            {JSON.stringify(responseData, null, 2)}
+          </Typography>
+        </Paper>
+      )}
 
       <Box sx={{ height: 470, width: "100%" }}>
         <DataGrid

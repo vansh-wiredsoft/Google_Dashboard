@@ -7,6 +7,7 @@ export default function CompanyUsers() {
       <ExcelUploadGrid
         title="Upload Company User Data"
         description="Upload employee or candidate data mapped to companies and validate in the table."
+        uploadPath="/config/api/v1/users/upload"
       />
     </Layout>
   );
