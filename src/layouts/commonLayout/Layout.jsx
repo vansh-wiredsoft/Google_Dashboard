@@ -310,7 +310,12 @@ export default function Layout({ children, role = "admin", title }) {
 
       <Box
         component="main"
-        sx={{ flexGrow: 1, p: { xs: 2, sm: 3 }, mt: { xs: 8, sm: 9 } }}
+        sx={{
+          flexGrow: 1,
+          minWidth: 0,
+          p: { xs: 2, sm: 3 },
+          mt: { xs: 8, sm: 9 },
+        }}
       >
         {children}
       </Box>

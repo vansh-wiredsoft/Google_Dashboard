@@ -677,7 +677,7 @@ export default function Sessions() {
             )}
 
             <Box sx={{ width: "100%", overflowX: "auto" }}>
-              <Box sx={{ minWidth: 980, height: 420 }}>
+              <Box sx={{ height: 420, width: "max-content", minWidth: "100%" }}>
                 <DataGrid
                   loading={listLoading}
                   rows={sessionRows}

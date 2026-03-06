@@ -154,7 +154,7 @@ export default function ExcelUploadGrid({
       )}
 
       <Box sx={{ width: "100%", overflowX: "auto" }}>
-        <Box sx={{ height: 470, minWidth: Math.max(900, columns.length * 170) }}>
+        <Box sx={{ height: 470, width: "max-content", minWidth: "100%" }}>
           <DataGrid
             rows={rows}
             columns={columns}
