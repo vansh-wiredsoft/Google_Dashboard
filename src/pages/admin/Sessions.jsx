@@ -27,7 +27,7 @@ import {
 } from "../../store/sessionSlice";
 import { fetchCompanies } from "../../store/companySlice";
 
-const QUESTION_PATH = "/config/api/v1/kpiquestions";
+const QUESTION_HIERARCHY_PATH = "/config/api/v1/kpiquestions/hierarchy";
 
 const pickArray = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -61,8 +61,10 @@ export default function Sessions() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [companyId, setCompanyId] = useState("");
+  const [selectedThemeKey, setSelectedThemeKey] = useState("");
+  const [selectedKpiKey, setSelectedKpiKey] = useState("");
   const [selectedQuestions, setSelectedQuestions] = useState([]);
-  const [questions, setQuestions] = useState([]);
+  const [questionHierarchy, setQuestionHierarchy] = useState([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -70,13 +72,29 @@ export default function Sessions() {
     () => companies.find((company) => company.id === companyId)?.name || "",
     [companyId],
   );
+  const selectedTheme = useMemo(
+    () => questionHierarchy.find((theme) => theme.theme_key === selectedThemeKey) || null,
+    [questionHierarchy, selectedThemeKey],
+  );
+  const kpiOptions = useMemo(
+    () => (Array.isArray(selectedTheme?.kpis) ? selectedTheme.kpis : []),
+    [selectedTheme],
+  );
+  const selectedKpi = useMemo(
+    () => kpiOptions.find((kpi) => kpi.kpi_key === selectedKpiKey) || null,
+    [kpiOptions, selectedKpiKey],
+  );
+  const questions = useMemo(() => {
+    const raw = Array.isArray(selectedKpi?.questions) ? selectedKpi.questions : [];
+    return raw.map(normalizeQuestion);
+  }, [selectedKpi]);
 
   useEffect(() => {
     const loadQuestions = async () => {
       try {
         setLoadingQuestions(true);
-        const response = await api.get(QUESTION_PATH);
-        setQuestions(pickArray(response?.data).map(normalizeQuestion));
+        const response = await api.get(QUESTION_HIERARCHY_PATH);
+        setQuestionHierarchy(pickArray(response?.data));
       } catch {
         setFormError("Failed to load questions.");
       } finally {
@@ -161,6 +179,8 @@ export default function Sessions() {
     setTitle("");
     setDescription("");
     setCompanyId("");
+    setSelectedThemeKey("");
+    setSelectedKpiKey("");
     setSelectedQuestions([]);
     setFormError("");
     dispatch(resetSessionFlow());
@@ -257,21 +277,72 @@ export default function Sessions() {
                       </Typography>
                     </Stack>
                   ) : (
-                    <Stack spacing={0.6} sx={{ maxHeight: 240, overflowY: "auto", pr: 1 }}>
-                      {questions.map((question) => (
-                        <FormControlLabel
-                          key={question.id}
-                          control={
-                            <Checkbox
-                              checked={selectedQuestions.includes(question.id)}
-                              onChange={() => toggleQuestion(question.id)}
+                    <Stack spacing={1.5}>
+                      <FormControl fullWidth>
+                        <Select
+                          displayEmpty
+                          value={selectedThemeKey}
+                          onChange={(event) => {
+                            setSelectedThemeKey(event.target.value);
+                            setSelectedKpiKey("");
+                            setSelectedQuestions([]);
+                          }}
+                        >
+                          <MenuItem value="">Select Theme</MenuItem>
+                          {questionHierarchy.map((theme) => (
+                            <MenuItem key={theme.theme_key} value={theme.theme_key}>
+                              {theme.theme_display_name || theme.theme_key}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+
+                      <FormControl fullWidth disabled={!selectedThemeKey}>
+                        <Select
+                          displayEmpty
+                          value={selectedKpiKey}
+                          onChange={(event) => {
+                            setSelectedKpiKey(event.target.value);
+                            setSelectedQuestions([]);
+                          }}
+                        >
+                          <MenuItem value="">Select KPI</MenuItem>
+                          {kpiOptions.map((kpi) => (
+                            <MenuItem key={kpi.kpi_key} value={kpi.kpi_key}>
+                              {kpi.display_name || kpi.kpi_key}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+
+                      {!!selectedKpiKey && (
+                        <Stack
+                          spacing={0.6}
+                          sx={{ maxHeight: 240, overflowY: "auto", pr: 1 }}
+                        >
+                          {questions.map((question) => (
+                            <FormControlLabel
+                              key={question.id}
+                              control={
+                                <Checkbox
+                                  checked={selectedQuestions.includes(question.id)}
+                                  onChange={() => toggleQuestion(question.id)}
+                                />
+                              }
+                              label={
+                                question.code
+                                  ? `${question.text} (${question.code})`
+                                  : question.text
+                              }
                             />
-                          }
-                          label={
-                            question.code ? `${question.text} (${question.code})` : question.text
-                          }
-                        />
-                      ))}
+                          ))}
+                          {!questions.length && (
+                            <Typography variant="body2" color="text.secondary">
+                              No questions found for selected KPI.
+                            </Typography>
+                          )}
+                        </Stack>
+                      )}
                     </Stack>
                   )}
                 </Box>
