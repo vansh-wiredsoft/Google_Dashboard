@@ -1,8 +1,18 @@
 import { useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import * as XLSX from "xlsx";
-import { Alert, Box, Button, Paper, Stack, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  IconButton,
+  Paper,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { DataGrid } from "@mui/x-data-grid";
 
 const getColumns = (rows) => {
@@ -12,6 +22,17 @@ const getColumns = (rows) => {
     headerName: key,
     flex: 1,
     minWidth: 130,
+    renderCell: (params) => {
+      const value = params?.value;
+      const displayValue = value === null || value === undefined ? "-" : String(value);
+      return (
+        <Tooltip title={displayValue}>
+          <Typography variant="body2" noWrap sx={{ width: "100%" }}>
+            {displayValue}
+          </Typography>
+        </Tooltip>
+      );
+    },
   }));
 };
 
@@ -29,6 +50,11 @@ export default function ExcelUploadGrid({
   const [rows, setRows] = useState([]);
 
   const columns = useMemo(() => getColumns(rows), [rows]);
+
+  const handleRefreshTable = () => {
+    setRows([]);
+    dispatch(resetUploadAction());
+  };
 
   const handleUpload = async (event) => {
     const file = event.target.files?.[0];
@@ -77,26 +103,33 @@ export default function ExcelUploadGrid({
         <Typography color="text.secondary">{description}</Typography>
       </Stack>
 
-      <Button
-        variant="contained"
-        component="label"
-        startIcon={<UploadFileIcon />}
-        sx={{ mb: 2 }}
-        disabled={uploading}
-      >
-        {uploading ? "Uploading..." : "Upload Excel"}
-        <input
-          hidden
-          type="file"
-          accept=".xlsx,.xls,.csv"
-          onChange={handleUpload}
-          onClick={() => {
-            if (uploadError && clearUploadErrorAction) {
-              dispatch(clearUploadErrorAction());
-            }
-          }}
-        />
-      </Button>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+        <Button
+          variant="contained"
+          component="label"
+          startIcon={<UploadFileIcon />}
+          disabled={uploading}
+        >
+          {uploading ? "Uploading..." : "Upload Excel"}
+          <input
+            hidden
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleUpload}
+            onClick={() => {
+              if (uploadError && clearUploadErrorAction) {
+                dispatch(clearUploadErrorAction());
+              }
+            }}
+          />
+        </Button>
+
+        <Tooltip title="Refresh Table">
+          <IconButton onClick={handleRefreshTable} size="small">
+            <RefreshIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Stack>
 
       {uploadStatus === "success" && (
         <Alert severity="success" sx={{ mb: 2 }}>

@@ -34,6 +34,7 @@ import { fetchCompanies } from "../../store/companySlice";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
 const QUESTION_HIERARCHY_PATH = "/config/api/v1/kpiquestions/hierarchy";
 
@@ -233,18 +234,44 @@ export default function Sessions() {
 
   const sessionColumns = useMemo(
     () => [
-      { field: "title", headerName: "Title", flex: 1.1, minWidth: 140 },
+      {
+        field: "title",
+        headerName: "Title",
+        flex: 1.1,
+        minWidth: 140,
+        renderCell: (params) => (
+          <Tooltip title={params.value || "-"}>
+            <Typography variant="body2" noWrap sx={{ width: "100%" }}>
+              {params.value || "-"}
+            </Typography>
+          </Tooltip>
+        ),
+      },
       {
         field: "description",
         headerName: "Description",
         flex: 1.6,
         minWidth: 220,
+        renderCell: (params) => (
+          <Tooltip title={params.value || "-"}>
+            <Typography variant="body2" noWrap sx={{ width: "100%" }}>
+              {params.value || "-"}
+            </Typography>
+          </Tooltip>
+        ),
       },
       {
         field: "company_name",
         headerName: "Company",
         flex: 1.2,
         minWidth: 180,
+        renderCell: (params) => (
+          <Tooltip title={params.value || "-"}>
+            <Typography variant="body2" noWrap sx={{ width: "100%" }}>
+              {params.value || "-"}
+            </Typography>
+          </Tooltip>
+        ),
       },
       {
         field: "is_active",
@@ -259,6 +286,18 @@ export default function Sessions() {
         minWidth: 180,
         valueFormatter: (value) =>
           value ? new Date(value).toLocaleString() : "-",
+        renderCell: (params) => {
+          const displayValue = params.value
+            ? new Date(params.value).toLocaleString()
+            : "-";
+          return (
+            <Tooltip title={displayValue}>
+              <Typography variant="body2" noWrap sx={{ width: "100%" }}>
+                {displayValue}
+              </Typography>
+            </Tooltip>
+          );
+        },
       },
       {
         field: "actions",
@@ -588,9 +627,25 @@ export default function Sessions() {
               bgcolor: "rgba(255,255,255,0.86)",
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-              Sessions Listing
-            </Typography>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Sessions Listing
+              </Typography>
+              <Tooltip title="Refresh Sessions">
+                <IconButton
+                  size="small"
+                  onClick={() => dispatch(fetchSessions())}
+                  disabled={listLoading}
+                >
+                  <RefreshIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
             {!!listError && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {listError}
