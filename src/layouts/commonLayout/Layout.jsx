@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   AppBar,
@@ -33,6 +33,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 const drawerWidth = 260;
 const collapsedDrawerWidth = 88;
+const SIDEBAR_COLLAPSED_KEY = "sidebarCollapsed";
 
 const adminItems = [
   { label: "Dashboard", to: "/admin/dashboard", icon: <DashboardIcon /> },
@@ -49,7 +50,10 @@ const userItems = [
 export default function Layout({ children, role = "admin", title }) {
   const dispatch = useDispatch();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+  });
   const [menuAnchor, setMenuAnchor] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
@@ -97,6 +101,10 @@ export default function Layout({ children, role = "admin", title }) {
   const activeDrawerWidth = sidebarCollapsed
     ? collapsedDrawerWidth
     : drawerWidth;
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   const drawer = (
     <Box sx={{ height: "100%", p: 2.5 }}>
