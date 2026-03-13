@@ -295,7 +295,10 @@ function MetricCard({ item }) {
       <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
         {item.label}
       </Typography>
-      <Typography variant="h4" sx={{ mt: 0.5, fontWeight: 800, color: item.color }}>
+      <Typography
+        variant="h4"
+        sx={{ mt: 0.5, fontWeight: 800, color: item.color }}
+      >
         {item.score}
       </Typography>
       <LinearProgress
@@ -330,7 +333,14 @@ function HighlightStat({ item }) {
       }}
     >
       <Stack direction="row" spacing={1.2} alignItems="center">
-        <Avatar sx={{ bgcolor: alpha(item.color, 0.14), color: item.color, width: 36, height: 36 }}>
+        <Avatar
+          sx={{
+            bgcolor: alpha(item.color, 0.14),
+            color: item.color,
+            width: 36,
+            height: 36,
+          }}
+        >
           {item.icon}
         </Avatar>
         <Box sx={{ minWidth: 0 }}>
@@ -376,7 +386,8 @@ export default function Dashboard() {
               width: 220,
               height: 220,
               borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(15,118,110,0.12), transparent 68%)",
+              background:
+                "radial-gradient(circle, rgba(15,118,110,0.12), transparent 68%)",
             }}
           />
           <Stack
@@ -387,20 +398,37 @@ export default function Dashboard() {
             sx={{ position: "relative" }}
           >
             <Box>
-              <Typography variant="overline" sx={{ color: "primary.main", fontWeight: 700 }}>
+              <Typography
+                variant="overline"
+                sx={{ color: "primary.main", fontWeight: 700 }}
+              >
                 Personal Wellness Journey
               </Typography>
               <Typography variant="h4" sx={{ fontWeight: 800, mt: 0.5 }}>
                 Welcome back, Ayumonk User
               </Typography>
               <Typography color="text.secondary" sx={{ mt: 1, maxWidth: 760 }}>
-                Your dashboard now blends the wellness overview with progress, streak, and performance-style cards inspired by the other product tabs.
+                Your dashboard now blends the wellness overview with progress,
+                streak, and performance-style cards inspired by the other
+                product tabs.
               </Typography>
             </Box>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-              <Chip label="My Wellness" color="primary" sx={{ fontWeight: 700 }} />
-              <Chip label="Challenges" variant="outlined" sx={{ fontWeight: 700 }} />
-              <Chip label="HR Analytics" variant="outlined" sx={{ fontWeight: 700 }} />
+              <Chip
+                label="My Wellness"
+                color="primary"
+                sx={{ fontWeight: 700 }}
+              />
+              <Chip
+                label="Challenges"
+                variant="outlined"
+                sx={{ fontWeight: 700 }}
+              />
+              <Chip
+                label="HR Analytics"
+                variant="outlined"
+                sx={{ fontWeight: 700 }}
+              />
             </Stack>
           </Stack>
         </SectionCard>
@@ -415,7 +443,10 @@ export default function Dashboard() {
 
         <Grid container spacing={2}>
           {metrics.map((item) => (
-            <Grid key={item.label} size={{ xs: 12, sm: 6, md: 4, xl: 4 / 3 }}>
+            <Grid
+              key={item.label}
+              size={{ xs: 12, sm: 4, md: 2, lg: 7 / 4, xl: 4 / 3 }}
+            >
               <MetricCard item={item} />
             </Grid>
           ))}
@@ -429,7 +460,11 @@ export default function Dashboard() {
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>
                     Wellness Index
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
                     Overall score based on your key wellness factors
                   </Typography>
 
@@ -478,8 +513,20 @@ export default function Dashboard() {
                     sx={{ rowGap: 1, mt: 1 }}
                   >
                     {wellnessIndexData.map((item) => (
-                      <Stack key={item.name} direction="row" spacing={0.8} alignItems="center">
-                        <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: item.color }} />
+                      <Stack
+                        key={item.name}
+                        direction="row"
+                        spacing={0.8}
+                        alignItems="center"
+                      >
+                        <Box
+                          sx={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            bgcolor: item.color,
+                          }}
+                        />
                         <Typography variant="caption" color="text.secondary">
                           {item.name}
                         </Typography>
@@ -489,7 +536,12 @@ export default function Dashboard() {
 
                   <Chip
                     label="43% improvement from baseline"
-                    sx={{ mt: 2, bgcolor: alpha("#16a34a", 0.1), color: "#15803d", fontWeight: 700 }}
+                    sx={{
+                      mt: 2,
+                      bgcolor: alpha("#16a34a", 0.1),
+                      color: "#15803d",
+                      fontWeight: 700,
+                    }}
                   />
                 </SectionCard>
               </Grid>
@@ -523,17 +575,54 @@ export default function Dashboard() {
                       <XAxis dataKey="name" />
                       <YAxis domain={[2, 5]} />
                       <Tooltip />
-                      <Line type="monotone" dataKey="social" stroke="#d946ef" strokeWidth={3} dot={false} />
-                      <Line type="monotone" dataKey="hydration" stroke="#0284c7" strokeWidth={3} dot={false} />
-                      <Line type="monotone" dataKey="energy" stroke="#ca8a04" strokeWidth={3} dot={false} />
+                      <Line
+                        type="monotone"
+                        dataKey="social"
+                        stroke="#d946ef"
+                        strokeWidth={3}
+                        dot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="hydration"
+                        stroke="#0284c7"
+                        strokeWidth={3}
+                        dot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="energy"
+                        stroke="#ca8a04"
+                        strokeWidth={3}
+                        dot={false}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
 
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1.5 }}>
-                    <Chip label="Social +17%" sx={{ bgcolor: alpha("#d946ef", 0.1), color: "#a21caf", fontWeight: 700 }} />
-                    <Chip label="Hydration +15%" sx={{ bgcolor: alpha("#0284c7", 0.1), color: "#0369a1", fontWeight: 700 }} />
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={1}
+                    sx={{ mt: 1.5 }}
+                  >
+                    <Chip
+                      label="Social +17%"
+                      sx={{
+                        bgcolor: alpha("#d946ef", 0.1),
+                        color: "#a21caf",
+                        fontWeight: 700,
+                      }}
+                    />
+                    <Chip
+                      label="Hydration +15%"
+                      sx={{
+                        bgcolor: alpha("#0284c7", 0.1),
+                        color: "#0369a1",
+                        fontWeight: 700,
+                      }}
+                    />
                     <Typography variant="body2" color="text.secondary">
-                      Most stable gains are showing up in hydration and recovery.
+                      Most stable gains are showing up in hydration and
+                      recovery.
                     </Typography>
                   </Stack>
                 </SectionCard>
@@ -552,12 +641,17 @@ export default function Dashboard() {
                         Daily Focus Programs
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Borrowed from the challenge screens to make your next actions clearer
+                        Borrowed from the challenge screens to make your next
+                        actions clearer
                       </Typography>
                     </Box>
                     <Stack direction="row" spacing={1}>
                       <Chip label="3 active" size="small" color="primary" />
-                      <Chip label="1 upcoming" size="small" variant="outlined" />
+                      <Chip
+                        label="1 upcoming"
+                        size="small"
+                        variant="outlined"
+                      />
                     </Stack>
                   </Stack>
 
@@ -574,20 +668,37 @@ export default function Dashboard() {
                             height: "100%",
                           }}
                         >
-                          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="flex-start"
+                          >
                             <Box>
-                              <Typography sx={{ fontWeight: 800 }}>{item.title}</Typography>
-                              <Typography variant="caption" sx={{ color: item.accent, fontWeight: 700 }}>
+                              <Typography sx={{ fontWeight: 800 }}>
+                                {item.title}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{ color: item.accent, fontWeight: 700 }}
+                              >
                                 {item.caption}
                               </Typography>
                             </Box>
                             <Chip
                               label={item.value}
                               size="small"
-                              sx={{ bgcolor: alpha(item.accent, 0.1), color: item.accent, fontWeight: 700 }}
+                              sx={{
+                                bgcolor: alpha(item.accent, 0.1),
+                                color: item.accent,
+                                fontWeight: 700,
+                              }}
                             />
                           </Stack>
-                          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.2, mb: 1.5 }}>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mt: 1.2, mb: 1.5 }}
+                          >
                             {item.detail}
                           </Typography>
                           <LinearProgress
@@ -618,13 +729,23 @@ export default function Dashboard() {
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   Dosha Profile
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
                   Balanced composition based on the latest assessment
                 </Typography>
 
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
-                    <Pie data={doshaData} dataKey="value" innerRadius={48} outerRadius={82} stroke="none">
+                    <Pie
+                      data={doshaData}
+                      dataKey="value"
+                      innerRadius={48}
+                      outerRadius={82}
+                      stroke="none"
+                    >
                       {doshaData.map((entry) => (
                         <Cell key={entry.name} fill={entry.color} />
                       ))}
@@ -634,36 +755,65 @@ export default function Dashboard() {
 
                 <Stack spacing={1.2}>
                   {doshaData.map((item) => (
-                    <Stack key={item.name} direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack
+                      key={item.name}
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: item.color }} />
+                        <Box
+                          sx={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            bgcolor: item.color,
+                          }}
+                        />
                         <Typography variant="body2">{item.name}</Typography>
                       </Stack>
-                      <Typography sx={{ fontWeight: 700, color: item.color }}>{item.value}%</Typography>
+                      <Typography sx={{ fontWeight: 700, color: item.color }}>
+                        {item.value}%
+                      </Typography>
                     </Stack>
                   ))}
                 </Stack>
 
                 <Divider sx={{ my: 2 }} />
 
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
                   Today&apos;s Mood Check
                 </Typography>
-                <Stack direction="row" spacing={1} justifyContent="space-between">
-                  {["Sad", "Low", "Okay", "Good", "Great"].map((label, index) => (
-                    <Chip
-                      key={label}
-                      label={label}
-                      color={index === 3 ? "primary" : "default"}
-                      variant={index === 3 ? "filled" : "outlined"}
-                      sx={{ minWidth: 0 }}
-                    />
-                  ))}
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  justifyContent="space-between"
+                >
+                  {["Sad", "Low", "Okay", "Good", "Great"].map(
+                    (label, index) => (
+                      <Chip
+                        key={label}
+                        label={label}
+                        color={index === 3 ? "primary" : "default"}
+                        variant={index === 3 ? "filled" : "outlined"}
+                        sx={{ minWidth: 0 }}
+                      />
+                    ),
+                  )}
                 </Stack>
               </SectionCard>
 
               <SectionCard>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ mb: 1.5 }}
+                >
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>
                       Weekly Leaderboard
@@ -683,25 +833,55 @@ export default function Dashboard() {
                       sx={{
                         p: 1.4,
                         borderRadius: 2.5,
-                        borderColor: item.current ? alpha("#0f766e", 0.3) : "divider",
-                        bgcolor: item.current ? alpha("#0f766e", 0.06) : "transparent",
+                        borderColor: item.current
+                          ? alpha("#0f766e", 0.3)
+                          : "divider",
+                        bgcolor: item.current
+                          ? alpha("#0f766e", 0.06)
+                          : "transparent",
                       }}
                     >
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Stack direction="row" spacing={1.2} alignItems="center">
-                          <Typography sx={{ width: 24, fontWeight: 800, color: index < 3 ? "#c2410c" : "text.secondary" }}>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Stack
+                          direction="row"
+                          spacing={1.2}
+                          alignItems="center"
+                        >
+                          <Typography
+                            sx={{
+                              width: 24,
+                              fontWeight: 800,
+                              color: index < 3 ? "#c2410c" : "text.secondary",
+                            }}
+                          >
                             {index + 1}
                           </Typography>
                           <Box>
-                            <Typography sx={{ fontWeight: item.current ? 800 : 700 }}>
-                              {item.current ? `4th - You (${item.name})` : item.name}
+                            <Typography
+                              sx={{ fontWeight: item.current ? 800 : 700 }}
+                            >
+                              {item.current
+                                ? `4th - You (${item.name})`
+                                : item.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
                               {item.team}
                             </Typography>
                           </Box>
                         </Stack>
-                        <Typography sx={{ fontWeight: 800, color: item.current ? "#15803d" : "#0f766e" }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 800,
+                            color: item.current ? "#15803d" : "#0f766e",
+                          }}
+                        >
                           {item.delta}
                         </Typography>
                       </Stack>
@@ -729,8 +909,17 @@ export default function Dashboard() {
               </Typography>
             </Box>
             <Stack direction="row" spacing={1}>
-              <Chip label="Tier 1 - KPI risk" size="small" sx={{ fontWeight: 700 }} />
-              <Chip label="Tier 2 - Question score" size="small" variant="outlined" sx={{ fontWeight: 700 }} />
+              <Chip
+                label="Tier 1 - KPI risk"
+                size="small"
+                sx={{ fontWeight: 700 }}
+              />
+              <Chip
+                label="Tier 2 - Question score"
+                size="small"
+                variant="outlined"
+                sx={{ fontWeight: 700 }}
+              />
             </Stack>
           </Stack>
 
@@ -746,14 +935,23 @@ export default function Dashboard() {
                     height: "100%",
                   }}
                 >
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{ mb: 1.5 }}
+                  >
                     <Typography sx={{ fontWeight: 800, color: item.color }}>
                       {item.title}
                     </Typography>
                     <Chip
                       label={item.flagged}
                       size="small"
-                      sx={{ bgcolor: alpha(item.color, 0.1), color: item.color, fontWeight: 700 }}
+                      sx={{
+                        bgcolor: alpha(item.color, 0.1),
+                        color: item.color,
+                        fontWeight: 700,
+                      }}
                     />
                   </Stack>
                   <Stack spacing={1}>

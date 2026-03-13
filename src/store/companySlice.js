@@ -36,8 +36,16 @@ export const fetchCompanies = createAsyncThunk(
 
       const normalized = pickArray(payload).map((item, index) => ({
         id: String(item?.id || item?.company_id || index),
-        name:
+        company_name:
           item?.company_name || item?.name || item?.title || "Unnamed Company",
+        industry: item?.industry || "",
+        size_bucket: item?.size_bucket || "",
+        email: item?.email || "",
+        phone: String(item?.phone ?? ""),
+        no_of_employees: item?.no_of_employees ?? "",
+        is_active: item?.is_active ?? false,
+        created_at: item?.created_at || "",
+        updated_at: item?.updated_at || "",
       }));
 
       return {

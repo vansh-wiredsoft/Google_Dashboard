@@ -34,11 +34,16 @@ export default function EntityManagementTable({
   storageKey,
   fields,
   initialRows,
+  rows: controlledRows,
+  loading = false,
 }) {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
-  const [rows, setRows] = useState(() => loadEntityRows(storageKey, initialRows));
+  const [internalRows, setInternalRows] = useState(() =>
+    loadEntityRows(storageKey, initialRows),
+  );
   const [feedback, setFeedback] = useState(null);
+  const rows = controlledRows ?? internalRows;
 
   const columns = useMemo(
     () => [
@@ -100,7 +105,9 @@ export default function EntityManagementTable({
       const parsedRows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
       const normalizedRows = normalizeImportedRows(parsedRows);
 
-      setRows(normalizedRows);
+      if (controlledRows === undefined) {
+        setInternalRows(normalizedRows);
+      }
       saveEntityRows(storageKey, normalizedRows);
       setFeedback({
         severity: "success",
@@ -117,7 +124,9 @@ export default function EntityManagementTable({
   };
 
   const handleReset = () => {
-    setRows(initialRows);
+    if (controlledRows === undefined) {
+      setInternalRows(initialRows);
+    }
     saveEntityRows(storageKey, initialRows);
     setFeedback({
       severity: "info",
@@ -220,6 +229,7 @@ export default function EntityManagementTable({
           <DataGrid
             rows={rows}
             columns={columns}
+            loading={loading}
             disableRowSelectionOnClick
             pageSizeOptions={[10, 25, 50]}
             initialState={{

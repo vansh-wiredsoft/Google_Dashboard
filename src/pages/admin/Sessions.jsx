@@ -437,7 +437,7 @@ export default function Sessions() {
                   <MenuItem value="">Select Company</MenuItem>
                   {companies.map((company) => (
                     <MenuItem key={company.id} value={company.id}>
-                      {company.name}
+                      {company.company_name}
                     </MenuItem>
                   ))}
                 </Select>
@@ -705,7 +705,12 @@ export default function Sessions() {
         <DialogTitle>Session Details</DialogTitle>
         <DialogContent dividers>
           {detailLoading && (
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 2 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{ py: 2 }}
+            >
               <CircularProgress size={18} />
               <Typography>Loading session details...</Typography>
             </Stack>
@@ -738,7 +743,11 @@ export default function Sessions() {
               </Paper>
 
               {(sessionDetails.themes || []).map((theme) => (
-                <Paper key={theme.theme_key} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                <Paper
+                  key={theme.theme_key}
+                  variant="outlined"
+                  sx={{ p: 1.5, borderRadius: 2 }}
+                >
                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                     {theme.theme_display_name || theme.theme_key}
                   </Typography>
@@ -747,14 +756,20 @@ export default function Sessions() {
                   <Stack spacing={1.5}>
                     {(theme.kpis || []).map((kpi) => (
                       <Box key={kpi.kpi_key}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 600 }}
+                        >
                           KPI: {kpi.display_name || kpi.kpi_key}
                         </Typography>
                         <Stack spacing={0.7} sx={{ mt: 0.8 }}>
                           {(kpi.questions || []).map((question) => (
-                            <Typography key={question.question_id} variant="body2">
-                              {question.display_order}. {question.question_text} (
-                              {question.question_code})
+                            <Typography
+                              key={question.question_id}
+                              variant="body2"
+                            >
+                              {question.display_order}. {question.question_text}{" "}
+                              ({question.question_code})
                             </Typography>
                           ))}
                           {!kpi.questions?.length && (
