@@ -25,7 +25,6 @@ import {
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import Layout from "../../layouts/commonLayout/Layout";
-import api from "../../services/api";
 import {
   addQuestionsToSession,
   clearSessionDetailError,
@@ -39,20 +38,14 @@ import {
   resetSessionFlow,
 } from "../../store/sessionSlice";
 import { fetchCompanies } from "../../store/companySlice";
+import {
+  clearQuestionHierarchyError,
+  fetchQuestionHierarchy,
+} from "../../store/questionHierarchySlice";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import RefreshIcon from "@mui/icons-material/Refresh";
-
-const QUESTION_HIERARCHY_PATH = "/config/api/v1/kpiquestions/hierarchy";
-
-const pickArray = (payload) => {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.items)) return payload.items;
-  if (Array.isArray(payload?.results)) return payload.results;
-  return [];
-};
 
 const normalizeQuestion = (item, index) => ({
   id: String(item?.id || item?.question_id || index),
@@ -83,6 +76,11 @@ export default function Sessions() {
     companiesLoading,
     error: companiesError,
   } = useSelector((state) => state.company);
+  const {
+    items: questionHierarchy,
+    loading: loadingQuestions,
+    error: questionHierarchyError,
+  } = useSelector((state) => state.questionHierarchy);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -90,8 +88,6 @@ export default function Sessions() {
   const [selectedThemeKey, setSelectedThemeKey] = useState("");
   const [selectedKpiKey, setSelectedKpiKey] = useState("");
   const [selectedQuestions, setSelectedQuestions] = useState([]);
-  const [questionHierarchy, setQuestionHierarchy] = useState([]);
-  const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [formError, setFormError] = useState("");
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
 
@@ -121,29 +117,15 @@ export default function Sessions() {
   }, [selectedKpi]);
 
   useEffect(() => {
-    const loadQuestions = async () => {
-      try {
-        setLoadingQuestions(true);
-        const response = await api.get(QUESTION_HIERARCHY_PATH);
-        setQuestionHierarchy(pickArray(response?.data));
-      } catch {
-        setFormError("Failed to load questions.");
-      } finally {
-        setLoadingQuestions(false);
-      }
-    };
-
-    loadQuestions();
-  }, []);
-
-  useEffect(() => {
     dispatch(fetchCompanies());
     dispatch(fetchSessions());
+    dispatch(fetchQuestionHierarchy());
   }, [dispatch]);
 
   useEffect(() => {
     return () => {
       dispatch(resetSessionFlow());
+      dispatch(clearQuestionHierarchyError());
     };
   }, [dispatch]);
 
@@ -394,6 +376,9 @@ export default function Sessions() {
               {!!sessionError && <Alert severity="error">{sessionError}</Alert>}
               {!!companiesError && (
                 <Alert severity="error">{companiesError}</Alert>
+              )}
+              {!!questionHierarchyError && (
+                <Alert severity="error">{questionHierarchyError}</Alert>
               )}
               {!!createMessage && (
                 <Alert severity="success">{createMessage}</Alert>
