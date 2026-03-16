@@ -247,7 +247,14 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="/sessions/:id/form" element={<SessionForm />} />
+      <Route
+        path="/sessions/:id/form"
+        element={
+          <ProtectedRoute>
+            <SessionForm />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="*"
