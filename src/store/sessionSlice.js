@@ -9,23 +9,30 @@ const initialState = {
   sessions: [],
   sessionDetails: null,
   sessionPreview: null,
+  sessionForm: null,
   createLoading: false,
   addLoading: false,
   listLoading: false,
   detailLoading: false,
   previewLoading: false,
   publishLoading: false,
+  formLoading: false,
+  submitLoading: false,
   createMessage: "",
   addMessage: "",
   listMessage: "",
   detailMessage: "",
   previewMessage: "",
   publishMessage: "",
+  submitMessage: "",
   error: null,
   listError: null,
   detailError: null,
   previewError: null,
   publishError: null,
+  formError: null,
+  submitError: null,
+  submittedResponseId: null,
 };
 
 export const createSession = createAsyncThunk(
@@ -190,6 +197,61 @@ export const publishSession = createAsyncThunk(
   },
 );
 
+export const fetchSessionForm = createAsyncThunk(
+  "session/fetchSessionForm",
+  async (sessionId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`${SESSION_PATH}/${sessionId}/form`);
+      const payload = response?.data || {};
+
+      if (!payload?.success || !payload?.data) {
+        return rejectWithValue(payload?.message || "Failed to fetch session form.");
+      }
+
+      return {
+        sessionForm: payload.data,
+        message: payload?.message || "Session form fetched successfully.",
+      };
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.detail?.message ||
+        error?.response?.data?.detail ||
+        "Failed to fetch session form due to server/network error.";
+      return rejectWithValue(message);
+    }
+  },
+);
+
+export const submitSessionForm = createAsyncThunk(
+  "session/submitSessionForm",
+  async ({ sessionId, email, answers }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`${SESSION_PATH}/${sessionId}/form/submit`, {
+        email,
+        answers,
+      });
+      const payload = response?.data || {};
+
+      if (!payload?.success || !payload?.data?.response_id) {
+        return rejectWithValue(payload?.message || "Failed to submit session form.");
+      }
+
+      return {
+        responseId: payload.data.response_id,
+        message: payload?.message || "Session form submitted successfully.",
+      };
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.detail?.message ||
+        error?.response?.data?.detail ||
+        "Failed to submit session form due to server/network error.";
+      return rejectWithValue(message);
+    }
+  },
+);
+
 const sessionSlice = createSlice({
   name: "session",
   initialState,
@@ -218,6 +280,15 @@ const sessionSlice = createSlice({
       state.previewLoading = false;
       state.publishLoading = false;
     },
+    clearSessionForm(state) {
+      state.sessionForm = null;
+      state.formError = null;
+      state.submitError = null;
+      state.submitMessage = "";
+      state.submittedResponseId = null;
+      state.formLoading = false;
+      state.submitLoading = false;
+    },
     clearSessionMessages(state) {
       state.createMessage = "";
       state.addMessage = "";
@@ -234,6 +305,10 @@ const sessionSlice = createSlice({
       state.error = null;
       state.previewError = null;
       state.publishError = null;
+      state.formError = null;
+      state.submitError = null;
+      state.submitMessage = "";
+      state.submittedResponseId = null;
     },
   },
   extraReducers: (builder) => {
@@ -333,6 +408,33 @@ const sessionSlice = createSlice({
       .addCase(publishSession.rejected, (state, action) => {
         state.publishLoading = false;
         state.publishError = action.payload || "Failed to publish session.";
+      })
+      .addCase(fetchSessionForm.pending, (state) => {
+        state.formLoading = true;
+        state.formError = null;
+      })
+      .addCase(fetchSessionForm.fulfilled, (state, action) => {
+        state.formLoading = false;
+        state.sessionForm = action.payload.sessionForm;
+      })
+      .addCase(fetchSessionForm.rejected, (state, action) => {
+        state.formLoading = false;
+        state.formError = action.payload || "Failed to fetch session form.";
+      })
+      .addCase(submitSessionForm.pending, (state) => {
+        state.submitLoading = true;
+        state.submitError = null;
+        state.submitMessage = "";
+        state.submittedResponseId = null;
+      })
+      .addCase(submitSessionForm.fulfilled, (state, action) => {
+        state.submitLoading = false;
+        state.submitMessage = action.payload.message;
+        state.submittedResponseId = action.payload.responseId;
+      })
+      .addCase(submitSessionForm.rejected, (state, action) => {
+        state.submitLoading = false;
+        state.submitError = action.payload || "Failed to submit session form.";
       });
   },
 });
@@ -343,6 +445,7 @@ export const {
   clearSessionDetailError,
   clearSessionDetails,
   clearSessionPreview,
+  clearSessionForm,
   clearSessionMessages,
   resetSessionFlow,
 } = sessionSlice.actions;

@@ -20,6 +20,7 @@ import KpiForm from "../pages/admin/KpiForm";
 import KpiView from "../pages/admin/KpiView";
 import Login from "../pages/auth/Login";
 import Profile from "../pages/common/Profile";
+import SessionForm from "../pages/common/SessionForm";
 import UserDashboard from "../pages/user/Dashboard";
 
 function ProtectedRoute({ children, allowedRole }) {
@@ -246,6 +247,7 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/sessions/:id/form" element={<SessionForm />} />
 
       <Route
         path="*"
