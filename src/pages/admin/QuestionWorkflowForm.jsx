@@ -33,69 +33,18 @@ import {
   clearThemeCreateState,
   createTheme,
 } from "../../store/themeSlice";
+import {
+  clearKpiCreateState,
+  createKpi,
+} from "../../store/kpiSlice";
 import { entityConfigs } from "../../data/adminEntityConfigs";
 import { loadEntityRows, saveEntityRows } from "../../utils/entityStorage";
-
-const QUESTION_HIERARCHY_LOCAL_KEY = "admin-question-hierarchy-local";
 
 const createEmptyOption = (index) => ({
   option_number: index + 1,
   option_text: "",
   score: index + 1,
 });
-
-const createKpiKey = (label) =>
-  `local-kpi-${label.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-") || Date.now()}`;
-
-function loadLocalHierarchy() {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const raw = localStorage.getItem(QUESTION_HIERARCHY_LOCAL_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveLocalHierarchy(items) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(QUESTION_HIERARCHY_LOCAL_KEY, JSON.stringify(items));
-}
-
-function mergeHierarchy(apiThemes, localThemes) {
-  const themeMap = new Map();
-
-  [...apiThemes, ...localThemes].forEach((theme) => {
-    const existing = themeMap.get(theme.theme_key);
-    if (!existing) {
-      themeMap.set(theme.theme_key, {
-        ...theme,
-        kpis: Array.isArray(theme.kpis) ? [...theme.kpis] : [],
-      });
-      return;
-    }
-
-    const kpiMap = new Map(
-      existing.kpis.map((kpi) => [kpi.kpi_key, kpi]),
-    );
-
-    (theme.kpis || []).forEach((kpi) => {
-      if (!kpiMap.has(kpi.kpi_key)) {
-        kpiMap.set(kpi.kpi_key, kpi);
-      }
-    });
-
-    themeMap.set(theme.theme_key, {
-      ...existing,
-      ...theme,
-      kpis: Array.from(kpiMap.values()),
-    });
-  });
-
-  return Array.from(themeMap.values());
-}
 
 function buildInitialForm(record, themes) {
   const themeOptions = themes.map((theme) => ({
@@ -178,20 +127,17 @@ export default function QuestionWorkflowForm({ mode }) {
     createLoading: createThemeLoading,
     createError: createThemeError,
   } = useSelector((state) => state.theme);
+  const {
+    createLoading: createKpiLoading,
+    createError: createKpiError,
+  } = useSelector((state) => state.kpi);
   const config = entityConfigs.question;
   const records = useMemo(
     () => loadEntityRows(config.storageKey, config.initialRows),
     [config.initialRows, config.storageKey],
   );
   const record = mode === "edit" ? records.find((item) => item.id === id) : null;
-  const [localHierarchy, setLocalHierarchy] = useState(() => loadLocalHierarchy());
-
-  const hierarchy = useMemo(
-    () => mergeHierarchy(apiHierarchy, localHierarchy),
-    [apiHierarchy, localHierarchy],
-  );
-
-  const [form, setForm] = useState(() => buildInitialForm(record, hierarchy));
+  const [form, setForm] = useState(() => buildInitialForm(record, apiHierarchy));
   const [errors, setErrors] = useState({});
   const [themeDialogOpen, setThemeDialogOpen] = useState(false);
   const [kpiDialogOpen, setKpiDialogOpen] = useState(false);
@@ -207,23 +153,24 @@ export default function QuestionWorkflowForm({ mode }) {
     return () => {
       dispatch(clearQuestionHierarchyError());
       dispatch(clearThemeCreateState());
+      dispatch(clearKpiCreateState());
     };
   }, [dispatch]);
 
   useEffect(() => {
     if (mode === "edit" && record) {
-      setForm(buildInitialForm(record, hierarchy));
+      setForm(buildInitialForm(record, apiHierarchy));
     }
-  }, [hierarchy, mode, record]);
+  }, [apiHierarchy, mode, record]);
 
   const themeOptions = useMemo(
     () =>
-      hierarchy.map((theme) => ({
+      apiHierarchy.map((theme) => ({
         key: theme.theme_key,
         label: theme.theme_display_name,
         description: theme.description || "",
       })),
-    [hierarchy],
+    [apiHierarchy],
   );
 
   const selectedThemes = themeOptions.filter((theme) =>
@@ -232,7 +179,7 @@ export default function QuestionWorkflowForm({ mode }) {
 
   const kpiOptions = useMemo(
     () =>
-      hierarchy
+      apiHierarchy
         .filter((theme) => form.selectedThemeKeys.includes(theme.theme_key))
         .flatMap((theme) =>
           (theme.kpis || []).map((kpi) => ({
@@ -243,7 +190,7 @@ export default function QuestionWorkflowForm({ mode }) {
             description: kpi.description || "",
           })),
         ),
-    [form.selectedThemeKeys, hierarchy],
+    [form.selectedThemeKeys, apiHierarchy],
   );
 
   const selectedKpis = kpiOptions.filter((kpi) =>
@@ -350,46 +297,34 @@ export default function QuestionWorkflowForm({ mode }) {
 
   const handleAddKpi = () => {
     if (!newKpi.themeKey || !newKpi.name.trim()) return;
+    const today = new Date().toISOString().slice(0, 10);
 
-    const createdKpi = {
-      kpi_key: createKpiKey(newKpi.name),
-      display_name: newKpi.name.trim(),
-      description: newKpi.description.trim(),
-      questions: [],
-    };
-
-    const selectedTheme = hierarchy.find((theme) => theme.theme_key === newKpi.themeKey);
-    const existingLocalTheme = localHierarchy.find(
-      (theme) => theme.theme_key === newKpi.themeKey,
-    );
-
-    const nextLocalHierarchy = existingLocalTheme
-      ? localHierarchy.map((theme) =>
-          theme.theme_key === newKpi.themeKey
-            ? { ...theme, kpis: [...(theme.kpis || []), createdKpi] }
-            : theme,
-        )
-      : [
-          ...localHierarchy,
-          {
-            theme_key: newKpi.themeKey,
-            theme_display_name: selectedTheme?.theme_display_name || "Untitled Theme",
-            description: selectedTheme?.description || "",
-            kpis: [...(selectedTheme?.kpis || []), createdKpi],
-          },
-        ];
-
-    setLocalHierarchy(nextLocalHierarchy);
-    saveLocalHierarchy(nextLocalHierarchy);
-    setForm((current) => ({
-      ...current,
-      selectedThemeKeys: current.selectedThemeKeys.includes(newKpi.themeKey)
-        ? current.selectedThemeKeys
-        : [...current.selectedThemeKeys, newKpi.themeKey],
-      selectedKpiKeys: [...current.selectedKpiKeys, createdKpi.kpi_key],
-    }));
-    setNewKpi({ themeKey: "", name: "", description: "" });
-    setKpiDialogOpen(false);
+    dispatch(
+      createKpi({
+        displayName: newKpi.name.trim(),
+        themeKey: newKpi.themeKey,
+        startDate: today,
+        endDate: today,
+      }),
+    )
+      .unwrap()
+      .then((payload) => {
+        dispatch(fetchQuestionHierarchy());
+        setForm((current) => ({
+          ...current,
+          selectedThemeKeys: current.selectedThemeKeys.includes(newKpi.themeKey)
+            ? current.selectedThemeKeys
+            : [...current.selectedThemeKeys, newKpi.themeKey],
+          selectedKpiKeys: current.selectedKpiKeys.includes(payload.item.kpi_key)
+            ? current.selectedKpiKeys
+            : [...current.selectedKpiKeys, payload.item.kpi_key],
+        }));
+        setNewKpi({ themeKey: "", name: "", description: "" });
+        setKpiDialogOpen(false);
+      })
+      .catch(() => {
+        // Error is already handled in redux state.
+      });
   };
 
   if (mode === "edit" && !record) {
@@ -428,7 +363,7 @@ export default function QuestionWorkflowForm({ mode }) {
               {mode === "edit" ? "Edit Question" : "Add Question"}
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 0.75, maxWidth: 760 }}>
-              Select themes and KPIs from hierarchy, build question options dynamically, and optionally add local themes or KPIs from the popup actions.
+              Select themes and KPIs from hierarchy, build question options dynamically, and optionally create new themes or KPIs from the popup actions.
             </Typography>
           </Box>
           <Button startIcon={<ArrowBackRoundedIcon />} onClick={() => navigate(config.basePath)}>
@@ -444,6 +379,11 @@ export default function QuestionWorkflowForm({ mode }) {
         {createThemeError && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {createThemeError}
+          </Alert>
+        )}
+        {createKpiError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {createKpiError}
           </Alert>
         )}
 
@@ -473,7 +413,7 @@ export default function QuestionWorkflowForm({ mode }) {
                 ...current,
                 selectedThemeKeys: value.map((item) => item.key),
                 selectedKpiKeys: current.selectedKpiKeys.filter((key) =>
-                  hierarchy
+                  apiHierarchy
                     .filter((theme) => value.some((item) => item.key === theme.theme_key))
                     .flatMap((theme) => (theme.kpis || []).map((kpi) => kpi.kpi_key))
                     .includes(key),
@@ -743,13 +683,18 @@ export default function QuestionWorkflowForm({ mode }) {
               multiline
               minRows={3}
               fullWidth
+              helperText="KPI API currently uses theme, KPI name, and default start/end date as today."
             />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setKpiDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddKpi}>
-            Save KPI
+          <Button
+            variant="contained"
+            onClick={handleAddKpi}
+            disabled={createKpiLoading}
+          >
+            {createKpiLoading ? "Saving..." : "Save KPI"}
           </Button>
         </DialogActions>
       </Dialog>

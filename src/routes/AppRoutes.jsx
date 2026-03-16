@@ -15,6 +15,9 @@ import Sessions from "../pages/admin/Sessions";
 import Themes from "../pages/admin/Themes";
 import ThemeForm from "../pages/admin/ThemeForm";
 import ThemeView from "../pages/admin/ThemeView";
+import Kpis from "../pages/admin/Kpis";
+import KpiForm from "../pages/admin/KpiForm";
+import KpiView from "../pages/admin/KpiView";
 import Login from "../pages/auth/Login";
 import Profile from "../pages/common/Profile";
 import UserDashboard from "../pages/user/Dashboard";
@@ -184,6 +187,38 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="admin">
             <ThemeForm mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/kpis"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <Kpis />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/kpis/add"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <KpiForm mode="add" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/kpis/:id"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <KpiView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/kpis/:id/edit"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <KpiForm mode="edit" />
           </ProtectedRoute>
         }
       />
