@@ -5,6 +5,7 @@ import companyReducer from "./companySlice";
 import userUploadReducer from "./userUploadSlice";
 import questionUploadReducer from "./questionUploadSlice";
 import questionHierarchyReducer from "./questionHierarchySlice";
+import themeReducer from "./themeSlice";
 
 const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ const store = configureStore({
     userUpload: userUploadReducer,
     questionUpload: questionUploadReducer,
     questionHierarchy: questionHierarchyReducer,
+    theme: themeReducer,
   },
 });
 

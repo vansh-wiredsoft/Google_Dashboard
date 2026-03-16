@@ -28,6 +28,7 @@ import PeopleIcon from "@mui/icons-material/People";
 import QuizIcon from "@mui/icons-material/Quiz";
 import EventIcon from "@mui/icons-material/Event";
 import PersonIcon from "@mui/icons-material/Person";
+import CategoryIcon from "@mui/icons-material/Category";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
@@ -40,6 +41,7 @@ const adminItems = [
   { label: "Company Data", to: "/admin/company-data", icon: <BusinessIcon /> },
   { label: "Company Users", to: "/admin/company-users", icon: <PeopleIcon /> },
   { label: "Questions", to: "/admin/questions", icon: <QuizIcon /> },
+  { label: "Themes", to: "/admin/themes", icon: <CategoryIcon /> },
   { label: "Sessions", to: "/admin/sessions", icon: <EventIcon /> },
 ];
 

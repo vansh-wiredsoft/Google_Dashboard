@@ -29,6 +29,10 @@ import {
   clearQuestionHierarchyError,
   fetchQuestionHierarchy,
 } from "../../store/questionHierarchySlice";
+import {
+  clearThemeCreateState,
+  createTheme,
+} from "../../store/themeSlice";
 import { entityConfigs } from "../../data/adminEntityConfigs";
 import { loadEntityRows, saveEntityRows } from "../../utils/entityStorage";
 
@@ -39,9 +43,6 @@ const createEmptyOption = (index) => ({
   option_text: "",
   score: index + 1,
 });
-
-const createThemeKey = (label) =>
-  `local-theme-${label.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-") || Date.now()}`;
 
 const createKpiKey = (label) =>
   `local-kpi-${label.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-") || Date.now()}`;
@@ -173,6 +174,10 @@ export default function QuestionWorkflowForm({ mode }) {
   const { items: apiHierarchy, loading, error } = useSelector(
     (state) => state.questionHierarchy,
   );
+  const {
+    createLoading: createThemeLoading,
+    createError: createThemeError,
+  } = useSelector((state) => state.theme);
   const config = entityConfigs.question;
   const records = useMemo(
     () => loadEntityRows(config.storageKey, config.initialRows),
@@ -201,6 +206,7 @@ export default function QuestionWorkflowForm({ mode }) {
     dispatch(fetchQuestionHierarchy());
     return () => {
       dispatch(clearQuestionHierarchyError());
+      dispatch(clearThemeCreateState());
     };
   }, [dispatch]);
 
@@ -318,22 +324,28 @@ export default function QuestionWorkflowForm({ mode }) {
   const handleAddTheme = () => {
     if (!newTheme.name.trim()) return;
 
-    const createdTheme = {
-      theme_key: createThemeKey(newTheme.name),
-      theme_display_name: newTheme.name.trim(),
-      description: newTheme.description.trim(),
-      kpis: [],
-    };
-
-    const nextLocalHierarchy = [...localHierarchy, createdTheme];
-    setLocalHierarchy(nextLocalHierarchy);
-    saveLocalHierarchy(nextLocalHierarchy);
-    setForm((current) => ({
-      ...current,
-      selectedThemeKeys: [...current.selectedThemeKeys, createdTheme.theme_key],
-    }));
-    setNewTheme({ name: "", description: "" });
-    setThemeDialogOpen(false);
+    dispatch(
+      createTheme({
+        themeDisplayName: newTheme.name.trim(),
+      }),
+    )
+      .unwrap()
+      .then((payload) => {
+        dispatch(fetchQuestionHierarchy());
+        setForm((current) => ({
+          ...current,
+          selectedThemeKeys: current.selectedThemeKeys.includes(
+            payload.item.theme_key,
+          )
+            ? current.selectedThemeKeys
+            : [...current.selectedThemeKeys, payload.item.theme_key],
+        }));
+        setNewTheme({ name: "", description: "" });
+        setThemeDialogOpen(false);
+      })
+      .catch(() => {
+        // Error is already handled in redux state.
+      });
   };
 
   const handleAddKpi = () => {
@@ -427,6 +439,11 @@ export default function QuestionWorkflowForm({ mode }) {
         {error && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             {error}
+          </Alert>
+        )}
+        {createThemeError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {createThemeError}
           </Alert>
         )}
 
@@ -670,13 +687,18 @@ export default function QuestionWorkflowForm({ mode }) {
               multiline
               minRows={3}
               fullWidth
+              helperText="Theme API currently uses only the theme name."
             />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setThemeDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddTheme}>
-            Save Theme
+          <Button
+            variant="contained"
+            onClick={handleAddTheme}
+            disabled={createThemeLoading}
+          >
+            {createThemeLoading ? "Saving..." : "Save Theme"}
           </Button>
         </DialogActions>
       </Dialog>

@@ -12,6 +12,9 @@ import Questions from "../pages/admin/Questions";
 import QuestionsForm from "../pages/admin/QuestionsForm";
 import QuestionsView from "../pages/admin/QuestionsView";
 import Sessions from "../pages/admin/Sessions";
+import Themes from "../pages/admin/Themes";
+import ThemeForm from "../pages/admin/ThemeForm";
+import ThemeView from "../pages/admin/ThemeView";
 import Login from "../pages/auth/Login";
 import Profile from "../pages/common/Profile";
 import UserDashboard from "../pages/user/Dashboard";
@@ -149,6 +152,38 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="admin">
             <QuestionsForm mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/themes"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <Themes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/themes/add"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <ThemeForm mode="add" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/themes/:id"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <ThemeView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/themes/:id/edit"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <ThemeForm mode="edit" />
           </ProtectedRoute>
         }
       />
