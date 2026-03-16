@@ -8,17 +8,24 @@ const initialState = {
   addedQuestions: [],
   sessions: [],
   sessionDetails: null,
+  sessionPreview: null,
   createLoading: false,
   addLoading: false,
   listLoading: false,
   detailLoading: false,
+  previewLoading: false,
+  publishLoading: false,
   createMessage: "",
   addMessage: "",
   listMessage: "",
   detailMessage: "",
+  previewMessage: "",
+  publishMessage: "",
   error: null,
   listError: null,
   detailError: null,
+  previewError: null,
+  publishError: null,
 };
 
 export const createSession = createAsyncThunk(
@@ -129,6 +136,60 @@ export const fetchSessionById = createAsyncThunk(
   },
 );
 
+export const fetchSessionPreview = createAsyncThunk(
+  "session/fetchSessionPreview",
+  async (sessionId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`${SESSION_PATH}/${sessionId}/form/preview`);
+      const payload = response?.data || {};
+
+      if (!payload?.success || !payload?.data) {
+        return rejectWithValue(
+          payload?.message || "Failed to fetch session preview.",
+        );
+      }
+
+      return {
+        sessionPreview: payload.data,
+        message: payload?.message || "Session preview fetched successfully.",
+      };
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.detail?.message ||
+        error?.response?.data?.detail ||
+        "Failed to fetch session preview due to server/network error.";
+      return rejectWithValue(message);
+    }
+  },
+);
+
+export const publishSession = createAsyncThunk(
+  "session/publishSession",
+  async (sessionId, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`${SESSION_PATH}/${sessionId}/publish`);
+      const payload = response?.data || {};
+
+      if (!payload?.success || !payload?.data) {
+        return rejectWithValue(payload?.message || "Failed to publish session.");
+      }
+
+      return {
+        sessionPreview: payload.data,
+        message: payload?.message || "Session form published successfully.",
+      };
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.detail?.message ||
+        error?.response?.data?.detail ||
+        "Failed to publish session due to server/network error.";
+      return rejectWithValue(message);
+    }
+  },
+);
+
 const sessionSlice = createSlice({
   name: "session",
   initialState,
@@ -148,6 +209,15 @@ const sessionSlice = createSlice({
       state.detailError = null;
       state.detailLoading = false;
     },
+    clearSessionPreview(state) {
+      state.sessionPreview = null;
+      state.previewMessage = "";
+      state.publishMessage = "";
+      state.previewError = null;
+      state.publishError = null;
+      state.previewLoading = false;
+      state.publishLoading = false;
+    },
     clearSessionMessages(state) {
       state.createMessage = "";
       state.addMessage = "";
@@ -159,7 +229,11 @@ const sessionSlice = createSlice({
       state.addLoading = false;
       state.createMessage = "";
       state.addMessage = "";
+      state.previewMessage = "";
+      state.publishMessage = "";
       state.error = null;
+      state.previewError = null;
+      state.publishError = null;
     },
   },
   extraReducers: (builder) => {
@@ -219,6 +293,46 @@ const sessionSlice = createSlice({
       .addCase(fetchSessionById.rejected, (state, action) => {
         state.detailLoading = false;
         state.detailError = action.payload || "Failed to fetch session details.";
+      })
+      .addCase(fetchSessionPreview.pending, (state) => {
+        state.previewLoading = true;
+        state.previewError = null;
+        state.previewMessage = "";
+        state.publishMessage = "";
+        state.publishError = null;
+      })
+      .addCase(fetchSessionPreview.fulfilled, (state, action) => {
+        state.previewLoading = false;
+        state.sessionPreview = action.payload.sessionPreview;
+        state.previewMessage = action.payload.message;
+      })
+      .addCase(fetchSessionPreview.rejected, (state, action) => {
+        state.previewLoading = false;
+        state.previewError = action.payload || "Failed to fetch session preview.";
+      })
+      .addCase(publishSession.pending, (state) => {
+        state.publishLoading = true;
+        state.publishError = null;
+        state.publishMessage = "";
+      })
+      .addCase(publishSession.fulfilled, (state, action) => {
+        state.publishLoading = false;
+        state.sessionPreview = action.payload.sessionPreview;
+        state.publishMessage = action.payload.message;
+        state.sessions = state.sessions.map((session) =>
+          session.id === action.payload.sessionPreview.session_id
+            ? {
+                ...session,
+                is_published: action.payload.sessionPreview.is_published,
+                published_at: action.payload.sessionPreview.published_at,
+                final_url: action.payload.sessionPreview.final_url,
+              }
+            : session,
+        );
+      })
+      .addCase(publishSession.rejected, (state, action) => {
+        state.publishLoading = false;
+        state.publishError = action.payload || "Failed to publish session.";
       });
   },
 });
@@ -228,6 +342,7 @@ export const {
   clearSessionListError,
   clearSessionDetailError,
   clearSessionDetails,
+  clearSessionPreview,
   clearSessionMessages,
   resetSessionFlow,
 } = sessionSlice.actions;

@@ -32,9 +32,12 @@ import {
   clearSessionError,
   clearSessionListError,
   clearSessionMessages,
+  clearSessionPreview,
   createSession,
+  fetchSessionPreview,
   fetchSessionById,
   fetchSessions,
+  publishSession,
   resetSessionFlow,
 } from "../../store/sessionSlice";
 import { fetchCompanies } from "../../store/companySlice";
@@ -46,6 +49,10 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
+import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import LinkIcon from "@mui/icons-material/Link";
+import PublishIcon from "@mui/icons-material/Publish";
 
 const normalizeQuestion = (item, index) => ({
   id: String(item?.id || item?.question_id || index),
@@ -63,13 +70,20 @@ export default function Sessions() {
     addLoading,
     listLoading,
     detailLoading,
+    previewLoading,
+    publishLoading,
     createMessage,
     addMessage,
     detailMessage,
+    previewMessage,
+    publishMessage,
     error: sessionError,
     listError,
     detailError,
+    previewError,
+    publishError,
     sessionDetails,
+    sessionPreview,
   } = useSelector((state) => state.session);
   const {
     companies,
@@ -90,6 +104,7 @@ export default function Sessions() {
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [formError, setFormError] = useState("");
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
 
   const selectedCompanyName = useMemo(
     () => companies.find((company) => company.id === companyId)?.name || "",
@@ -225,6 +240,26 @@ export default function Sessions() {
     }
   };
 
+  const handlePreviewSession = async (sessionId) => {
+    setPreviewDialogOpen(true);
+    try {
+      await dispatch(fetchSessionPreview(sessionId)).unwrap();
+    } catch {
+      // Error is already captured in redux state.
+    }
+  };
+
+  const handlePublishSession = async () => {
+    if (!sessionPreview?.session_id) return;
+
+    try {
+      await dispatch(publishSession(sessionPreview.session_id)).unwrap();
+      dispatch(fetchSessions());
+    } catch {
+      // Error is already captured in redux state.
+    }
+  };
+
   const handleEditSession = (row) => {
     console.log("Edit session:", row);
   };
@@ -318,6 +353,16 @@ export default function Sessions() {
               </IconButton>
             </Tooltip>
 
+            <Tooltip title="Preview Form">
+              <IconButton
+                size="small"
+                color="success"
+                onClick={() => handlePreviewSession(params.row.id)}
+              >
+                <PreviewRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+
             <Tooltip title="Edit">
               <IconButton
                 size="small"
@@ -347,6 +392,11 @@ export default function Sessions() {
   const handleCloseViewDialog = () => {
     setViewDialogOpen(false);
     dispatch(clearSessionDetails());
+  };
+
+  const handleClosePreviewDialog = () => {
+    setPreviewDialogOpen(false);
+    dispatch(clearSessionPreview());
   };
 
   return (
@@ -540,6 +590,16 @@ export default function Sessions() {
                     {addLoading ? "Adding Questions..." : "Add Questions"}
                   </Button>
                 )}
+                {!!createdSession && !!addedQuestions.length && (
+                  <Button
+                    variant="outlined"
+                    color="success"
+                    startIcon={<PreviewRoundedIcon />}
+                    onClick={() => handlePreviewSession(createdSession.id)}
+                  >
+                    Preview Form
+                  </Button>
+                )}
                 <Button variant="outlined" onClick={handleReset}>
                   {createdSession ? "Create New Session" : "Reset"}
                 </Button>
@@ -605,6 +665,17 @@ export default function Sessions() {
                 </Typography>
                 <Typography>{addedQuestions.length}</Typography>
               </Box>
+
+              {!!createdSession && !!addedQuestions.length && (
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<PreviewRoundedIcon />}
+                  onClick={() => handlePreviewSession(createdSession.id)}
+                >
+                  Open Form Preview
+                </Button>
+              )}
             </Stack>
 
             {!!addedQuestions.length && (
@@ -773,6 +844,206 @@ export default function Sessions() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseViewDialog}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={previewDialogOpen}
+        onClose={handleClosePreviewDialog}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle sx={{ pb: 1 }}>Form Preview</DialogTitle>
+        <DialogContent
+          dividers
+          sx={{
+            bgcolor: "background.default",
+            px: { xs: 1.5, sm: 3 },
+            py: { xs: 2, sm: 3 },
+          }}
+        >
+          {previewLoading && (
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 2 }}>
+              <CircularProgress size={18} />
+              <Typography>Loading form preview...</Typography>
+            </Stack>
+          )}
+
+          {!!previewError && !previewLoading && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {previewError}
+            </Alert>
+          )}
+
+          {!!publishError && !previewLoading && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {publishError}
+            </Alert>
+          )}
+
+          {!!previewMessage && !previewLoading && !previewError && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              {previewMessage}
+            </Alert>
+          )}
+
+          {!!publishMessage && !previewLoading && !publishError && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {publishMessage}
+            </Alert>
+          )}
+
+          {!!sessionPreview && !previewLoading && (
+            <Stack spacing={2}>
+              <Paper
+                elevation={0}
+                sx={{
+                  borderRadius: 3,
+                  overflow: "hidden",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  bgcolor: "rgba(255,255,255,0.92)",
+                  backdropFilter: "blur(6px)",
+                }}
+              >
+                <Box sx={{ height: 10, bgcolor: "primary.main" }} />
+                <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Typography variant="h4" sx={{ fontSize: { xs: 24, sm: 32 }, mb: 1 }}>
+                    {sessionPreview.title || "-"}
+                  </Typography>
+                  <Typography color="text.secondary" sx={{ mb: 2 }}>
+                    {sessionPreview.description || "No description provided."}
+                  </Typography>
+
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2} useFlexGap flexWrap="wrap">
+                    <Paper variant="outlined" sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Session ID
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {sessionPreview.session_id}
+                      </Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Status
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {sessionPreview.is_published ? "Published" : "Draft"}
+                      </Typography>
+                    </Paper>
+                    {!!sessionPreview.preview_url && (
+                      <Paper variant="outlined" sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}>
+                        <Typography variant="caption" color="text.secondary">
+                          Preview URL
+                        </Typography>
+                        <Stack direction="row" spacing={0.7} alignItems="center">
+                          <LinkIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {sessionPreview.preview_url}
+                          </Typography>
+                        </Stack>
+                      </Paper>
+                    )}
+                    {!!sessionPreview.final_url && (
+                      <Paper variant="outlined" sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}>
+                        <Typography variant="caption" color="text.secondary">
+                          Final URL
+                        </Typography>
+                        <Stack direction="row" spacing={0.7} alignItems="center">
+                          <LinkIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {sessionPreview.final_url}
+                          </Typography>
+                        </Stack>
+                      </Paper>
+                    )}
+                  </Stack>
+                </Box>
+              </Paper>
+
+              {(sessionPreview.questions || []).map((question) => (
+                <Paper
+                  key={question.question_id}
+                  elevation={0}
+                  sx={{
+                    p: { xs: 2, sm: 3 },
+                    borderRadius: 3,
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Stack spacing={1.4}>
+                    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1}>
+                      <Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                          {question.display_order}. {question.question_text}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {question.theme_display_name} • {question.kpi_display_name}
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {question.question_code}
+                      </Typography>
+                    </Stack>
+
+                    <Stack spacing={1}>
+                      {(question.options || []).map((option, index) => (
+                        <Paper
+                          key={`${question.question_id}-${index}`}
+                          variant="outlined"
+                          sx={{
+                            p: 1.4,
+                            borderRadius: 999,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.2,
+                            bgcolor: "rgba(15,118,110,0.04)",
+                            borderColor: "rgba(15,118,110,0.18)",
+                          }}
+                        >
+                          <RadioButtonUncheckedIcon sx={{ color: "text.secondary", fontSize: 20 }} />
+                          <Typography variant="body2">{option}</Typography>
+                        </Paper>
+                      ))}
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ))}
+
+              {!sessionPreview.questions?.length && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: 3,
+                    border: "1px dashed",
+                    borderColor: "divider",
+                    textAlign: "center",
+                  }}
+                >
+                  <Typography color="text.secondary">
+                    No questions are available in this preview yet.
+                  </Typography>
+                </Paper>
+              )}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          {!sessionPreview?.is_published && !!sessionPreview && (
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={<PublishIcon />}
+              onClick={handlePublishSession}
+              disabled={publishLoading}
+            >
+              {publishLoading ? "Publishing..." : "Publish Form"}
+            </Button>
+          )}
+          <Button onClick={handleClosePreviewDialog}>Close</Button>
         </DialogActions>
       </Dialog>
     </Layout>
