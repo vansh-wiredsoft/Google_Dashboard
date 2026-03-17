@@ -84,7 +84,12 @@ export default function KpiForm({ mode }) {
   );
 
   const handleSave = async () => {
-    if (!form.displayName.trim() || !form.themeKey || !form.startDate || !form.endDate) {
+    if (
+      !form.displayName.trim() ||
+      !form.themeKey ||
+      !form.startDate ||
+      !form.endDate
+    ) {
       setFormError("Theme, KPI name, start date, and end date are required.");
       return;
     }
@@ -140,7 +145,16 @@ export default function KpiForm({ mode }) {
   if (mode === "edit" && detailLoading) {
     return (
       <Layout role="admin" title={pageTitle}>
-        <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid", borderColor: "divider", bgcolor: "rgba(255,255,255,0.86)" }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 2, sm: 3 },
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: "rgba(255,255,255,0.86)",
+          }}
+        >
           <Typography>Loading KPI...</Typography>
         </Paper>
       </Layout>
@@ -175,7 +189,10 @@ export default function KpiForm({ mode }) {
                 : "Create a new KPI using the API-backed form."}
             </Typography>
           </Box>
-          <Button startIcon={<ArrowBackRoundedIcon />} onClick={() => navigate("/admin/kpis")}>
+          <Button
+            startIcon={<ArrowBackRoundedIcon />}
+            onClick={() => navigate("/admin/kpis")}
+          >
             Back to list
           </Button>
         </Stack>
@@ -187,39 +204,49 @@ export default function KpiForm({ mode }) {
         )}
 
         <Stack spacing={2}>
-          <TextField
-            label="Theme"
-            value={form.themeKey}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, themeKey: event.target.value }))
-            }
-            select
-            fullWidth
-          >
-            <MenuItem value="">Select Theme</MenuItem>
-            {themeItems.map((theme) => (
-              <MenuItem key={theme.theme_key} value={theme.theme_key}>
-                {theme.theme_display_name}
-              </MenuItem>
-            ))}
-          </TextField>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="Theme"
+              value={form.themeKey}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  themeKey: event.target.value,
+                }))
+              }
+              select
+              fullWidth
+            >
+              <MenuItem value="">Select Theme</MenuItem>
+              {themeItems.map((theme) => (
+                <MenuItem key={theme.theme_key} value={theme.theme_key}>
+                  {theme.theme_display_name}
+                </MenuItem>
+              ))}
+            </TextField>
 
-          <TextField
-            label="KPI Name"
-            value={form.displayName}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, displayName: event.target.value }))
-            }
-            fullWidth
-          />
-
+            <TextField
+              label="KPI Name"
+              value={form.displayName}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  displayName: event.target.value,
+                }))
+              }
+              fullWidth
+            />
+          </Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Start Date"
               type="date"
               value={form.startDate}
               onChange={(event) =>
-                setForm((current) => ({ ...current, startDate: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  startDate: event.target.value,
+                }))
               }
               InputLabelProps={{ shrink: true }}
               fullWidth
@@ -229,7 +256,10 @@ export default function KpiForm({ mode }) {
               type="date"
               value={form.endDate}
               onChange={(event) =>
-                setForm((current) => ({ ...current, endDate: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  endDate: event.target.value,
+                }))
               }
               InputLabelProps={{ shrink: true }}
               fullWidth
@@ -242,7 +272,10 @@ export default function KpiForm({ mode }) {
                 <Switch
                   checked={form.isActive}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, isActive: event.target.checked }))
+                    setForm((current) => ({
+                      ...current,
+                      isActive: event.target.checked,
+                    }))
                   }
                 />
               }

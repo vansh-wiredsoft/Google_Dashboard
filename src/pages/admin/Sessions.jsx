@@ -910,7 +910,30 @@ export default function Sessions() {
         fullWidth
         maxWidth="md"
       >
-        <DialogTitle sx={{ pb: 1 }}>Form Preview</DialogTitle>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1.2}
+            alignItems={{ xs: "stretch", sm: "center" }}
+            justifyContent="space-between"
+          >
+            <Typography variant="h6">Form Preview</Typography>
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              {!sessionPreview?.is_published && !!sessionPreview && (
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<PublishIcon />}
+                  onClick={handlePublishSession}
+                  disabled={publishLoading}
+                >
+                  {publishLoading ? "Publishing..." : "Publish Form"}
+                </Button>
+              )}
+              <Button onClick={handleClosePreviewDialog}>Close</Button>
+            </Stack>
+          </Stack>
+        </DialogTitle>
         <DialogContent
           dividers
           sx={{
@@ -1135,20 +1158,6 @@ export default function Sessions() {
             </Stack>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          {!sessionPreview?.is_published && !!sessionPreview && (
-            <Button
-              variant="contained"
-              color="success"
-              startIcon={<PublishIcon />}
-              onClick={handlePublishSession}
-              disabled={publishLoading}
-            >
-              {publishLoading ? "Publishing..." : "Publish Form"}
-            </Button>
-          )}
-          <Button onClick={handleClosePreviewDialog}>Close</Button>
-        </DialogActions>
       </Dialog>
     </Layout>
   );
