@@ -70,11 +70,7 @@ export const uploadCompanyFile = createAsyncThunk(
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await api.post(COMPANY_UPLOAD_PATH, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const response = await api.post(COMPANY_UPLOAD_PATH, formData);
 
       const payload = response?.data || {};
       if (!payload?.success) {

@@ -5,7 +5,13 @@ import { Alert, Stack } from "@mui/material";
 import Layout from "../../layouts/commonLayout/Layout";
 import EntityManagementTable from "../../components/shared/EntityManagementTable";
 import { entityConfigs } from "../../data/adminEntityConfigs";
-import { clearCompanyError, fetchCompanies } from "../../store/companySlice";
+import {
+  clearCompanyError,
+  clearCompanyUploadError,
+  fetchCompanies,
+  resetCompanyUpload,
+  uploadCompanyFile,
+} from "../../store/companySlice";
 
 export default function CompanyData() {
   const dispatch = useDispatch();
@@ -33,6 +39,16 @@ export default function CompanyData() {
           {...config}
           rows={companies}
           loading={companiesLoading}
+          uploadSelector={(state) => ({
+            loading: state.company.uploadLoading,
+            status: state.company.uploadStatus,
+            error: state.company.uploadError,
+            responseData: state.company.uploadResponseData,
+          })}
+          uploadThunk={uploadCompanyFile}
+          resetUploadAction={resetCompanyUpload}
+          clearUploadErrorAction={clearCompanyUploadError}
+          onUploadSuccess={(dispatch) => dispatch(fetchCompanies()).unwrap()}
         />
       </Stack>
     </Layout>

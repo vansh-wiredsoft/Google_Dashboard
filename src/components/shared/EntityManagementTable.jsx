@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import {
@@ -36,7 +37,13 @@ export default function EntityManagementTable({
   initialRows,
   rows: controlledRows,
   loading = false,
+  uploadSelector,
+  uploadThunk,
+  resetUploadAction,
+  clearUploadErrorAction,
+  onUploadSuccess,
 }) {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [internalRows, setInternalRows] = useState(() =>
@@ -44,6 +51,21 @@ export default function EntityManagementTable({
   );
   const [feedback, setFeedback] = useState(null);
   const rows = controlledRows ?? internalRows;
+  const uploadState = useSelector(
+    uploadSelector ||
+      (() => ({
+        loading: false,
+        status: null,
+        error: "",
+        responseData: null,
+      })),
+  );
+  const {
+    loading: uploadLoading = false,
+    status: uploadStatus = null,
+    error: uploadError = "",
+    responseData: uploadResponseData = null,
+  } = uploadState || {};
 
   const columns = useMemo(
     () => [
@@ -98,6 +120,11 @@ export default function EntityManagementTable({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (resetUploadAction) {
+      dispatch(resetUploadAction());
+    }
+    setFeedback(null);
+
     try {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data, { type: "array" });
@@ -107,16 +134,28 @@ export default function EntityManagementTable({
 
       if (controlledRows === undefined) {
         setInternalRows(normalizedRows);
+        saveEntityRows(storageKey, normalizedRows);
       }
-      saveEntityRows(storageKey, normalizedRows);
-      setFeedback({
-        severity: "success",
-        message: `${parsedRows.length} ${entityLabel.toLowerCase()} record(s) imported from Excel.`,
-      });
-    } catch {
+
+      if (uploadThunk) {
+        await dispatch(uploadThunk(file)).unwrap();
+        if (onUploadSuccess) {
+          await onUploadSuccess(dispatch);
+        }
+        setFeedback({
+          severity: "success",
+          message: `${parsedRows.length} ${entityLabel.toLowerCase()} record(s) uploaded successfully.`,
+        });
+      } else {
+        setFeedback({
+          severity: "success",
+          message: `${parsedRows.length} ${entityLabel.toLowerCase()} record(s) imported from Excel.`,
+        });
+      }
+    } catch (error) {
       setFeedback({
         severity: "error",
-        message: "Unable to read the selected file.",
+        message: error?.message || "Unable to process the selected file.",
       });
     }
 
@@ -186,6 +225,7 @@ export default function EntityManagementTable({
             variant="outlined"
             startIcon={<UploadFileRoundedIcon />}
             onClick={() => fileInputRef.current?.click()}
+            disabled={uploadLoading}
             sx={{
               minWidth: 148,
               px: 2,
@@ -193,7 +233,7 @@ export default function EntityManagementTable({
               whiteSpace: "nowrap",
             }}
           >
-            Import Excel
+            {uploadLoading ? "Uploading..." : "Import Excel"}
           </Button>
           <Button
             variant="text"
@@ -214,6 +254,11 @@ export default function EntityManagementTable({
             type="file"
             accept=".xlsx,.xls,.csv"
             onChange={handleImport}
+            onClick={() => {
+              if (uploadError && clearUploadErrorAction) {
+                dispatch(clearUploadErrorAction());
+              }
+            }}
           />
         </Stack>
       </Stack>
@@ -222,6 +267,21 @@ export default function EntityManagementTable({
         <Alert severity={feedback.severity} sx={{ mb: 2 }} onClose={() => setFeedback(null)}>
           {feedback.message}
         </Alert>
+      )}
+      {uploadStatus === "error" && !!uploadError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {uploadError}
+        </Alert>
+      )}
+      {!!uploadResponseData && (
+        <Paper variant="outlined" sx={{ mb: 2, p: 1.5, borderRadius: 2 }}>
+          <Typography variant="subtitle2" sx={{ mb: 0.8 }}>
+            Upload Summary
+          </Typography>
+          <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+            {JSON.stringify(uploadResponseData, null, 2)}
+          </Typography>
+        </Paper>
       )}
 
       <Box sx={{ width: "100%", overflowX: "auto" }}>
