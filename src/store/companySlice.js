@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import api from "../services/api";
+import api, { getApiErrorMessage } from "../services/api";
 
 const COMPANY_PATH = "/config/api/v1/companies";
 const COMPANY_UPLOAD_PATH = "/config/api/v1/companies/upload";
@@ -53,11 +53,12 @@ export const fetchCompanies = createAsyncThunk(
         message: payload?.message || "Companies fetched successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to fetch companies due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to fetch companies due to server/network error.",
+        ),
+      );
     }
   },
 );
@@ -82,11 +83,9 @@ export const uploadCompanyFile = createAsyncThunk(
 
       return payload?.data || null;
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Upload failed due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "Upload failed due to server/network error."),
+      );
     }
   },
 );

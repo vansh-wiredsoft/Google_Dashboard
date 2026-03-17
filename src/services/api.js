@@ -45,6 +45,40 @@ const ngrokError = {
   },
 };
 
+const collectMessages = (errors) =>
+  Array.isArray(errors)
+    ? errors
+        .map((item) => {
+          const path = Array.isArray(item?.loc) ? item.loc.slice(1).join(".") : "";
+          const baseMessage = item?.msg || item?.message || "";
+          return path ? `${path}: ${baseMessage}` : baseMessage;
+        })
+        .filter(Boolean)
+    : [];
+
+export const getApiErrorMessage = (error, fallback) => {
+  const payload = error?.response?.data || {};
+  const detail = payload?.detail;
+  const detailObject =
+    detail && typeof detail === "object" && !Array.isArray(detail) ? detail : null;
+
+  const validationMessages = [
+    ...collectMessages(payload?.errors),
+    ...collectMessages(detailObject?.errors),
+  ];
+
+  if (validationMessages.length) {
+    return validationMessages.join("\n");
+  }
+
+  return (
+    payload?.message ||
+    detailObject?.message ||
+    (typeof detail === "string" ? detail : "") ||
+    fallback
+  );
+};
+
 api.interceptors.request.use((config) => {
   const token = getToken();
 

@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import api from "../services/api";
+import api, { getApiErrorMessage } from "../services/api";
 
 const SESSION_PATH = "/config/api/v1/sessions";
 
@@ -55,11 +55,12 @@ export const createSession = createAsyncThunk(
         message: payload.message || "Session created successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Session creation failed due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Session creation failed due to server/network error.",
+        ),
+      );
     }
   },
 );
@@ -82,11 +83,12 @@ export const addQuestionsToSession = createAsyncThunk(
         message: payload?.message || "Questions added to session successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to add questions due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to add questions due to server/network error.",
+        ),
+      );
     }
   },
 );
@@ -107,11 +109,12 @@ export const fetchSessions = createAsyncThunk(
         message: payload?.message || "Sessions fetched successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to fetch sessions due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to fetch sessions due to server/network error.",
+        ),
+      );
     }
   },
 );
@@ -134,11 +137,12 @@ export const fetchSessionById = createAsyncThunk(
         message: payload?.message || "Session details fetched successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to fetch session details due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to fetch session details due to server/network error.",
+        ),
+      );
     }
   },
 );
@@ -161,12 +165,12 @@ export const fetchSessionPreview = createAsyncThunk(
         message: payload?.message || "Session preview fetched successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail?.message ||
-        error?.response?.data?.detail ||
-        "Failed to fetch session preview due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to fetch session preview due to server/network error.",
+        ),
+      );
     }
   },
 );
@@ -187,12 +191,12 @@ export const publishSession = createAsyncThunk(
         message: payload?.message || "Session form published successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail?.message ||
-        error?.response?.data?.detail ||
-        "Failed to publish session due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to publish session due to server/network error.",
+        ),
+      );
     }
   },
 );
@@ -213,12 +217,12 @@ export const fetchSessionForm = createAsyncThunk(
         message: payload?.message || "Session form fetched successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail?.message ||
-        error?.response?.data?.detail ||
-        "Failed to fetch session form due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to fetch session form due to server/network error.",
+        ),
+      );
     }
   },
 );
@@ -242,12 +246,12 @@ export const submitSessionForm = createAsyncThunk(
         message: payload?.message || "Session form submitted successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail?.message ||
-        error?.response?.data?.detail ||
-        "Failed to submit session form due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to submit session form due to server/network error.",
+        ),
+      );
     }
   },
 );

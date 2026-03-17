@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import api from "../services/api";
+import api, { getApiErrorMessage } from "../services/api";
 
 const QUESTION_HIERARCHY_PATH = "/config/api/v1/kpiquestions/hierarchy";
 
@@ -36,11 +36,12 @@ export const fetchQuestionHierarchy = createAsyncThunk(
           : [],
       }));
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to fetch question hierarchy due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to fetch question hierarchy due to server/network error.",
+        ),
+      );
     }
   },
 );

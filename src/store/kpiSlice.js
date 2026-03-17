@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import api from "../services/api";
+import api, { getApiErrorMessage } from "../services/api";
 
 const KPI_PATH = "/config/api/v1/kpi";
 
@@ -64,11 +64,9 @@ export const fetchKpis = createAsyncThunk(
         limit: Number(data?.limit) || limit,
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to fetch KPIs due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "Failed to fetch KPIs due to server/network error."),
+      );
     }
   },
 );
@@ -94,11 +92,9 @@ export const createKpi = createAsyncThunk(
         message: payload?.message || "KPI created successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "KPI creation failed due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "KPI creation failed due to server/network error."),
+      );
     }
   },
 );
@@ -116,11 +112,9 @@ export const fetchKpiById = createAsyncThunk(
 
       return normalizeKpi(payload.data);
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to fetch KPI due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "Failed to fetch KPI due to server/network error."),
+      );
     }
   },
 );
@@ -150,11 +144,9 @@ export const updateKpi = createAsyncThunk(
         message: payload?.message || "KPI updated successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to update KPI due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "Failed to update KPI due to server/network error."),
+      );
     }
   },
 );
@@ -175,11 +167,9 @@ export const deleteKpi = createAsyncThunk(
         message: payload?.message || "KPI deleted successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to delete KPI due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "Failed to delete KPI due to server/network error."),
+      );
     }
   },
 );

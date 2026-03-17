@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import api from "../services/api";
+import api, { getApiErrorMessage } from "../services/api";
 
 const THEME_PATH = "/config/api/v1/themes";
 
@@ -64,11 +64,9 @@ export const fetchThemes = createAsyncThunk(
         limit: Number(data?.limit) || limit,
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to fetch themes due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "Failed to fetch themes due to server/network error."),
+      );
     }
   },
 );
@@ -91,11 +89,9 @@ export const createTheme = createAsyncThunk(
         message: payload?.message || "Theme created successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Theme creation failed due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "Theme creation failed due to server/network error."),
+      );
     }
   },
 );
@@ -113,11 +109,9 @@ export const fetchThemeById = createAsyncThunk(
 
       return normalizeTheme(payload.data);
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to fetch theme due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "Failed to fetch theme due to server/network error."),
+      );
     }
   },
 );
@@ -141,11 +135,9 @@ export const updateTheme = createAsyncThunk(
         message: payload?.message || "Theme updated successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to update theme due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "Failed to update theme due to server/network error."),
+      );
     }
   },
 );
@@ -166,11 +158,9 @@ export const deleteTheme = createAsyncThunk(
         message: payload?.message || "Theme deleted successfully.",
       };
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Failed to delete theme due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "Failed to delete theme due to server/network error."),
+      );
     }
   },
 );

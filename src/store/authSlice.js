@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import api from "../services/api";
+import api, { getApiErrorMessage } from "../services/api";
 import {
   clearAuthSession,
   getRole,
@@ -55,11 +55,12 @@ export const loginUser = createAsyncThunk(
 
       return payload;
     } catch (requestError) {
-      const message =
-        requestError?.response?.data?.message ||
-        requestError?.response?.data?.detail ||
-        "Invalid credentials or server unavailable.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(
+          requestError,
+          "Invalid credentials or server unavailable.",
+        ),
+      );
     }
   },
 );

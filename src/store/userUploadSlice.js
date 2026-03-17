@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import api from "../services/api";
+import api, { getApiErrorMessage } from "../services/api";
 
 const USER_UPLOAD_PATH = "/config/api/v1/users/upload";
 
@@ -30,11 +30,9 @@ export const uploadUserFile = createAsyncThunk(
 
       return payload?.data || null;
     } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Upload failed due to server/network error.";
-      return rejectWithValue(message);
+      return rejectWithValue(
+        getApiErrorMessage(error, "Upload failed due to server/network error."),
+      );
     }
   },
 );

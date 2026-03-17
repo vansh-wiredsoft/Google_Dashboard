@@ -665,17 +665,6 @@ export default function Sessions() {
                 </Typography>
                 <Typography>{addedQuestions.length}</Typography>
               </Box>
-
-              {!!createdSession && !!addedQuestions.length && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={<PreviewRoundedIcon />}
-                  onClick={() => handlePreviewSession(createdSession.id)}
-                >
-                  Open Form Preview
-                </Button>
-              )}
             </Stack>
 
             {!!addedQuestions.length && (
@@ -692,6 +681,17 @@ export default function Sessions() {
                   ))}
                 </Stack>
               </Paper>
+            )}
+
+            {!!createdSession && !!addedQuestions.length && (
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<PreviewRoundedIcon />}
+                onClick={() => handlePreviewSession(createdSession.id)}
+              >
+                Open Form Preview
+              </Button>
             )}
           </Paper>
         </Grid>
@@ -863,7 +863,12 @@ export default function Sessions() {
           }}
         >
           {previewLoading && (
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 2 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{ py: 2 }}
+            >
               <CircularProgress size={18} />
               <Typography>Loading form preview...</Typography>
             </Stack>
@@ -908,15 +913,26 @@ export default function Sessions() {
               >
                 <Box sx={{ height: 10, bgcolor: "primary.main" }} />
                 <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Typography variant="h4" sx={{ fontSize: { xs: 24, sm: 32 }, mb: 1 }}>
+                  <Typography
+                    variant="h4"
+                    sx={{ fontSize: { xs: 24, sm: 32 }, mb: 1 }}
+                  >
                     {sessionPreview.title || "-"}
                   </Typography>
                   <Typography color="text.secondary" sx={{ mb: 2 }}>
                     {sessionPreview.description || "No description provided."}
                   </Typography>
 
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2} useFlexGap flexWrap="wrap">
-                    <Paper variant="outlined" sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}>
+                  <Stack
+                    direction={{ xs: "column", sm: "row" }}
+                    spacing={1.2}
+                    useFlexGap
+                    flexWrap="wrap"
+                  >
+                    <Paper
+                      variant="outlined"
+                      sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}
+                    >
                       <Typography variant="caption" color="text.secondary">
                         Session ID
                       </Typography>
@@ -924,7 +940,10 @@ export default function Sessions() {
                         {sessionPreview.session_id}
                       </Typography>
                     </Paper>
-                    <Paper variant="outlined" sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}
+                    >
                       <Typography variant="caption" color="text.secondary">
                         Status
                       </Typography>
@@ -933,12 +952,21 @@ export default function Sessions() {
                       </Typography>
                     </Paper>
                     {!!sessionPreview.preview_url && (
-                      <Paper variant="outlined" sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}>
+                      <Paper
+                        variant="outlined"
+                        sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}
+                      >
                         <Typography variant="caption" color="text.secondary">
                           Preview URL
                         </Typography>
-                        <Stack direction="row" spacing={0.7} alignItems="center">
-                          <LinkIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+                        <Stack
+                          direction="row"
+                          spacing={0.7}
+                          alignItems="center"
+                        >
+                          <LinkIcon
+                            sx={{ fontSize: 16, color: "text.secondary" }}
+                          />
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {sessionPreview.preview_url}
                           </Typography>
@@ -946,12 +974,21 @@ export default function Sessions() {
                       </Paper>
                     )}
                     {!!sessionPreview.final_url && (
-                      <Paper variant="outlined" sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}>
+                      <Paper
+                        variant="outlined"
+                        sx={{ px: 1.5, py: 1, borderRadius: 2, minWidth: 180 }}
+                      >
                         <Typography variant="caption" color="text.secondary">
                           Final URL
                         </Typography>
-                        <Stack direction="row" spacing={0.7} alignItems="center">
-                          <LinkIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+                        <Stack
+                          direction="row"
+                          spacing={0.7}
+                          alignItems="center"
+                        >
+                          <LinkIcon
+                            sx={{ fontSize: 16, color: "text.secondary" }}
+                          />
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             {sessionPreview.final_url}
                           </Typography>
@@ -974,13 +1011,21 @@ export default function Sessions() {
                   }}
                 >
                   <Stack spacing={1.4}>
-                    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1}>
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      justifyContent="space-between"
+                      spacing={1}
+                    >
                       <Box>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{ fontWeight: 700 }}
+                        >
                           {question.display_order}. {question.question_text}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {question.theme_display_name} • {question.kpi_display_name}
+                          {question.theme_display_name} •{" "}
+                          {question.kpi_display_name}
                         </Typography>
                       </Box>
                       <Typography variant="caption" color="text.secondary">
@@ -1003,7 +1048,9 @@ export default function Sessions() {
                             borderColor: "rgba(15,118,110,0.18)",
                           }}
                         >
-                          <RadioButtonUncheckedIcon sx={{ color: "text.secondary", fontSize: 20 }} />
+                          <RadioButtonUncheckedIcon
+                            sx={{ color: "text.secondary", fontSize: 20 }}
+                          />
                           <Typography variant="body2">{option}</Typography>
                         </Paper>
                       ))}
