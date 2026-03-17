@@ -35,7 +35,7 @@ export default function Profile() {
   return (
     <Layout role={role} title="My Profile">
       <Grid container spacing={2.5}>
-        <Grid size={{ xs: 12, lg: 8 }}>
+        <Grid size={{ xs: 12, lg: 12 }}>
           <Paper
             elevation={0}
             sx={{
@@ -84,7 +84,7 @@ export default function Profile() {
           </Paper>
         </Grid>
 
-        <Grid size={{ xs: 12, lg: 4 }}>
+        {/* <Grid size={{ xs: 12, lg: 12 }}>
           <Paper
             elevation={0}
             sx={{
@@ -105,15 +105,15 @@ export default function Profile() {
               <Typography sx={{ textTransform: "capitalize", fontWeight: 700 }}>
                 {role}
               </Typography>
-              {/* <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 Auth Token
               </Typography>
               <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
                 {profile?.token || "No token"}
-              </Typography> */}
+              </Typography>
             </Stack>
           </Paper>
-        </Grid>
+        </Grid> */}
       </Grid>
     </Layout>
   );
