@@ -16,7 +16,7 @@ import { clearAuthError, loginUser, setAuthError } from "../../store/authSlice";
 export default function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [username, setUsername] = useState("subia");
+  const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("password");
   const { loading, error } = useSelector((state) => state.auth);
 

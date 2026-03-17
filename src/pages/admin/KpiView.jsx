@@ -94,10 +94,10 @@ export default function KpiView() {
               gap: 2,
             }}
           >
-            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+            {/* <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
               <Typography variant="caption" color="text.secondary">KPI Key</Typography>
               <Typography sx={{ mt: 0.8, fontWeight: 600 }}>{selectedKpi.kpi_key}</Typography>
-            </Paper>
+            </Paper> */}
             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
               <Typography variant="caption" color="text.secondary">KPI Name</Typography>
               <Typography sx={{ mt: 0.8, fontWeight: 600 }}>{selectedKpi.display_name}</Typography>

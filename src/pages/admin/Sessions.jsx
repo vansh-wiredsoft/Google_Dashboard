@@ -99,37 +99,52 @@ export default function Sessions() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [companyId, setCompanyId] = useState("");
-  const [selectedThemeKey, setSelectedThemeKey] = useState("");
-  const [selectedKpiKey, setSelectedKpiKey] = useState("");
+  const [selectedThemeKeys, setSelectedThemeKeys] = useState([]);
+  const [selectedKpiKeys, setSelectedKpiKeys] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [formError, setFormError] = useState("");
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
 
   const selectedCompanyName = useMemo(
-    () => companies.find((company) => company.id === companyId)?.name || "",
+    () => companies.find((company) => company.id === companyId)?.company_name || "",
     [companyId],
   );
-  const selectedTheme = useMemo(
+  const selectedThemes = useMemo(
     () =>
-      questionHierarchy.find((theme) => theme.theme_key === selectedThemeKey) ||
-      null,
-    [questionHierarchy, selectedThemeKey],
+      questionHierarchy.filter((theme) =>
+        selectedThemeKeys.includes(theme.theme_key),
+      ),
+    [questionHierarchy, selectedThemeKeys],
   );
   const kpiOptions = useMemo(
-    () => (Array.isArray(selectedTheme?.kpis) ? selectedTheme.kpis : []),
-    [selectedTheme],
-  );
-  const selectedKpi = useMemo(
-    () => kpiOptions.find((kpi) => kpi.kpi_key === selectedKpiKey) || null,
-    [kpiOptions, selectedKpiKey],
+    () =>
+      selectedThemes.flatMap((theme) =>
+        (Array.isArray(theme?.kpis) ? theme.kpis : []).map((kpi) => ({
+          ...kpi,
+          selectionKey: `${theme.theme_key}::${kpi.kpi_key}`,
+          themeKey: theme.theme_key,
+          themeDisplayName: theme.theme_display_name || theme.theme_key,
+        })),
+      ),
+    [selectedThemes],
   );
   const questions = useMemo(() => {
-    const raw = Array.isArray(selectedKpi?.questions)
-      ? selectedKpi.questions
-      : [];
-    return raw.map(normalizeQuestion);
-  }, [selectedKpi]);
+    const questionMap = new Map();
+
+    kpiOptions
+      .filter((kpi) => selectedKpiKeys.includes(kpi.selectionKey))
+      .forEach((kpi) => {
+        const rawQuestions = Array.isArray(kpi.questions) ? kpi.questions : [];
+        rawQuestions.map(normalizeQuestion).forEach((question) => {
+          if (!questionMap.has(question.id)) {
+            questionMap.set(question.id, question);
+          }
+        });
+      });
+
+    return Array.from(questionMap.values());
+  }, [kpiOptions, selectedKpiKeys]);
 
   useEffect(() => {
     dispatch(fetchCompanies());
@@ -211,8 +226,8 @@ export default function Sessions() {
     setTitle("");
     setDescription("");
     setCompanyId("");
-    setSelectedThemeKey("");
-    setSelectedKpiKey("");
+    setSelectedThemeKeys([]);
+    setSelectedKpiKeys([]);
     setSelectedQuestions([]);
     setFormError("");
     dispatch(resetSessionFlow());
@@ -507,45 +522,87 @@ export default function Sessions() {
                     <Stack spacing={1.5}>
                       <FormControl fullWidth>
                         <Select
+                          multiple
                           displayEmpty
-                          value={selectedThemeKey}
+                          value={selectedThemeKeys}
                           onChange={(event) => {
-                            setSelectedThemeKey(event.target.value);
-                            setSelectedKpiKey("");
+                            const nextThemeKeys = event.target.value;
+                            setSelectedThemeKeys(nextThemeKeys);
+                            setSelectedKpiKeys([]);
                             setSelectedQuestions([]);
                           }}
+                          renderValue={(selected) =>
+                            selected.length
+                              ? questionHierarchy
+                                  .filter((theme) =>
+                                    selected.includes(theme.theme_key),
+                                  )
+                                  .map(
+                                    (theme) =>
+                                      theme.theme_display_name ||
+                                      theme.theme_key,
+                                  )
+                                  .join(", ")
+                              : "Select Theme"
+                          }
                         >
-                          <MenuItem value="">Select Theme</MenuItem>
                           {questionHierarchy.map((theme) => (
                             <MenuItem
                               key={theme.theme_key}
                               value={theme.theme_key}
                             >
+                              <Checkbox
+                                checked={selectedThemeKeys.includes(
+                                  theme.theme_key,
+                                )}
+                              />
                               {theme.theme_display_name || theme.theme_key}
                             </MenuItem>
                           ))}
                         </Select>
                       </FormControl>
 
-                      <FormControl fullWidth disabled={!selectedThemeKey}>
+                      <FormControl fullWidth disabled={!selectedThemeKeys.length}>
                         <Select
+                          multiple
                           displayEmpty
-                          value={selectedKpiKey}
+                          value={selectedKpiKeys}
                           onChange={(event) => {
-                            setSelectedKpiKey(event.target.value);
+                            setSelectedKpiKeys(event.target.value);
                             setSelectedQuestions([]);
                           }}
+                          renderValue={(selected) =>
+                            selected.length
+                              ? kpiOptions
+                                  .filter((kpi) =>
+                                    selected.includes(kpi.selectionKey),
+                                  )
+                                  .map(
+                                    (kpi) =>
+                                      `${kpi.display_name || kpi.kpi_key} (${kpi.themeDisplayName})`,
+                                  )
+                                  .join(", ")
+                              : "Select KPI"
+                          }
                         >
-                          <MenuItem value="">Select KPI</MenuItem>
                           {kpiOptions.map((kpi) => (
-                            <MenuItem key={kpi.kpi_key} value={kpi.kpi_key}>
-                              {kpi.display_name || kpi.kpi_key}
+                            <MenuItem
+                              key={kpi.selectionKey}
+                              value={kpi.selectionKey}
+                            >
+                              <Checkbox
+                                checked={selectedKpiKeys.includes(
+                                  kpi.selectionKey,
+                                )}
+                              />
+                              {kpi.display_name || kpi.kpi_key} (
+                              {kpi.themeDisplayName})
                             </MenuItem>
                           ))}
                         </Select>
                       </FormControl>
 
-                      {!!selectedKpiKey && (
+                      {!!selectedKpiKeys.length && (
                         <Stack
                           spacing={0.6}
                           sx={{ maxHeight: 240, overflowY: "auto", pr: 1 }}
@@ -570,7 +627,7 @@ export default function Sessions() {
                           ))}
                           {!questions.length && (
                             <Typography variant="body2" color="text.secondary">
-                              No questions found for selected KPI.
+                              No questions found for selected KPIs.
                             </Typography>
                           )}
                         </Stack>
