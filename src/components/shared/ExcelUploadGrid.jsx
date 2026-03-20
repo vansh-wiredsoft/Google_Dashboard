@@ -10,10 +10,12 @@ import {
   Stack,
   Tooltip,
   Typography,
+  useTheme,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { DataGrid } from "@mui/x-data-grid";
+import { getSurfaceBackground } from "../../theme";
 
 const getColumns = (rows) => {
   if (!rows.length) return [];
@@ -44,6 +46,7 @@ export default function ExcelUploadGrid({
   resetUploadAction,
   clearUploadErrorAction,
 }) {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const { loading: uploading, status: uploadStatus, error: uploadError, responseData } =
     useSelector(uploadSelector);
@@ -93,7 +96,7 @@ export default function ExcelUploadGrid({
         borderRadius: 3,
         border: "1px solid",
         borderColor: "divider",
-        bgcolor: "rgba(255,255,255,0.86)",
+        bgcolor: getSurfaceBackground(theme),
       }}
     >
       <Stack spacing={1.5} sx={{ mb: 2.5 }}>

@@ -1,6 +1,9 @@
-import { Grid, Paper, Typography } from "@mui/material";
+import { Grid, Paper, Typography, useTheme } from "@mui/material";
+import { getRaisedGradient } from "../../theme";
 
 export default function StatsCards({ items }) {
+  const theme = useTheme();
+
   return (
     <Grid container spacing={2}>
       {items.map((item) => (
@@ -12,8 +15,7 @@ export default function StatsCards({ items }) {
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
-              background:
-                "linear-gradient(130deg, rgba(255,255,255,0.96) 0%, rgba(247,245,241,0.95) 100%)",
+              background: getRaisedGradient(theme),
             }}
           >
             <Typography variant="body2" color="text.secondary">

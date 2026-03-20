@@ -9,7 +9,9 @@ import {
   Paper,
   Stack,
   Typography,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import Layout from "../../layouts/commonLayout/Layout";
@@ -21,6 +23,7 @@ import {
 
 export default function ChallengeView() {
   const dispatch = useDispatch();
+  const theme = useTheme();
   const navigate = useNavigate();
   const { id } = useParams();
   const { items: kpiItems } = useSelector((state) => state.kpi);
@@ -64,7 +67,7 @@ export default function ChallengeView() {
             borderRadius: 3,
             border: "1px solid",
             borderColor: "divider",
-            bgcolor: "rgba(255,255,255,0.86)",
+            bgcolor: alpha(theme.palette.background.paper, 0.86),
           }}
         >
           <Stack
@@ -184,7 +187,7 @@ export default function ChallengeView() {
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
-              bgcolor: "rgba(255,255,255,0.86)",
+              bgcolor: alpha(theme.palette.background.paper, 0.86),
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 700 }}>

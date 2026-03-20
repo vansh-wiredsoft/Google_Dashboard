@@ -16,10 +16,14 @@ import {
   Toolbar,
   Tooltip,
   Typography,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
+import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
+import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../../store/authSlice";
@@ -32,6 +36,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import CategoryIcon from "@mui/icons-material/Category";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import { useThemeMode } from "../../context/ThemeModeContext";
 
 const drawerWidth = 260;
 const collapsedDrawerWidth = 88;
@@ -54,6 +59,8 @@ const userItems = [
 
 export default function Layout({ children, role, title }) {
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const { mode, toggleColorMode } = useThemeMode();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -212,7 +219,7 @@ export default function Layout({ children, role, title }) {
           borderBottom: "1px solid",
           borderColor: "divider",
           backdropFilter: "blur(8px)",
-          bgcolor: "rgba(251, 248, 242, 0.8)",
+          bgcolor: alpha(theme.palette.background.default, 0.8),
           transition: (theme) =>
             theme.transitions.create(["width", "margin-left"], {
               easing: theme.transitions.easing.sharp,
@@ -236,13 +243,24 @@ export default function Layout({ children, role, title }) {
           <Box
             sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 1.2 }}
           >
+            <Tooltip
+              title={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              <IconButton onClick={toggleColorMode} color="inherit">
+                {mode === "dark" ? (
+                  <LightModeRoundedIcon />
+                ) : (
+                  <DarkModeRoundedIcon />
+                )}
+              </IconButton>
+            </Tooltip>
             <Chip
               size="small"
               label={displayRole}
               sx={{
                 display: { xs: "none", sm: "inline-flex" },
-                bgcolor: "rgba(15,118,110,0.13)",
-                color: "primary.dark",
+                bgcolor: alpha(theme.palette.primary.main, 0.16),
+                color: "primary.main",
                 fontWeight: 700,
               }}
             />
@@ -312,7 +330,7 @@ export default function Layout({ children, role, title }) {
               boxSizing: "border-box",
               borderRight: "1px solid",
               borderColor: "divider",
-              bgcolor: "rgba(255,255,255,0.76)",
+              bgcolor: alpha(theme.palette.background.paper, 0.78),
               backdropFilter: "blur(8px)",
               overflowX: "hidden",
               transition: (theme) =>

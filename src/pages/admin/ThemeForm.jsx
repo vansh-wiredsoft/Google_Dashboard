@@ -11,6 +11,7 @@ import {
   Switch,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
@@ -23,8 +24,10 @@ import {
   fetchThemeById,
   updateTheme,
 } from "../../store/themeSlice";
+import { getSurfaceBackground } from "../../theme";
 
 export default function ThemeForm({ mode }) {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -125,7 +128,7 @@ export default function ThemeForm({ mode }) {
             borderRadius: 3,
             border: "1px solid",
             borderColor: "divider",
-            bgcolor: "rgba(255,255,255,0.86)",
+            bgcolor: getSurfaceBackground(theme),
           }}
         >
           <Typography>Loading theme...</Typography>
@@ -143,7 +146,7 @@ export default function ThemeForm({ mode }) {
           borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
-          bgcolor: "rgba(255,255,255,0.86)",
+          bgcolor: getSurfaceBackground(theme),
         }}
       >
         <Stack

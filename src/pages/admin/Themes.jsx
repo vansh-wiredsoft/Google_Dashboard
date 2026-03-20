@@ -14,6 +14,7 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useTheme,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
@@ -28,8 +29,10 @@ import {
   deleteTheme,
   fetchThemes,
 } from "../../store/themeSlice";
+import { getSurfaceBackground } from "../../theme";
 
 export default function Themes() {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -168,7 +171,7 @@ export default function Themes() {
             borderRadius: 3,
             border: "1px solid",
             borderColor: "divider",
-            bgcolor: "rgba(255,255,255,0.86)",
+            bgcolor: getSurfaceBackground(theme),
           }}
         >
           <Stack

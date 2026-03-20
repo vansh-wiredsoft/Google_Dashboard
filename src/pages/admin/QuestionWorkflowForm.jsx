@@ -20,6 +20,7 @@ import {
   TextField,
   Typography,
   Switch,
+  useTheme,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
@@ -39,6 +40,7 @@ import {
 } from "../../store/kpiSlice";
 import { entityConfigs } from "../../data/adminEntityConfigs";
 import { loadEntityRows, saveEntityRows } from "../../utils/entityStorage";
+import { getSurfaceBackground } from "../../theme";
 
 const createEmptyOption = (index) => ({
   option_number: index + 1,
@@ -117,6 +119,7 @@ function buildInitialForm(record, themes) {
 }
 
 export default function QuestionWorkflowForm({ mode }) {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -329,7 +332,7 @@ export default function QuestionWorkflowForm({ mode }) {
 
   if (mode === "edit" && !record) {
     return (
-      <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid", borderColor: "divider", bgcolor: "rgba(255,255,255,0.86)" }}>
+      <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid", borderColor: "divider", bgcolor: getSurfaceBackground(theme) }}>
         <Alert severity="warning" sx={{ mb: 2 }}>
           This question record could not be found.
         </Alert>
@@ -349,7 +352,7 @@ export default function QuestionWorkflowForm({ mode }) {
           borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
-          bgcolor: "rgba(255,255,255,0.86)",
+          bgcolor: getSurfaceBackground(theme),
         }}
       >
         <Stack

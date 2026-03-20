@@ -13,7 +13,6 @@ import StarsRoundedIcon from "@mui/icons-material/StarsRounded";
 import WaterDropRoundedIcon from "@mui/icons-material/WaterDropRounded";
 import WorkspacePremiumRoundedIcon from "@mui/icons-material/WorkspacePremiumRounded";
 import {
-  alpha,
   Avatar,
   Box,
   Chip,
@@ -23,7 +22,9 @@ import {
   Paper,
   Stack,
   Typography,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import {
   Cell,
   Line,
@@ -36,6 +37,7 @@ import {
   YAxis,
 } from "recharts";
 import Layout from "../../layouts/commonLayout/Layout";
+import { getRaisedGradient, getSurfaceBackground } from "../../theme";
 
 const metrics = [
   {
@@ -237,6 +239,8 @@ const leaderboard = [
 ];
 
 function SectionCard({ children, sx }) {
+  const theme = useTheme();
+
   return (
     <Paper
       elevation={0}
@@ -245,7 +249,7 @@ function SectionCard({ children, sx }) {
         borderRadius: 3,
         border: "1px solid",
         borderColor: "divider",
-        bgcolor: "rgba(255,255,255,0.86)",
+        bgcolor: getSurfaceBackground(theme),
         ...sx,
       }}
     >
@@ -255,6 +259,8 @@ function SectionCard({ children, sx }) {
 }
 
 function MetricCard({ item }) {
+  const theme = useTheme();
+
   return (
     <Paper
       elevation={0}
@@ -263,7 +269,7 @@ function MetricCard({ item }) {
         borderRadius: 3,
         border: "1px solid",
         borderColor: alpha(item.color, 0.22),
-        background: `linear-gradient(135deg, ${alpha(item.color, 0.08)} 0%, rgba(255,255,255,0.94) 100%)`,
+        background: getRaisedGradient(theme, item.color),
         height: "100%",
       }}
     >
@@ -367,14 +373,30 @@ function HighlightStat({ item }) {
 }
 
 export default function Dashboard() {
+  const theme = useTheme();
+  const chartTooltipStyles = {
+    contentStyle: {
+      backgroundColor: getSurfaceBackground(theme, 0.98),
+      border: `1px solid ${alpha(theme.palette.divider, 1)}`,
+      borderRadius: 12,
+      boxShadow: theme.shadows[8],
+    },
+    labelStyle: {
+      color: theme.palette.text.secondary,
+      fontWeight: 700,
+    },
+    itemStyle: {
+      color: theme.palette.text.primary,
+    },
+  };
+
   return (
     <Layout role="user" title="Wellness Dashboard">
       <Stack spacing={2.5}>
         <SectionCard
           sx={{
             overflow: "hidden",
-            background:
-              "linear-gradient(135deg, rgba(15,118,110,0.12) 0%, rgba(255,255,255,0.92) 50%, rgba(245,158,11,0.1) 100%)",
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.12)} 0%, ${getSurfaceBackground(theme, theme.palette.mode === "dark" ? 0.96 : 0.92)} 52%, ${alpha("#f59e0b", theme.palette.mode === "dark" ? 0.18 : 0.1)} 100%)`,
             position: "relative",
           }}
         >
@@ -386,8 +408,7 @@ export default function Dashboard() {
               width: 220,
               height: 220,
               borderRadius: "50%",
-              background:
-                "radial-gradient(circle, rgba(15,118,110,0.12), transparent 68%)",
+              background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.22 : 0.12)}, transparent 68%)`,
             }}
           />
           <Stack
@@ -574,7 +595,7 @@ export default function Dashboard() {
                     <LineChart data={trendData}>
                       <XAxis dataKey="name" />
                       <YAxis domain={[2, 5]} />
-                      <Tooltip />
+                      <Tooltip {...chartTooltipStyles} />
                       <Line
                         type="monotone"
                         dataKey="social"
@@ -664,7 +685,7 @@ export default function Dashboard() {
                             p: 2,
                             borderRadius: 3,
                             borderColor: alpha(item.accent, 0.22),
-                            background: `linear-gradient(180deg, ${alpha(item.accent, 0.05)} 0%, rgba(255,255,255,0.92) 100%)`,
+                            background: `linear-gradient(180deg, ${alpha(item.accent, theme.palette.mode === "dark" ? 0.14 : 0.05)} 0%, ${getSurfaceBackground(theme, theme.palette.mode === "dark" ? 0.98 : 0.92)} 100%)`,
                             height: "100%",
                           }}
                         >

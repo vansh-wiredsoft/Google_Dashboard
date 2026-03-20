@@ -9,10 +9,12 @@ import {
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import { buildEmptyForm, loadEntityRows, saveEntityRows } from "../../utils/entityStorage";
+import { getSurfaceBackground } from "../../theme";
 
 export default function EntityFormPage({
   mode,
@@ -23,6 +25,7 @@ export default function EntityFormPage({
   fields,
   initialRows,
 }) {
+  const theme = useTheme();
   const navigate = useNavigate();
   const { id } = useParams();
   const records = useMemo(() => loadEntityRows(storageKey, initialRows), [initialRows, storageKey]);
@@ -81,7 +84,7 @@ export default function EntityFormPage({
           borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
-          bgcolor: "rgba(255,255,255,0.86)",
+          bgcolor: getSurfaceBackground(theme),
         }}
       >
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -102,7 +105,7 @@ export default function EntityFormPage({
         borderRadius: 3,
         border: "1px solid",
         borderColor: "divider",
-        bgcolor: "rgba(255,255,255,0.86)",
+        bgcolor: getSurfaceBackground(theme),
       }}
     >
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>

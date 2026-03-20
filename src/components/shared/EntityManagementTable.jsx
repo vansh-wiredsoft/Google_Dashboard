@@ -11,6 +11,7 @@ import {
   Stack,
   Tooltip,
   Typography,
+  useTheme,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
@@ -19,6 +20,7 @@ import RestartAltRoundedIcon from "@mui/icons-material/RestartAltRounded";
 import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 import { DataGrid } from "@mui/x-data-grid";
 import { loadEntityRows, saveEntityRows } from "../../utils/entityStorage";
+import { getSurfaceBackground } from "../../theme";
 
 function normalizeImportedRows(rows) {
   return rows.map((row, index) => ({
@@ -43,6 +45,7 @@ export default function EntityManagementTable({
   clearUploadErrorAction,
   onUploadSuccess,
 }) {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -181,7 +184,7 @@ export default function EntityManagementTable({
         borderRadius: 3,
         border: "1px solid",
         borderColor: "divider",
-        bgcolor: "rgba(255,255,255,0.86)",
+        bgcolor: getSurfaceBackground(theme),
       }}
     >
       <Stack

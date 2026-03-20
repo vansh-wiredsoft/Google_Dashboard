@@ -10,7 +10,9 @@ import {
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import {
@@ -19,8 +21,10 @@ import {
   submitSessionForm,
 } from "../../store/sessionSlice";
 import { getUserProfile } from "../../utils/roleHelper";
+import { getSurfaceBackground } from "../../theme";
 
 export default function SessionForm() {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const { id } = useParams();
   const storedProfile = getUserProfile();
@@ -110,7 +114,7 @@ export default function SessionForm() {
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
-              bgcolor: "rgba(255,255,255,0.9)",
+              bgcolor: getSurfaceBackground(theme, 0.9),
             }}
           >
             <Stack direction="row" spacing={1} alignItems="center">
@@ -145,7 +149,7 @@ export default function SessionForm() {
                 overflow: "hidden",
                 border: "1px solid",
                 borderColor: "divider",
-                bgcolor: "rgba(255,255,255,0.92)",
+                bgcolor: getSurfaceBackground(theme, 0.92),
               }}
             >
               <Box sx={{ height: 10, bgcolor: "primary.main" }} />
@@ -178,7 +182,7 @@ export default function SessionForm() {
                   borderRadius: 3,
                   border: "1px solid",
                   borderColor: "divider",
-                  bgcolor: "rgba(255,255,255,0.92)",
+                  bgcolor: getSurfaceBackground(theme, 0.92),
                 }}
               >
                 <Stack spacing={1.4}>
@@ -218,11 +222,11 @@ export default function SessionForm() {
                             alignItems: "center",
                             gap: 1.2,
                             bgcolor: selected
-                              ? "rgba(15,118,110,0.10)"
-                              : "rgba(15,118,110,0.04)",
+                              ? alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.18 : 0.1)
+                              : alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.08 : 0.04),
                             borderColor: selected
                               ? "primary.main"
-                              : "rgba(15,118,110,0.18)",
+                              : alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.28 : 0.18),
                             cursor: "pointer",
                           }}
                         >
@@ -257,7 +261,7 @@ export default function SessionForm() {
                 borderRadius: 3,
                 border: "1px solid",
                 borderColor: "divider",
-                bgcolor: "rgba(255,255,255,0.92)",
+                bgcolor: getSurfaceBackground(theme, 0.92),
               }}
             >
               <Stack

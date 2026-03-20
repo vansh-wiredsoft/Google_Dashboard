@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Alert, Box, Button, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Paper, Stack, Typography, useTheme } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import { loadEntityRows } from "../../utils/entityStorage";
+import { getSurfaceBackground } from "../../theme";
 
 export default function EntityViewPage({
   entityLabel,
@@ -13,6 +14,7 @@ export default function EntityViewPage({
   fields,
   initialRows,
 }) {
+  const theme = useTheme();
   const navigate = useNavigate();
   const { id } = useParams();
   const records = useMemo(() => loadEntityRows(storageKey, initialRows), [initialRows, storageKey]);
@@ -27,7 +29,7 @@ export default function EntityViewPage({
           borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
-          bgcolor: "rgba(255,255,255,0.86)",
+          bgcolor: getSurfaceBackground(theme),
         }}
       >
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -48,7 +50,7 @@ export default function EntityViewPage({
         borderRadius: 3,
         border: "1px solid",
         borderColor: "divider",
-        bgcolor: "rgba(255,255,255,0.86)",
+        bgcolor: getSurfaceBackground(theme),
       }}
     >
       <Stack

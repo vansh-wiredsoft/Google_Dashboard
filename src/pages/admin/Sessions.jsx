@@ -22,7 +22,9 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { DataGrid } from "@mui/x-data-grid";
 import Layout from "../../layouts/commonLayout/Layout";
 import {
@@ -53,6 +55,7 @@ import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import LinkIcon from "@mui/icons-material/Link";
 import PublishIcon from "@mui/icons-material/Publish";
+import { getSurfaceBackground } from "../../theme";
 
 const normalizeQuestion = (item, index) => ({
   id: String(item?.id || item?.question_id || index),
@@ -61,6 +64,7 @@ const normalizeQuestion = (item, index) => ({
 });
 
 export default function Sessions() {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const {
     createdSession,
@@ -425,7 +429,7 @@ export default function Sessions() {
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
-              bgcolor: "rgba(255,255,255,0.86)",
+              bgcolor: getSurfaceBackground(theme),
             }}
           >
             <Typography variant="h5" sx={{ fontWeight: 750, mb: 0.7 }}>
@@ -673,7 +677,7 @@ export default function Sessions() {
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
-              bgcolor: "rgba(255,255,255,0.86)",
+              bgcolor: getSurfaceBackground(theme),
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
@@ -761,7 +765,7 @@ export default function Sessions() {
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
-              bgcolor: "rgba(255,255,255,0.86)",
+              bgcolor: getSurfaceBackground(theme),
             }}
           >
             <Stack
@@ -987,7 +991,7 @@ export default function Sessions() {
                   overflow: "hidden",
                   border: "1px solid",
                   borderColor: "divider",
-                  bgcolor: "rgba(255,255,255,0.92)",
+                  bgcolor: getSurfaceBackground(theme, 0.92),
                   backdropFilter: "blur(6px)",
                 }}
               >
@@ -1124,8 +1128,14 @@ export default function Sessions() {
                             display: "flex",
                             alignItems: "center",
                             gap: 1.2,
-                            bgcolor: "rgba(15,118,110,0.04)",
-                            borderColor: "rgba(15,118,110,0.18)",
+                            bgcolor: alpha(
+                              theme.palette.primary.main,
+                              theme.palette.mode === "dark" ? 0.08 : 0.04,
+                            ),
+                            borderColor: alpha(
+                              theme.palette.primary.main,
+                              theme.palette.mode === "dark" ? 0.28 : 0.18,
+                            ),
                           }}
                         >
                           <RadioButtonUncheckedIcon

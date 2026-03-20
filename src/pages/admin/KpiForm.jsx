@@ -12,6 +12,7 @@ import {
   Switch,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
@@ -25,10 +26,12 @@ import {
   fetchKpiById,
   updateKpi,
 } from "../../store/kpiSlice";
+import { getSurfaceBackground } from "../../theme";
 
 const today = new Date().toISOString().slice(0, 10);
 
 export default function KpiForm({ mode }) {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -152,7 +155,7 @@ export default function KpiForm({ mode }) {
             borderRadius: 3,
             border: "1px solid",
             borderColor: "divider",
-            bgcolor: "rgba(255,255,255,0.86)",
+            bgcolor: getSurfaceBackground(theme),
           }}
         >
           <Typography>Loading KPI...</Typography>
@@ -170,7 +173,7 @@ export default function KpiForm({ mode }) {
           borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
-          bgcolor: "rgba(255,255,255,0.86)",
+          bgcolor: getSurfaceBackground(theme),
         }}
       >
         <Stack

@@ -15,6 +15,7 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useTheme,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
@@ -22,6 +23,7 @@ import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
 import RestartAltRoundedIcon from "@mui/icons-material/RestartAltRounded";
 import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 import { DataGrid } from "@mui/x-data-grid";
+import { getSurfaceBackground } from "../../theme";
 
 const buildEmptyForm = (fields) =>
   fields.reduce((accumulator, field) => {
@@ -42,6 +44,7 @@ export default function EntityCrudManager({
   fields,
   initialRows,
 }) {
+  const theme = useTheme();
   const [rows, setRows] = useState(initialRows);
   const [formMode, setFormMode] = useState("add");
   const [formOpen, setFormOpen] = useState(false);
@@ -222,7 +225,7 @@ export default function EntityCrudManager({
           borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
-          bgcolor: "rgba(255,255,255,0.86)",
+          bgcolor: getSurfaceBackground(theme),
         }}
       >
         <Stack

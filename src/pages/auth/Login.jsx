@@ -10,10 +10,13 @@ import {
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
 import { clearAuthError, loginUser, setAuthError } from "../../store/authSlice";
+import { getSurfaceBackground } from "../../theme";
 
 export default function Login() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [username, setUsername] = useState("admin");
@@ -76,7 +79,7 @@ export default function Login() {
           borderRadius: 4,
           border: "1px solid",
           borderColor: "divider",
-          bgcolor: "rgba(255,255,255,0.9)",
+          bgcolor: getSurfaceBackground(theme, 0.9),
         }}
       >
         <Typography variant="h4" sx={{ mb: 1 }}>

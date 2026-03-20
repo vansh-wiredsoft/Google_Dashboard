@@ -13,6 +13,7 @@ import {
   Switch,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
@@ -30,6 +31,7 @@ import {
   fetchChallengeById,
   updateChallenge,
 } from "../../store/challengeSlice";
+import { getSurfaceBackground } from "../../theme";
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -41,6 +43,7 @@ const defaultMapping = () => ({
 });
 
 export default function ChallengeForm({ mode }) {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -307,7 +310,7 @@ export default function ChallengeForm({ mode }) {
             borderRadius: 3,
             border: "1px solid",
             borderColor: "divider",
-            bgcolor: "rgba(255,255,255,0.86)",
+            bgcolor: getSurfaceBackground(theme),
           }}
         >
           <Typography>Loading challenge...</Typography>
@@ -326,7 +329,7 @@ export default function ChallengeForm({ mode }) {
             borderRadius: 3,
             border: "1px solid",
             borderColor: "divider",
-            bgcolor: "rgba(255,255,255,0.86)",
+            bgcolor: getSurfaceBackground(theme),
           }}
         >
           <Stack
@@ -500,7 +503,7 @@ export default function ChallengeForm({ mode }) {
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
-              bgcolor: "rgba(255,255,255,0.86)",
+              bgcolor: getSurfaceBackground(theme),
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 700 }}>

@@ -9,6 +9,7 @@ import {
   Paper,
   Stack,
   Typography,
+  useTheme,
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
@@ -17,8 +18,10 @@ import {
   clearThemeDetailState,
   fetchThemeById,
 } from "../../store/themeSlice";
+import { getSurfaceBackground } from "../../theme";
 
 export default function ThemeView() {
+  const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -47,7 +50,7 @@ export default function ThemeView() {
           borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
-          bgcolor: "rgba(255,255,255,0.86)",
+          bgcolor: getSurfaceBackground(theme),
         }}
       >
         <Stack
