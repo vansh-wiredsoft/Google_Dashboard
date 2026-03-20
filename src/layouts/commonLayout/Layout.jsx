@@ -14,6 +14,7 @@ import {
   Menu,
   MenuItem,
   Toolbar,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -30,8 +31,7 @@ import EventIcon from "@mui/icons-material/Event";
 import PersonIcon from "@mui/icons-material/Person";
 import CategoryIcon from "@mui/icons-material/Category";
 import AssessmentIcon from "@mui/icons-material/Assessment";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
 const drawerWidth = 260;
 const collapsedDrawerWidth = 88;
@@ -44,6 +44,7 @@ const adminItems = [
   { label: "Questions", to: "/admin/questions", icon: <QuizIcon /> },
   { label: "Themes", to: "/admin/themes", icon: <CategoryIcon /> },
   { label: "KPIs", to: "/admin/kpis", icon: <AssessmentIcon /> },
+  { label: "Challenges", to: "/admin/challenges", icon: <EmojiEventsIcon /> },
   { label: "Sessions", to: "/admin/sessions", icon: <EventIcon /> },
 ];
 
@@ -147,8 +148,7 @@ export default function Layout({ children, role, title }) {
       <List sx={{ p: 0 }}>
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
-
-          return (
+          const navButton = (
             <ListItemButton
               key={item.to}
               component={Link}
@@ -166,7 +166,6 @@ export default function Layout({ children, role, title }) {
                 },
               }}
             >
-              {/* ICON */}
               <ListItemIcon
                 sx={{
                   minWidth: 0,
@@ -188,6 +187,14 @@ export default function Layout({ children, role, title }) {
                 />
               )}
             </ListItemButton>
+          );
+
+          return sidebarCollapsed ? (
+            <Tooltip key={item.to} title={item.label} placement="right" arrow>
+              {navButton}
+            </Tooltip>
+          ) : (
+            navButton
           );
         })}
       </List>

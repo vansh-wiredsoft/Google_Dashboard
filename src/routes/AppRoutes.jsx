@@ -18,6 +18,9 @@ import ThemeView from "../pages/admin/ThemeView";
 import Kpis from "../pages/admin/Kpis";
 import KpiForm from "../pages/admin/KpiForm";
 import KpiView from "../pages/admin/KpiView";
+import Challenges from "../pages/admin/Challenges";
+import ChallengeForm from "../pages/admin/ChallengeForm";
+import ChallengeView from "../pages/admin/ChallengeView";
 import Login from "../pages/auth/Login";
 import Profile from "../pages/common/Profile";
 import SessionForm from "../pages/common/SessionForm";
@@ -220,6 +223,38 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="admin">
             <KpiForm mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/challenges"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <Challenges />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/challenges/add"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <ChallengeForm mode="add" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/challenges/:id"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <ChallengeView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/challenges/:id/edit"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <ChallengeForm mode="edit" />
           </ProtectedRoute>
         }
       />
