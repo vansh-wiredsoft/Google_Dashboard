@@ -46,7 +46,8 @@ export default function ChallengeView() {
       (selectedChallenge?.kpi_mappings || []).map((mapping, index) => ({
         ...mapping,
         display_name:
-          kpiItems.find((kpi) => kpi.kpi_key === mapping.kpi_key)?.display_name ||
+          kpiItems.find((kpi) => kpi.kpi_key === mapping.kpi_key)
+            ?.display_name ||
           mapping.kpi_key ||
           `Mapping ${index + 1}`,
       })),
@@ -77,7 +78,8 @@ export default function ChallengeView() {
                 Challenge Details
               </Typography>
               <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-                Review the challenge record and its KPI mappings before making changes.
+                Review the challenge record and its KPI mappings before making
+                changes.
               </Typography>
             </Box>
             <Stack direction="row" spacing={1}>
@@ -104,7 +106,10 @@ export default function ChallengeView() {
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" },
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, minmax(0, 1fr))",
+                },
                 gap: 2,
               }}
             >
@@ -125,7 +130,9 @@ export default function ChallengeView() {
                     size="small"
                     label={selectedChallenge.is_active ? "Active" : "Inactive"}
                     color={selectedChallenge.is_active ? "success" : "default"}
-                    variant={selectedChallenge.is_active ? "filled" : "outlined"}
+                    variant={
+                      selectedChallenge.is_active ? "filled" : "outlined"
+                    }
                   />
                 </Box>
               </Paper>
@@ -190,13 +197,22 @@ export default function ChallengeView() {
             {!!mappingRows.length ? (
               <Stack spacing={1.5}>
                 {mappingRows.map((mapping) => (
-                  <Paper key={mapping.id} variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
-                    <Typography sx={{ fontWeight: 600 }}>{mapping.display_name}</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                      KPI Key: {mapping.kpi_key || "-"}
+                  <Paper
+                    key={mapping.id}
+                    variant="outlined"
+                    sx={{ p: 2, borderRadius: 2.5 }}
+                  >
+                    <Typography sx={{ fontWeight: 600 }}>
+                      {mapping.display_name}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-                      Date Range: {mapping.start_date || "-"} to {mapping.end_date || "-"}
+
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 0.25 }}
+                    >
+                      Date Range: {mapping.start_date || "-"} to{" "}
+                      {mapping.end_date || "-"}
                     </Typography>
                   </Paper>
                 ))}

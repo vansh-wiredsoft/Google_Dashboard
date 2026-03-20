@@ -19,7 +19,7 @@ import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import Layout from "../../layouts/commonLayout/Layout";
-import { fetchKpis } from "../../store/kpiSlice";
+import { fetchKpiById, fetchKpis } from "../../store/kpiSlice";
 import {
   addChallengeKpiMapping,
   clearChallengeCreateState,
@@ -36,8 +36,8 @@ const today = new Date().toISOString().slice(0, 10);
 const defaultMapping = () => ({
   localId: `${Date.now()}-${Math.random()}`,
   kpiKey: "",
-  startDate: today,
-  endDate: today,
+  startDate: "",
+  endDate: "",
 });
 
 export default function ChallengeForm({ mode }) {
@@ -65,8 +65,8 @@ export default function ChallengeForm({ mode }) {
   const [mappings, setMappings] = useState([defaultMapping()]);
   const [newMapping, setNewMapping] = useState({
     kpiKey: "",
-    startDate: today,
-    endDate: today,
+    startDate: "",
+    endDate: "",
   });
   const [formError, setFormError] = useState("");
   const [mappingFormError, setMappingFormError] = useState("");
@@ -101,6 +101,36 @@ export default function ChallengeForm({ mode }) {
     () => (mode === "edit" ? "Edit Challenge" : "Add Challenge"),
     [mode],
   );
+
+  const getKpiDatesFromList = (kpiKey) => {
+    const selectedKpi = kpiItems.find((item) => item.kpi_key === kpiKey);
+
+    return {
+      startDate: selectedKpi?.start_date || "",
+      endDate: selectedKpi?.end_date || "",
+    };
+  };
+
+  const hydrateMappingDates = async (kpiKey) => {
+    const listDates = getKpiDatesFromList(kpiKey);
+    if (listDates.startDate && listDates.endDate) {
+      return listDates;
+    }
+
+    try {
+      const kpiDetail = await dispatch(fetchKpiById(kpiKey)).unwrap();
+
+      return {
+        startDate: kpiDetail?.start_date || "",
+        endDate: kpiDetail?.end_date || "",
+      };
+    } catch {
+      return {
+        startDate: "",
+        endDate: "",
+      };
+    }
+  };
 
   const validateDateRange = (startDate, endDate) =>
     Boolean(startDate) && Boolean(endDate) && startDate <= endDate;
@@ -190,6 +220,33 @@ export default function ChallengeForm({ mode }) {
     );
   };
 
+  const handleMappingKpiChange = async (localId, kpiKey) => {
+    setFormError("");
+
+    setMappings((current) =>
+      current.map((item) =>
+        item.localId === localId
+          ? { ...item, kpiKey, startDate: "", endDate: "" }
+          : item,
+      ),
+    );
+
+    const kpiDates = await hydrateMappingDates(kpiKey);
+
+    setMappings((current) =>
+      current.map((item) =>
+        item.localId === localId
+          ? {
+              ...item,
+              kpiKey,
+              startDate: kpiDates.startDate,
+              endDate: kpiDates.endDate,
+            }
+          : item,
+      ),
+    );
+  };
+
   const handleExistingMappingAdd = async () => {
     if (
       !newMapping.kpiKey ||
@@ -215,12 +272,29 @@ export default function ChallengeForm({ mode }) {
 
       setNewMapping({
         kpiKey: "",
-        startDate: today,
-        endDate: today,
+        startDate: "",
+        endDate: "",
       });
     } catch {
       // Error is already handled in redux state.
     }
+  };
+
+  const handleExistingMappingKpiChange = async (kpiKey) => {
+    setMappingFormError("");
+    setNewMapping({
+      kpiKey,
+      startDate: "",
+      endDate: "",
+    });
+
+    const kpiDates = await hydrateMappingDates(kpiKey);
+
+    setNewMapping({
+      kpiKey,
+      startDate: kpiDates.startDate,
+      endDate: kpiDates.endDate,
+    });
   };
 
   if (mode === "edit" && detailLoading) {
@@ -371,13 +445,7 @@ export default function ChallengeForm({ mode }) {
                         select
                         value={mapping.kpiKey}
                         onChange={(event) =>
-                          setMappings((current) =>
-                            current.map((item) =>
-                              item.localId === mapping.localId
-                                ? { ...item, kpiKey: event.target.value }
-                                : item,
-                            ),
-                          )
+                          handleMappingKpiChange(mapping.localId, event.target.value)
                         }
                         fullWidth
                       >
@@ -390,33 +458,15 @@ export default function ChallengeForm({ mode }) {
                       </TextField>
                       <TextField
                         label="Start Date"
-                        type="date"
                         value={mapping.startDate}
-                        onChange={(event) =>
-                          setMappings((current) =>
-                            current.map((item) =>
-                              item.localId === mapping.localId
-                                ? { ...item, startDate: event.target.value }
-                                : item,
-                            ),
-                          )
-                        }
+                        disabled
                         InputLabelProps={{ shrink: true }}
                         fullWidth
                       />
                       <TextField
                         label="End Date"
-                        type="date"
                         value={mapping.endDate}
-                        onChange={(event) =>
-                          setMappings((current) =>
-                            current.map((item) =>
-                              item.localId === mapping.localId
-                                ? { ...item, endDate: event.target.value }
-                                : item,
-                            ),
-                          )
-                        }
+                        disabled
                         InputLabelProps={{ shrink: true }}
                         fullWidth
                       />
@@ -476,13 +526,7 @@ export default function ChallengeForm({ mode }) {
                 label="KPI"
                 select
                 value={newMapping.kpiKey}
-                onChange={(event) => {
-                  setMappingFormError("");
-                  setNewMapping((current) => ({
-                    ...current,
-                    kpiKey: event.target.value,
-                  }));
-                }}
+                onChange={(event) => handleExistingMappingKpiChange(event.target.value)}
                 fullWidth
               >
                 <MenuItem value="">Select KPI</MenuItem>
@@ -494,29 +538,15 @@ export default function ChallengeForm({ mode }) {
               </TextField>
               <TextField
                 label="Start Date"
-                type="date"
                 value={newMapping.startDate}
-                onChange={(event) => {
-                  setMappingFormError("");
-                  setNewMapping((current) => ({
-                    ...current,
-                    startDate: event.target.value,
-                  }));
-                }}
+                disabled
                 InputLabelProps={{ shrink: true }}
                 fullWidth
               />
               <TextField
                 label="End Date"
-                type="date"
                 value={newMapping.endDate}
-                onChange={(event) => {
-                  setMappingFormError("");
-                  setNewMapping((current) => ({
-                    ...current,
-                    endDate: event.target.value,
-                  }));
-                }}
+                disabled
                 InputLabelProps={{ shrink: true }}
                 fullWidth
               />
