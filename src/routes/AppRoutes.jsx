@@ -24,6 +24,7 @@ import ChallengeView from "../pages/admin/ChallengeView";
 import Login from "../pages/auth/Login";
 import Profile from "../pages/common/Profile";
 import SessionForm from "../pages/common/SessionForm";
+import SketchLab from "../pages/hidden/SketchLab";
 import UserDashboard from "../pages/user/Dashboard";
 
 function ProtectedRoute({ children, allowedRole }) {
@@ -287,6 +288,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <SessionForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vault/ink-room-7f3a"
+        element={
+          <ProtectedRoute>
+            <SketchLab />
           </ProtectedRoute>
         }
       />

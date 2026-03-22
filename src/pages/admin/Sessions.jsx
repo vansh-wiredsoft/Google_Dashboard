@@ -149,6 +149,18 @@ export default function Sessions() {
 
     return Array.from(questionMap.values());
   }, [kpiOptions, selectedKpiKeys]);
+  const allThemeKeys = useMemo(
+    () => questionHierarchy.map((item) => item.theme_key),
+    [questionHierarchy],
+  );
+  const allKpiKeys = useMemo(
+    () => kpiOptions.map((item) => item.selectionKey),
+    [kpiOptions],
+  );
+  const allThemesSelected =
+    !!allThemeKeys.length && selectedThemeKeys.length === allThemeKeys.length;
+  const allKpisSelected =
+    !!allKpiKeys.length && selectedKpiKeys.length === allKpiKeys.length;
 
   useEffect(() => {
     dispatch(fetchCompanies());
@@ -176,6 +188,33 @@ export default function Sessions() {
         ? current.filter((id) => id !== questionId)
         : [...current, questionId],
     );
+  };
+
+  const handleThemeSelectionChange = (event) => {
+    const value = event.target.value;
+    const hasSelectAll = value.includes("__all_themes__");
+    const nextThemeKeys = hasSelectAll
+      ? allThemesSelected
+        ? []
+        : allThemeKeys
+      : value;
+
+    setSelectedThemeKeys(nextThemeKeys);
+    setSelectedKpiKeys([]);
+    setSelectedQuestions([]);
+  };
+
+  const handleKpiSelectionChange = (event) => {
+    const value = event.target.value;
+    const hasSelectAll = value.includes("__all_kpis__");
+    const nextKpiKeys = hasSelectAll
+      ? allKpisSelected
+        ? []
+        : allKpiKeys
+      : value;
+
+    setSelectedKpiKeys(nextKpiKeys);
+    setSelectedQuestions([]);
   };
 
   const handleCreateSession = async () => {
@@ -361,7 +400,13 @@ export default function Sessions() {
         sortable: false,
         filterable: false,
         renderCell: (params) => (
-          <Stack direction="row" spacing={0.5}>
+          <Stack
+            direction="row"
+            spacing={0.5}
+            alignItems="center"
+            justifyContent="center"
+            sx={{ width: "100%", height: "100%" }}
+          >
             <Tooltip title="View">
               <IconButton
                 size="small"
@@ -529,12 +574,7 @@ export default function Sessions() {
                           multiple
                           displayEmpty
                           value={selectedThemeKeys}
-                          onChange={(event) => {
-                            const nextThemeKeys = event.target.value;
-                            setSelectedThemeKeys(nextThemeKeys);
-                            setSelectedKpiKeys([]);
-                            setSelectedQuestions([]);
-                          }}
+                          onChange={handleThemeSelectionChange}
                           renderValue={(selected) =>
                             selected.length
                               ? questionHierarchy
@@ -550,6 +590,10 @@ export default function Sessions() {
                               : "Select Theme"
                           }
                         >
+                          <MenuItem value="__all_themes__">
+                            <Checkbox checked={allThemesSelected} />
+                            Select All Themes
+                          </MenuItem>
                           {questionHierarchy.map((theme) => (
                             <MenuItem
                               key={theme.theme_key}
@@ -571,10 +615,7 @@ export default function Sessions() {
                           multiple
                           displayEmpty
                           value={selectedKpiKeys}
-                          onChange={(event) => {
-                            setSelectedKpiKeys(event.target.value);
-                            setSelectedQuestions([]);
-                          }}
+                          onChange={handleKpiSelectionChange}
                           renderValue={(selected) =>
                             selected.length
                               ? kpiOptions
@@ -589,6 +630,10 @@ export default function Sessions() {
                               : "Select KPI"
                           }
                         >
+                          <MenuItem value="__all_kpis__">
+                            <Checkbox checked={allKpisSelected} />
+                            Select All KPI
+                          </MenuItem>
                           {kpiOptions.map((kpi) => (
                             <MenuItem
                               key={kpi.selectionKey}
@@ -730,9 +775,29 @@ export default function Sessions() {
 
             {!!addedQuestions.length && (
               <Paper variant="outlined" sx={{ mt: 2, p: 1.5, borderRadius: 2 }}>
-                <Typography variant="subtitle2" sx={{ mb: 0.8 }}>
-                  Added Questions Summary
-                </Typography>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={1}
+                  alignItems={{ xs: "stretch", sm: "center" }}
+                  justifyContent="space-between"
+                  sx={{ mb: 0.8 }}
+                >
+                  <Typography variant="subtitle2">
+                    Added Questions Summary
+                  </Typography>
+                  {!!createdSession && (
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      startIcon={<PreviewRoundedIcon />}
+                      onClick={() => handlePreviewSession(createdSession.id)}
+                      sx={{ alignSelf: { xs: "stretch", sm: "center" } }}
+                    >
+                      Open Form Preview
+                    </Button>
+                  )}
+                </Stack>
                 <Stack spacing={0.8}>
                   {addedQuestions.map((item) => (
                     <Typography key={item.question_id} variant="body2">
@@ -742,17 +807,6 @@ export default function Sessions() {
                   ))}
                 </Stack>
               </Paper>
-            )}
-
-            {!!createdSession && !!addedQuestions.length && (
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<PreviewRoundedIcon />}
-                onClick={() => handlePreviewSession(createdSession.id)}
-              >
-                Open Form Preview
-              </Button>
             )}
           </Paper>
         </Grid>
@@ -799,12 +853,33 @@ export default function Sessions() {
                   loading={listLoading}
                   rows={sessionRows}
                   columns={sessionColumns}
+                  rowHeight={66}
+                  columnHeaderHeight={56}
                   disableRowSelectionOnClick
                   pageSizeOptions={[10, 25, 50]}
                   initialState={{
                     pagination: {
                       paginationModel: { pageSize: 10, page: 0 },
                     },
+                  }}
+                  sx={{
+                    border: 0,
+                    "& .MuiDataGrid-columnHeader": {
+                      display: "flex",
+                      alignItems: "center",
+                    },
+                    "& .MuiDataGrid-cell": {
+                      display: "flex",
+                      alignItems: "center",
+                    },
+                    "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus":
+                      {
+                        outline: "none",
+                      },
+                    "& .MuiDataGrid-cell:focus-within, & .MuiDataGrid-columnHeader:focus-within":
+                      {
+                        outline: "none",
+                      },
                   }}
                 />
               </Box>
