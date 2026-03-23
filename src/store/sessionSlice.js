@@ -6,12 +6,19 @@ const SESSION_PATH = "/config/api/v1/sessions";
 const initialState = {
   createdSession: null,
   addedQuestions: [],
+  sessionQuestions: [],
   sessions: [],
   sessionDetails: null,
   sessionPreview: null,
   sessionForm: null,
   createLoading: false,
   addLoading: false,
+  questionsLoading: false,
+  setLoading: false,
+  removeLoading: false,
+  reorderLoading: false,
+  updateLoading: false,
+  deleteLoading: false,
   listLoading: false,
   detailLoading: false,
   previewLoading: false,
@@ -20,12 +27,24 @@ const initialState = {
   submitLoading: false,
   createMessage: "",
   addMessage: "",
+  questionsMessage: "",
+  setMessage: "",
+  removeMessage: "",
+  reorderMessage: "",
+  updateMessage: "",
+  deleteMessage: "",
   listMessage: "",
   detailMessage: "",
   previewMessage: "",
   publishMessage: "",
   submitMessage: "",
   error: null,
+  questionsError: null,
+  setError: null,
+  removeError: null,
+  reorderError: null,
+  updateError: null,
+  deleteError: null,
   listError: null,
   detailError: null,
   previewError: null,
@@ -33,6 +52,24 @@ const initialState = {
   formError: null,
   submitError: null,
   submittedResponseId: null,
+};
+
+const normalizeSessionQuestion = (item, index) => ({
+  question_id: String(item?.question_id || item?.id || index),
+  question_code: item?.question_code || "",
+  question_text: item?.question_text || item?.text || item?.name || "Untitled Question",
+  reverse_code: Boolean(item?.reverse_code),
+  display_order: item?.display_order ?? index + 1,
+});
+
+const extractSessionQuestions = (payload) => {
+  const source = Array.isArray(payload?.data)
+    ? payload.data
+    : Array.isArray(payload)
+      ? payload
+      : [];
+
+  return source.map(normalizeSessionQuestion);
 };
 
 export const createSession = createAsyncThunk(
@@ -79,7 +116,7 @@ export const addQuestionsToSession = createAsyncThunk(
       }
 
       return {
-        addedQuestions: Array.isArray(payload?.data) ? payload.data : [],
+        questions: extractSessionQuestions(payload),
         message: payload?.message || "Questions added to session successfully.",
       };
     } catch (error) {
@@ -87,6 +124,211 @@ export const addQuestionsToSession = createAsyncThunk(
         getApiErrorMessage(
           error,
           "Failed to add questions due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const fetchSessionQuestions = createAsyncThunk(
+  "session/fetchSessionQuestions",
+  async (sessionId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`${SESSION_PATH}/${sessionId}/questions`);
+      const payload = response?.data || {};
+
+      if (!payload?.success) {
+        return rejectWithValue(
+          payload?.message || "Failed to fetch session questions.",
+        );
+      }
+
+      return {
+        questions: extractSessionQuestions(payload),
+        message: payload?.message || "Session questions fetched successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to fetch session questions due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const setSessionQuestions = createAsyncThunk(
+  "session/setSessionQuestions",
+  async ({ sessionId, questionIds }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`${SESSION_PATH}/${sessionId}/questions`, {
+        question_ids: questionIds,
+      });
+      const payload = response?.data || {};
+
+      if (!payload?.success) {
+        return rejectWithValue(payload?.message || "Failed to set session questions.");
+      }
+
+      return {
+        questions: extractSessionQuestions(payload),
+        message: payload?.message || "Session questions updated successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to set session questions due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const removeSessionQuestions = createAsyncThunk(
+  "session/removeSessionQuestions",
+  async ({ sessionId, questionIds }, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`${SESSION_PATH}/${sessionId}/questions`, {
+        data: {
+          question_ids: questionIds,
+        },
+      });
+      const payload = response?.data || {};
+
+      if (!payload?.success) {
+        return rejectWithValue(
+          payload?.message || "Failed to remove session questions.",
+        );
+      }
+
+      return {
+        questions: extractSessionQuestions(payload),
+        removedIds: questionIds.map(String),
+        message: payload?.message || "Questions removed successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to remove session questions due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const removeSingleSessionQuestion = createAsyncThunk(
+  "session/removeSingleSessionQuestion",
+  async ({ sessionId, questionId }, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(
+        `${SESSION_PATH}/${sessionId}/questions/${questionId}`,
+      );
+      const payload = response?.data || {};
+
+      if (!payload?.success) {
+        return rejectWithValue(payload?.message || "Failed to remove question.");
+      }
+
+      return {
+        questions: extractSessionQuestions(payload),
+        questionId: String(questionId),
+        message: payload?.message || "Question removed successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to remove question due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const reorderSessionQuestions = createAsyncThunk(
+  "session/reorderSessionQuestions",
+  async ({ sessionId, items }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`${SESSION_PATH}/${sessionId}/questions/order`, {
+        items,
+      });
+      const payload = response?.data || {};
+
+      if (!payload?.success) {
+        return rejectWithValue(
+          payload?.message || "Failed to reorder session questions.",
+        );
+      }
+
+      return {
+        questions: extractSessionQuestions(payload),
+        items,
+        message: payload?.message || "Question order updated successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to reorder session questions due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const updateSession = createAsyncThunk(
+  "session/updateSession",
+  async ({ sessionId, title, description, companyId }, { rejectWithValue }) => {
+    try {
+      const response = await api.patch(`${SESSION_PATH}/${sessionId}`, {
+        title,
+        description,
+        company_id: companyId ? String(companyId) : null,
+      });
+      const payload = response?.data || {};
+
+      if (!payload?.success || !payload?.data) {
+        return rejectWithValue(payload?.message || "Failed to update session.");
+      }
+
+      return {
+        session: payload.data,
+        message: payload?.message || "Session updated successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to update session due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const deleteSession = createAsyncThunk(
+  "session/deleteSession",
+  async (sessionId, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`${SESSION_PATH}/${sessionId}`);
+      const payload = response?.data || {};
+
+      if (!payload?.success || !payload?.data) {
+        return rejectWithValue(payload?.message || "Failed to delete session.");
+      }
+
+      return {
+        session: payload.data,
+        message: payload?.message || "Session deleted successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to delete session due to server/network error.",
         ),
       );
     }
@@ -262,6 +504,12 @@ const sessionSlice = createSlice({
   reducers: {
     clearSessionError(state) {
       state.error = null;
+      state.questionsError = null;
+      state.setError = null;
+      state.removeError = null;
+      state.reorderError = null;
+      state.updateError = null;
+      state.deleteError = null;
     },
     clearSessionListError(state) {
       state.listError = null;
@@ -293,20 +541,56 @@ const sessionSlice = createSlice({
       state.formLoading = false;
       state.submitLoading = false;
     },
+    clearSessionQuestions(state) {
+      state.sessionQuestions = [];
+      state.questionsMessage = "";
+      state.questionsError = null;
+      state.setMessage = "";
+      state.setError = null;
+      state.removeMessage = "";
+      state.removeError = null;
+      state.reorderMessage = "";
+      state.reorderError = null;
+    },
     clearSessionMessages(state) {
       state.createMessage = "";
       state.addMessage = "";
+      state.questionsMessage = "";
+      state.setMessage = "";
+      state.removeMessage = "";
+      state.reorderMessage = "";
+      state.updateMessage = "";
+      state.deleteMessage = "";
     },
     resetSessionFlow(state) {
       state.createdSession = null;
       state.addedQuestions = [];
+      state.sessionQuestions = [];
       state.createLoading = false;
       state.addLoading = false;
+      state.questionsLoading = false;
+      state.setLoading = false;
+      state.removeLoading = false;
+      state.reorderLoading = false;
+      state.updateLoading = false;
+      state.deleteLoading = false;
       state.createMessage = "";
       state.addMessage = "";
+      state.questionsMessage = "";
+      state.setMessage = "";
+      state.removeMessage = "";
+      state.reorderMessage = "";
+      state.updateMessage = "";
+      state.deleteMessage = "";
+      state.error = null;
+      state.questionsError = null;
+      state.setError = null;
+      state.removeError = null;
+      state.reorderError = null;
+      state.updateError = null;
+      state.deleteError = null;
       state.previewMessage = "";
       state.publishMessage = "";
-      state.error = null;
       state.previewError = null;
       state.publishError = null;
       state.formError = null;
@@ -326,6 +610,7 @@ const sessionSlice = createSlice({
         state.createLoading = false;
         state.createdSession = action.payload.session;
         state.addedQuestions = [];
+        state.sessionQuestions = [];
         state.createMessage = action.payload.message;
       })
       .addCase(createSession.rejected, (state, action) => {
@@ -339,12 +624,156 @@ const sessionSlice = createSlice({
       })
       .addCase(addQuestionsToSession.fulfilled, (state, action) => {
         state.addLoading = false;
-        state.addedQuestions = action.payload.addedQuestions;
+        state.addedQuestions = action.payload.questions;
+        state.sessionQuestions = action.payload.questions;
         state.addMessage = action.payload.message;
       })
       .addCase(addQuestionsToSession.rejected, (state, action) => {
         state.addLoading = false;
         state.error = action.payload || "Failed to add questions.";
+      })
+      .addCase(fetchSessionQuestions.pending, (state) => {
+        state.questionsLoading = true;
+        state.questionsError = null;
+        state.questionsMessage = "";
+      })
+      .addCase(fetchSessionQuestions.fulfilled, (state, action) => {
+        state.questionsLoading = false;
+        state.sessionQuestions = action.payload.questions;
+        state.addedQuestions = action.payload.questions;
+        state.questionsMessage = action.payload.message;
+      })
+      .addCase(fetchSessionQuestions.rejected, (state, action) => {
+        state.questionsLoading = false;
+        state.questionsError = action.payload || "Failed to fetch session questions.";
+      })
+      .addCase(setSessionQuestions.pending, (state) => {
+        state.setLoading = true;
+        state.setError = null;
+        state.setMessage = "";
+      })
+      .addCase(setSessionQuestions.fulfilled, (state, action) => {
+        state.setLoading = false;
+        state.sessionQuestions = action.payload.questions;
+        state.addedQuestions = action.payload.questions;
+        state.setMessage = action.payload.message;
+      })
+      .addCase(setSessionQuestions.rejected, (state, action) => {
+        state.setLoading = false;
+        state.setError = action.payload || "Failed to set session questions.";
+      })
+      .addCase(removeSessionQuestions.pending, (state) => {
+        state.removeLoading = true;
+        state.removeError = null;
+        state.removeMessage = "";
+      })
+      .addCase(removeSessionQuestions.fulfilled, (state, action) => {
+        state.removeLoading = false;
+        state.sessionQuestions = action.payload.questions.length
+          ? action.payload.questions
+          : state.sessionQuestions.filter(
+              (question) => !action.payload.removedIds.includes(question.question_id),
+            );
+        state.addedQuestions = state.sessionQuestions;
+        state.removeMessage = action.payload.message;
+      })
+      .addCase(removeSessionQuestions.rejected, (state, action) => {
+        state.removeLoading = false;
+        state.removeError = action.payload || "Failed to remove session questions.";
+      })
+      .addCase(removeSingleSessionQuestion.pending, (state) => {
+        state.removeLoading = true;
+        state.removeError = null;
+        state.removeMessage = "";
+      })
+      .addCase(removeSingleSessionQuestion.fulfilled, (state, action) => {
+        state.removeLoading = false;
+        state.sessionQuestions = action.payload.questions.length
+          ? action.payload.questions
+          : state.sessionQuestions.filter(
+              (question) => question.question_id !== action.payload.questionId,
+            );
+        state.addedQuestions = state.sessionQuestions;
+        state.removeMessage = action.payload.message;
+      })
+      .addCase(removeSingleSessionQuestion.rejected, (state, action) => {
+        state.removeLoading = false;
+        state.removeError = action.payload || "Failed to remove question.";
+      })
+      .addCase(reorderSessionQuestions.pending, (state) => {
+        state.reorderLoading = true;
+        state.reorderError = null;
+        state.reorderMessage = "";
+      })
+      .addCase(reorderSessionQuestions.fulfilled, (state, action) => {
+        state.reorderLoading = false;
+        state.sessionQuestions = action.payload.questions.length
+          ? action.payload.questions
+          : action.payload.items.map((item, index) => {
+              const existing = state.sessionQuestions.find(
+                (question) => question.question_id === item.question_id,
+              );
+              return {
+                ...(existing || {}),
+                question_id: item.question_id,
+                display_order: item.display_order ?? index + 1,
+              };
+            });
+        state.addedQuestions = state.sessionQuestions;
+        state.reorderMessage = action.payload.message;
+      })
+      .addCase(reorderSessionQuestions.rejected, (state, action) => {
+        state.reorderLoading = false;
+        state.reorderError = action.payload || "Failed to reorder session questions.";
+      })
+      .addCase(updateSession.pending, (state) => {
+        state.updateLoading = true;
+        state.updateError = null;
+        state.updateMessage = "";
+      })
+      .addCase(updateSession.fulfilled, (state, action) => {
+        state.updateLoading = false;
+        state.updateMessage = action.payload.message;
+        state.sessions = state.sessions.map((session) =>
+          session.id === action.payload.session.id ? action.payload.session : session,
+        );
+        if (state.createdSession?.id === action.payload.session.id) {
+          state.createdSession = action.payload.session;
+        }
+        if (state.sessionDetails?.id === action.payload.session.id) {
+          state.sessionDetails = {
+            ...state.sessionDetails,
+            ...action.payload.session,
+          };
+        }
+      })
+      .addCase(updateSession.rejected, (state, action) => {
+        state.updateLoading = false;
+        state.updateError = action.payload || "Failed to update session.";
+      })
+      .addCase(deleteSession.pending, (state) => {
+        state.deleteLoading = true;
+        state.deleteError = null;
+        state.deleteMessage = "";
+      })
+      .addCase(deleteSession.fulfilled, (state, action) => {
+        state.deleteLoading = false;
+        state.deleteMessage = action.payload.message;
+        state.sessions = state.sessions.filter(
+          (session) => session.id !== action.payload.session.id,
+        );
+        if (state.createdSession?.id === action.payload.session.id) {
+          state.createdSession = null;
+          state.addedQuestions = [];
+          state.sessionQuestions = [];
+        }
+        if (state.sessionDetails?.id === action.payload.session.id) {
+          state.sessionDetails = null;
+        }
+      })
+      .addCase(deleteSession.rejected, (state, action) => {
+        state.deleteLoading = false;
+        state.deleteError = action.payload || "Failed to delete session.";
       })
       .addCase(fetchSessions.pending, (state) => {
         state.listLoading = true;
@@ -450,6 +879,7 @@ export const {
   clearSessionDetails,
   clearSessionPreview,
   clearSessionForm,
+  clearSessionQuestions,
   clearSessionMessages,
   resetSessionFlow,
 } = sessionSlice.actions;

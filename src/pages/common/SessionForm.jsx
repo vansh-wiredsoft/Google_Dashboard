@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -26,8 +26,10 @@ import { getSurfaceBackground } from "../../theme";
 export default function SessionForm() {
   const theme = useTheme();
   const dispatch = useDispatch();
+  // const navigate = useNavigate();
   const { id } = useParams();
   const storedProfile = getUserProfile();
+  // const role = useSelector((state) => state.auth.role);
   const {
     sessionForm,
     formLoading,
@@ -91,6 +93,9 @@ export default function SessionForm() {
           answers: payloadAnswers,
         }),
       ).unwrap();
+      // navigate(role === "admin" ? "/admin/dashboard" : "/user/dashboard", {
+      //   replace: true,
+      // });
     } catch {
       // Error is already handled in redux state.
     }

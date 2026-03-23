@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
@@ -18,6 +18,7 @@ import { getSurfaceBackground } from "../../theme";
 export default function Login() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("password");
@@ -40,7 +41,12 @@ export default function Login() {
         }),
       ).unwrap();
 
-      const target = result.role === "admin" ? "/admin/dashboard" : "/user/dashboard";
+      const redirectTarget = location.state?.from?.pathname
+        ? `${location.state.from.pathname}${location.state.from.search || ""}${location.state.from.hash || ""}`
+        : null;
+      const target =
+        redirectTarget ||
+        (result.role === "admin" ? "/admin/dashboard" : "/user/dashboard");
       navigate(target, { replace: true });
     } catch {
       // Error state is already handled by auth slice.

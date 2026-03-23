@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 import AdminDashboard from "../pages/admin/Dashboard";
@@ -12,6 +12,8 @@ import Questions from "../pages/admin/Questions";
 import QuestionsForm from "../pages/admin/QuestionsForm";
 import QuestionsView from "../pages/admin/QuestionsView";
 import Sessions from "../pages/admin/Sessions";
+import SessionEditor from "../pages/admin/SessionEditor";
+import SessionManagement from "../pages/admin/SessionManagement";
 import Themes from "../pages/admin/Themes";
 import ThemeForm from "../pages/admin/ThemeForm";
 import ThemeView from "../pages/admin/ThemeView";
@@ -28,11 +30,12 @@ import SketchLab from "../pages/hidden/SketchLab";
 import UserDashboard from "../pages/user/Dashboard";
 
 function ProtectedRoute({ children, allowedRole }) {
+  const location = useLocation();
   const role = useSelector((state) => state.auth.role);
   const authenticated = useSelector((state) => state.auth.isAuthenticated);
 
   if (!authenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   if (allowedRole && role !== allowedRole) {
@@ -41,6 +44,17 @@ function ProtectedRoute({ children, allowedRole }) {
   }
 
   return children;
+}
+
+function LoginRoute({ fallback }) {
+  const location = useLocation();
+  const authenticated = useSelector((state) => state.auth.isAuthenticated);
+  const redirectTarget =
+    location.state?.from?.pathname
+      ? `${location.state.from.pathname}${location.state.from.search || ""}${location.state.from.hash || ""}`
+      : fallback;
+
+  return authenticated ? <Navigate to={redirectTarget} replace /> : <Login />;
 }
 
 export default function AppRoutes() {
@@ -56,7 +70,7 @@ export default function AppRoutes() {
       />
       <Route
         path="/login"
-        element={authenticated ? <Navigate to={fallback} replace /> : <Login />}
+        element={<LoginRoute fallback={fallback} />}
       />
 
       <Route
@@ -264,6 +278,30 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="admin">
             <Sessions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/sessions/add"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <SessionEditor mode="add" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/sessions/:id/edit"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <SessionEditor mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/sessions/:id/manage"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <SessionManagement />
           </ProtectedRoute>
         }
       />
