@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Button, CircularProgress, FormControl, MenuItem, Paper, Select, Stack, TextField, Typography, Alert } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, FormControl, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "../../layouts/commonLayout/Layout";
 import { fetchCompanies } from "../../store/companySlice";
-import { clearSessionDetailError, clearSessionError, clearSessionMessages, createSession, fetchSessionById, updateSession } from "../../store/sessionSlice";
+import { clearSessionDetailError, clearSessionError, clearSessionMessages, createSession, fetchSessionById, resetSessionFlow, updateSession } from "../../store/sessionSlice";
 import { getSurfaceBackground } from "../../theme";
 
 export default function SessionEditor({ mode }) {
@@ -15,6 +15,7 @@ export default function SessionEditor({ mode }) {
   const { id } = useParams();
   const { companies, companiesLoading, error: companiesError } = useSelector((state) => state.company);
   const {
+    createdSession,
     createLoading,
     updateLoading,
     createMessage,
@@ -32,6 +33,10 @@ export default function SessionEditor({ mode }) {
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
+    if (mode === "add") {
+      dispatch(resetSessionFlow());
+    }
+
     dispatch(fetchCompanies());
     dispatch(clearSessionMessages());
     dispatch(clearSessionError());
@@ -53,6 +58,13 @@ export default function SessionEditor({ mode }) {
   const heading = useMemo(
     () => (mode === "edit" ? "Edit Session" : "Add Session"),
     [mode],
+  );
+  const activeSession = mode === "add" ? createdSession : sessionDetails;
+  const selectedCompanyName = useMemo(
+    () =>
+      companies.find((company) => company.id === activeSession?.company_id || company.id === companyId)
+        ?.company_name || activeSession?.company_id || companyId || "",
+    [activeSession?.company_id, companies, companyId],
   );
 
   const handleSubmit = async () => {
@@ -77,6 +89,7 @@ export default function SessionEditor({ mode }) {
             companyId,
           }),
         ).unwrap();
+        navigate("/admin/sessions", { replace: true });
       } else {
         await dispatch(
           createSession({
@@ -86,11 +99,17 @@ export default function SessionEditor({ mode }) {
           }),
         ).unwrap();
       }
-
-      navigate("/admin/sessions", { replace: true });
     } catch {
       // Redux state already holds the error.
     }
+  };
+
+  const handleCreateAnother = () => {
+    dispatch(resetSessionFlow());
+    setTitle("");
+    setDescription("");
+    setCompanyId("");
+    setFormError("");
   };
 
   return (
@@ -98,7 +117,7 @@ export default function SessionEditor({ mode }) {
       <Paper
         elevation={0}
         sx={{
-          maxWidth: 760,
+          // maxWidth: 760,
           p: { xs: 2, sm: 3 },
           borderRadius: 3,
           border: "1px solid",
@@ -113,7 +132,7 @@ export default function SessionEditor({ mode }) {
           <Typography color="text.secondary">
             {mode === "edit"
               ? "Update the session details here."
-              : "Create the session details here, then manage questions from the Sessions page."}
+              : "Create the session details here. After creation, you can continue to add questions and review the session summary."}
           </Typography>
 
           {(detailLoading || companiesLoading) && mode === "edit" && (
@@ -131,15 +150,15 @@ export default function SessionEditor({ mode }) {
           {!!createMessage && <Alert severity="success">{createMessage}</Alert>}
           {!!updateMessage && <Alert severity="success">{updateMessage}</Alert>}
 
-          <TextField label="Session Title" value={title} onChange={(event) => setTitle(event.target.value)} fullWidth />
-          <TextField label="Description" value={description} onChange={(event) => setDescription(event.target.value)} fullWidth multiline minRows={4} />
+          <TextField label="Session Title" value={title} onChange={(event) => setTitle(event.target.value)} fullWidth disabled={mode === "add" && Boolean(createdSession?.id)} />
+          <TextField label="Description" value={description} onChange={(event) => setDescription(event.target.value)} fullWidth multiline minRows={4} disabled={mode === "add" && Boolean(createdSession?.id)} />
 
           <FormControl fullWidth>
             <Select
               displayEmpty
               value={companyId}
               onChange={(event) => setCompanyId(event.target.value)}
-              disabled={companiesLoading}
+              disabled={companiesLoading || (mode === "add" && Boolean(createdSession?.id))}
             >
               <MenuItem value="">Select Company</MenuItem>
               {companies.map((company) => (
@@ -150,20 +169,77 @@ export default function SessionEditor({ mode }) {
             </Select>
           </FormControl>
 
-          <Stack direction="row" spacing={1.2}>
-            <Button variant="contained" onClick={handleSubmit} disabled={createLoading || updateLoading || detailLoading}>
+          <Stack direction="row" spacing={1.2} flexWrap="wrap" useFlexGap>
+            <Button variant="contained" onClick={handleSubmit} disabled={createLoading || updateLoading || detailLoading || (mode === "add" && Boolean(createdSession?.id))}>
               {createLoading || updateLoading
                 ? mode === "edit"
                   ? "Saving..."
                   : "Creating..."
                 : mode === "edit"
                   ? "Save Session"
-                  : "Create Session"}
+                  : createdSession?.id
+                    ? "Session Created"
+                    : "Create Session"}
             </Button>
             <Button variant="outlined" onClick={() => navigate("/admin/sessions")}>
               Cancel
             </Button>
+            {mode === "add" && createdSession?.id && (
+              <>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => navigate(`/admin/sessions/${createdSession.id}/manage`)}
+                >
+                  Add Questions
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={handleCreateAnother}
+                >
+                  Create Another
+                </Button>
+              </>
+            )}
           </Stack>
+
+          {mode === "add" && createdSession?.id && (
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              <Stack spacing={1.2}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  Session Summary
+                </Typography>
+                <Alert severity="info">
+                  Session created successfully. Continue to add questions for this session.
+                </Alert>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Title
+                  </Typography>
+                  <Typography>{createdSession.title || title || "-"}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Description
+                  </Typography>
+                  <Typography>{createdSession.description || description || "-"}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Company
+                  </Typography>
+                  <Typography>{selectedCompanyName || "-"}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Session ID
+                  </Typography>
+                  <Typography>{createdSession.id}</Typography>
+                </Box>
+              </Stack>
+            </Paper>
+          )}
         </Stack>
       </Paper>
     </Layout>

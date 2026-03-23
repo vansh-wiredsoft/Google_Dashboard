@@ -79,7 +79,7 @@ export default function Sessions() {
   );
 
   const handleDeleteSession = (row) => {
-    if (!window.confirm(`Soft delete session "${row.title || row.id}"?`)) {
+    if (!window.confirm(`Are you sure you want to delete session "${row.title || row.id}"?`)) {
       return;
     }
 
