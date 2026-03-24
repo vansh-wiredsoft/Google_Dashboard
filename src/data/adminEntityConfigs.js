@@ -156,7 +156,7 @@ export const entityConfigs = {
     description:
       "Manage company records with dedicated pages for viewing, adding, and editing.",
     entityLabel: "Company",
-    basePath: "/admin/company-data",
+    basePath: "/super-admin/company-data",
     storageKey: "admin-company-records",
     fields: companyFields,
     initialRows: companyRows,

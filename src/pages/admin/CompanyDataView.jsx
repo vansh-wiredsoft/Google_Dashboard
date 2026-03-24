@@ -4,7 +4,7 @@ import { entityConfigs } from "../../data/adminEntityConfigs";
 
 export default function CompanyDataView() {
   return (
-    <Layout role="admin" title="View Company">
+    <Layout role="superadmin" title="View Company">
       <EntityViewPage {...entityConfigs.company} />
     </Layout>
   );

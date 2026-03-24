@@ -37,6 +37,7 @@ import CategoryIcon from "@mui/icons-material/Category";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { useThemeMode } from "../../context/ThemeModeContext";
 
 const drawerWidth = 260;
@@ -45,7 +46,6 @@ const SIDEBAR_COLLAPSED_KEY = "sidebarCollapsed";
 
 const adminItems = [
   { label: "Dashboard", to: "/admin/dashboard", icon: <DashboardIcon /> },
-  { label: "Company Data", to: "/admin/company-data", icon: <BusinessIcon /> },
   { label: "Company Users", to: "/admin/company-users", icon: <PeopleIcon /> },
   { label: "Questions", to: "/admin/questions", icon: <QuizIcon /> },
   { label: "Themes", to: "/admin/themes", icon: <CategoryIcon /> },
@@ -60,6 +60,19 @@ const userItems = [
     label: "My Responses",
     to: "/user/my-responses",
     icon: <AssignmentTurnedInIcon />,
+  },
+];
+
+const superAdminItems = [
+  {
+    label: "Dashboard",
+    to: "/super-admin/dashboard",
+    icon: <AdminPanelSettingsIcon />,
+  },
+  {
+    label: "Company Data",
+    to: "/super-admin/company-data",
+    icon: <BusinessIcon />,
   },
 ];
 
@@ -86,6 +99,11 @@ export default function Layout({ children, role, title }) {
           ...userItems,
           { label: "My Profile", to: "/profile", icon: <PersonIcon /> },
         ]
+      : effectiveRole === "superadmin"
+        ? [
+            ...superAdminItems,
+            { label: "My Profile", to: "/profile", icon: <PersonIcon /> },
+          ]
       : [
           ...adminItems,
           { label: "My Profile", to: "/profile", icon: <PersonIcon /> },
@@ -154,7 +172,11 @@ export default function Layout({ children, role, title }) {
 
       {!sidebarCollapsed && (
         <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
-          {effectiveRole === "admin" ? "Admin Workspace" : "User Workspace"}
+          {effectiveRole === "admin"
+            ? "Admin Workspace"
+            : effectiveRole === "superadmin"
+              ? "Super Admin Workspace"
+              : "User Workspace"}
         </Typography>
       )}
 

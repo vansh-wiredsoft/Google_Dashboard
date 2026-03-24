@@ -5,7 +5,7 @@ import { entityConfigs } from "../../data/adminEntityConfigs";
 export default function CompanyDataForm({ mode }) {
   return (
     <Layout
-      role="admin"
+      role="superadmin"
       title={mode === "edit" ? "Edit Company" : "Add Company"}
     >
       <EntityFormPage mode={mode} {...entityConfigs.company} />

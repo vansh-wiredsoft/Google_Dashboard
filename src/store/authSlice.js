@@ -6,6 +6,7 @@ import {
   getToken,
   getUserProfile,
   isAuthenticated,
+  normalizeRole,
   setAuthSession,
   updateStoredProfile,
 } from "../utils/roleHelper";
@@ -33,7 +34,7 @@ export const loginUser = createAsyncThunk(
         return rejectWithValue("Login response is invalid.");
       }
 
-      const normalizedRole = String(user.role || "").toLowerCase();
+      const normalizedRole = normalizeRole(user.role);
       const payload = {
         token: accessToken,
         role: normalizedRole,

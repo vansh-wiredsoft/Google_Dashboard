@@ -46,7 +46,11 @@ export default function Login() {
         : null;
       const target =
         redirectTarget ||
-        (result.role === "admin" ? "/admin/dashboard" : "/user/dashboard");
+        (result.role === "superadmin"
+          ? "/super-admin/dashboard"
+          : result.role === "admin"
+            ? "/admin/dashboard"
+            : "/user/dashboard");
       navigate(target, { replace: true });
     } catch {
       // Error state is already handled by auth slice.

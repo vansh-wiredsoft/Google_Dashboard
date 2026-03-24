@@ -29,6 +29,19 @@ import SessionForm from "../pages/common/SessionForm";
 import SketchLab from "../pages/hidden/SketchLab";
 import UserDashboard from "../pages/user/Dashboard";
 import MyResponses from "../pages/user/MyResponses";
+import SuperAdminDashboard from "../pages/superadmin/Dashboard";
+
+const getHomePathForRole = (role) => {
+  switch (role) {
+    case "superadmin":
+      return "/super-admin/dashboard";
+    case "user":
+      return "/user/dashboard";
+    case "admin":
+    default:
+      return "/admin/dashboard";
+  }
+};
 
 function ProtectedRoute({ children, allowedRole }) {
   const location = useLocation();
@@ -40,7 +53,7 @@ function ProtectedRoute({ children, allowedRole }) {
   }
 
   if (allowedRole && role !== allowedRole) {
-    const fallback = role === "user" ? "/user/dashboard" : "/admin/dashboard";
+    const fallback = getHomePathForRole(role);
     return <Navigate to={fallback} replace />;
   }
 
@@ -61,7 +74,7 @@ function LoginRoute({ fallback }) {
 export default function AppRoutes() {
   const role = useSelector((state) => state.auth.role);
   const authenticated = useSelector((state) => state.auth.isAuthenticated);
-  const fallback = role === "user" ? "/user/dashboard" : "/admin/dashboard";
+  const fallback = getHomePathForRole(role);
 
   return (
     <Routes>
@@ -83,33 +96,33 @@ export default function AppRoutes() {
         }
       />
       <Route
-        path="/admin/company-data"
+        path="/super-admin/company-data"
         element={
-          <ProtectedRoute allowedRole="admin">
+          <ProtectedRoute allowedRole="superadmin">
             <CompanyData />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/admin/company-data/add"
+        path="/super-admin/company-data/add"
         element={
-          <ProtectedRoute allowedRole="admin">
+          <ProtectedRoute allowedRole="superadmin">
             <CompanyDataForm mode="add" />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/admin/company-data/:id"
+        path="/super-admin/company-data/:id"
         element={
-          <ProtectedRoute allowedRole="admin">
+          <ProtectedRoute allowedRole="superadmin">
             <CompanyDataView />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/admin/company-data/:id/edit"
+        path="/super-admin/company-data/:id/edit"
         element={
-          <ProtectedRoute allowedRole="admin">
+          <ProtectedRoute allowedRole="superadmin">
             <CompanyDataForm mode="edit" />
           </ProtectedRoute>
         }
@@ -303,6 +316,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="admin">
             <SessionManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super-admin/dashboard"
+        element={
+          <ProtectedRoute allowedRole="superadmin">
+            <SuperAdminDashboard />
           </ProtectedRoute>
         }
       />

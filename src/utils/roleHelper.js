@@ -3,12 +3,18 @@ const ROLE_KEY = "role";
 const TOKEN_KEY = "token";
 const USER_KEY = "userProfile";
 
+export const normalizeRole = (role) =>
+  String(role || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s-]+/g, "");
+
 export const getRole = () => localStorage.getItem(ROLE_KEY);
 
 export const isAuthenticated = () => localStorage.getItem(AUTH_KEY) === "true";
 
 export const setAuthSession = ({ role, name, email, token, id }) => {
-  const normalizedRole = String(role || "").toLowerCase();
+  const normalizedRole = normalizeRole(role);
   const accessToken = token || `fake-jwt-${normalizedRole}-${Date.now()}`;
   localStorage.setItem(AUTH_KEY, "true");
   localStorage.setItem(ROLE_KEY, normalizedRole);

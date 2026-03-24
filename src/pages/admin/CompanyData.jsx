@@ -31,7 +31,7 @@ export default function CompanyData() {
   }, [dispatch]);
 
   return (
-    <Layout role="admin" title="Company Data">
+    <Layout role="superadmin" title="Company Data">
       <Stack spacing={2}>
         {feedback && <Alert severity={feedback.severity}>{feedback.message}</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
