@@ -6,9 +6,26 @@ const COMPANY_UPLOAD_PATH = "/config/api/v1/companies/upload";
 
 const initialState = {
   companies: [],
+  selectedCompany: null,
   companiesLoading: false,
+  detailLoading: false,
+  createLoading: false,
+  updateLoading: false,
+  deleteLoading: false,
+  assignAdminLoading: false,
   error: "",
+  detailError: "",
+  createError: "",
+  updateError: "",
+  deleteError: "",
+  assignAdminError: "",
   message: "",
+  detailMessage: "",
+  createMessage: "",
+  updateMessage: "",
+  deleteMessage: "",
+  assignAdminMessage: "",
+  assignedAdmin: null,
   uploadLoading: false,
   uploadStatus: null,
   uploadError: "",
@@ -23,6 +40,34 @@ const pickArray = (payload) => {
   return [];
 };
 
+const normalizeCompany = (item, index = 0) => ({
+  id: String(item?.id || item?.company_id || index),
+  company_name: item?.company_name || item?.name || item?.title || "Unnamed Company",
+  industry: item?.industry || "",
+  size_bucket: item?.size_bucket || "",
+  email: item?.email || "",
+  phone: String(item?.phone ?? ""),
+  no_of_employees: item?.no_of_employees ?? "",
+  is_active: Boolean(item?.is_active),
+  created_at: item?.created_at || "",
+  updated_at: item?.updated_at || "",
+});
+
+const normalizeAdmin = (item) => ({
+  id: String(item?.id || ""),
+  emp_id: item?.emp_id || "",
+  full_name: item?.full_name || "",
+  department: item?.department || "",
+  location: item?.location || "",
+  gender: item?.gender || "",
+  phone: String(item?.phone ?? ""),
+  email: item?.email || "",
+  company_id: item?.company_id || "",
+  is_active: Boolean(item?.is_active),
+  created_at: item?.created_at || "",
+  updated_at: item?.updated_at || "",
+});
+
 export const fetchCompanies = createAsyncThunk(
   "company/fetchCompanies",
   async (_, { rejectWithValue }) => {
@@ -34,22 +79,8 @@ export const fetchCompanies = createAsyncThunk(
         return rejectWithValue(payload?.message || "Failed to fetch companies.");
       }
 
-      const normalized = pickArray(payload).map((item, index) => ({
-        id: String(item?.id || item?.company_id || index),
-        company_name:
-          item?.company_name || item?.name || item?.title || "Unnamed Company",
-        industry: item?.industry || "",
-        size_bucket: item?.size_bucket || "",
-        email: item?.email || "",
-        phone: String(item?.phone ?? ""),
-        no_of_employees: item?.no_of_employees ?? "",
-        is_active: item?.is_active ?? false,
-        created_at: item?.created_at || "",
-        updated_at: item?.updated_at || "",
-      }));
-
       return {
-        companies: normalized,
+        companies: pickArray(payload).map(normalizeCompany),
         message: payload?.message || "Companies fetched successfully.",
       };
     } catch (error) {
@@ -57,6 +88,142 @@ export const fetchCompanies = createAsyncThunk(
         getApiErrorMessage(
           error,
           "Failed to fetch companies due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const fetchCompanyById = createAsyncThunk(
+  "company/fetchCompanyById",
+  async (companyId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`${COMPANY_PATH}/${companyId}`);
+      const payload = response?.data || {};
+
+      if (!payload?.success || !payload?.data) {
+        return rejectWithValue(payload?.message || "Failed to fetch company.");
+      }
+
+      return {
+        company: normalizeCompany(payload.data),
+        message: payload?.message || "Company fetched successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to fetch company due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const createCompany = createAsyncThunk(
+  "company/createCompany",
+  async ({ company, admin }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(COMPANY_PATH, {
+        company,
+        admin,
+      });
+      const payload = response?.data || {};
+
+      if (!payload?.success || !payload?.data?.company) {
+        return rejectWithValue(payload?.message || "Failed to create company.");
+      }
+
+      return {
+        company: normalizeCompany(payload.data.company),
+        admin: payload.data.admin ? normalizeAdmin(payload.data.admin) : null,
+        message: payload?.message || "Company and admin created successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to create company due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const updateCompany = createAsyncThunk(
+  "company/updateCompany",
+  async ({ companyId, company }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`${COMPANY_PATH}/${companyId}`, company);
+      const payload = response?.data || {};
+
+      if (!payload?.success || !payload?.data) {
+        return rejectWithValue(payload?.message || "Failed to update company.");
+      }
+
+      return {
+        company: normalizeCompany(payload.data),
+        message: payload?.message || "Company updated successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to update company due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const deleteCompany = createAsyncThunk(
+  "company/deleteCompany",
+  async (companyId, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`${COMPANY_PATH}/${companyId}`);
+      const payload = response?.data || {};
+
+      if (!payload?.success || !payload?.data) {
+        return rejectWithValue(payload?.message || "Failed to delete company.");
+      }
+
+      return {
+        company: normalizeCompany(payload.data),
+        message: payload?.message || "Company deleted successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to delete company due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
+export const assignCompanyAdmin = createAsyncThunk(
+  "company/assignCompanyAdmin",
+  async ({ companyId, admin }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`${COMPANY_PATH}/${companyId}/admin`, admin);
+      const payload = response?.data || {};
+
+      if (!payload?.success || !payload?.data) {
+        return rejectWithValue(
+          payload?.message || "Failed to assign company admin.",
+        );
+      }
+
+      return {
+        admin: normalizeAdmin(payload.data),
+        message: payload?.message || "Company admin assigned successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to assign company admin due to server/network error.",
         ),
       );
     }
@@ -71,7 +238,6 @@ export const uploadCompanyFile = createAsyncThunk(
       formData.append("file", file);
 
       const response = await api.post(COMPANY_UPLOAD_PATH, formData);
-
       const payload = response?.data || {};
       if (!payload?.success) {
         return rejectWithValue(payload?.message || "Upload failed.");
@@ -92,6 +258,40 @@ const companySlice = createSlice({
   reducers: {
     clearCompanyError(state) {
       state.error = "";
+      state.createError = "";
+      state.updateError = "";
+      state.deleteError = "";
+      state.assignAdminError = "";
+    },
+    clearCompanyDetailState(state) {
+      state.selectedCompany = null;
+      state.detailLoading = false;
+      state.detailError = "";
+      state.detailMessage = "";
+      state.assignedAdmin = null;
+      state.assignAdminMessage = "";
+      state.assignAdminError = "";
+    },
+    clearCompanyCreateState(state) {
+      state.createLoading = false;
+      state.createError = "";
+      state.createMessage = "";
+    },
+    clearCompanyUpdateState(state) {
+      state.updateLoading = false;
+      state.updateError = "";
+      state.updateMessage = "";
+    },
+    clearCompanyDeleteState(state) {
+      state.deleteLoading = false;
+      state.deleteError = "";
+      state.deleteMessage = "";
+    },
+    clearAssignedAdminState(state) {
+      state.assignedAdmin = null;
+      state.assignAdminLoading = false;
+      state.assignAdminError = "";
+      state.assignAdminMessage = "";
     },
     resetCompanyUpload(state) {
       state.uploadLoading = false;
@@ -121,6 +321,85 @@ const companySlice = createSlice({
         state.companiesLoading = false;
         state.error = action.payload || "Failed to fetch companies.";
       })
+      .addCase(fetchCompanyById.pending, (state) => {
+        state.detailLoading = true;
+        state.detailError = "";
+        state.detailMessage = "";
+      })
+      .addCase(fetchCompanyById.fulfilled, (state, action) => {
+        state.detailLoading = false;
+        state.selectedCompany = action.payload.company;
+        state.detailMessage = action.payload.message;
+      })
+      .addCase(fetchCompanyById.rejected, (state, action) => {
+        state.detailLoading = false;
+        state.detailError = action.payload || "Failed to fetch company.";
+      })
+      .addCase(createCompany.pending, (state) => {
+        state.createLoading = true;
+        state.createError = "";
+        state.createMessage = "";
+      })
+      .addCase(createCompany.fulfilled, (state, action) => {
+        state.createLoading = false;
+        state.createMessage = action.payload.message;
+        state.assignedAdmin = action.payload.admin;
+      })
+      .addCase(createCompany.rejected, (state, action) => {
+        state.createLoading = false;
+        state.createError = action.payload || "Failed to create company.";
+      })
+      .addCase(updateCompany.pending, (state) => {
+        state.updateLoading = true;
+        state.updateError = "";
+        state.updateMessage = "";
+      })
+      .addCase(updateCompany.fulfilled, (state, action) => {
+        state.updateLoading = false;
+        state.updateMessage = action.payload.message;
+        state.selectedCompany = action.payload.company;
+        state.companies = state.companies.map((item) =>
+          item.id === action.payload.company.id ? action.payload.company : item,
+        );
+      })
+      .addCase(updateCompany.rejected, (state, action) => {
+        state.updateLoading = false;
+        state.updateError = action.payload || "Failed to update company.";
+      })
+      .addCase(deleteCompany.pending, (state) => {
+        state.deleteLoading = true;
+        state.deleteError = "";
+        state.deleteMessage = "";
+      })
+      .addCase(deleteCompany.fulfilled, (state, action) => {
+        state.deleteLoading = false;
+        state.deleteMessage = action.payload.message;
+        state.companies = state.companies.filter(
+          (item) => item.id !== action.payload.company.id,
+        );
+        if (state.selectedCompany?.id === action.payload.company.id) {
+          state.selectedCompany = null;
+        }
+      })
+      .addCase(deleteCompany.rejected, (state, action) => {
+        state.deleteLoading = false;
+        state.deleteError = action.payload || "Failed to delete company.";
+      })
+      .addCase(assignCompanyAdmin.pending, (state) => {
+        state.assignAdminLoading = true;
+        state.assignAdminError = "";
+        state.assignAdminMessage = "";
+      })
+      .addCase(assignCompanyAdmin.fulfilled, (state, action) => {
+        state.assignAdminLoading = false;
+        state.assignedAdmin = action.payload.admin;
+        state.assignAdminMessage = action.payload.message;
+      })
+      .addCase(assignCompanyAdmin.rejected, (state, action) => {
+        state.assignAdminLoading = false;
+        state.assignAdminError =
+          action.payload || "Failed to assign company admin.";
+      })
       .addCase(uploadCompanyFile.pending, (state) => {
         state.uploadLoading = true;
         state.uploadStatus = null;
@@ -142,7 +421,13 @@ const companySlice = createSlice({
 
 export const {
   clearCompanyError,
+  clearCompanyDetailState,
+  clearCompanyCreateState,
+  clearCompanyUpdateState,
+  clearCompanyDeleteState,
+  clearAssignedAdminState,
   resetCompanyUpload,
   clearCompanyUploadError,
 } = companySlice.actions;
+
 export default companySlice.reducer;
