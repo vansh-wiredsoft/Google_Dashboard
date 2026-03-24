@@ -1,10 +1,4 @@
-import {
-  Box,
-  Grid,
-  LinearProgress,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Grid, LinearProgress, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useTheme } from "@mui/material/styles";
 import SpaOutlinedIcon from "@mui/icons-material/SpaOutlined";
@@ -135,7 +129,13 @@ const leaderboard = [
   { rank: "1st", name: "Priya S.", meta: "Engineering • Delhi", gain: "+42%" },
   { rank: "2nd", name: "Rahul M.", meta: "Product • Mumbai", gain: "+38%" },
   { rank: "3rd", name: "Anjali K.", meta: "HR • BLR", gain: "+35%" },
-  { rank: "4th - You", name: "Amit R.", meta: "Finance • Delhi", gain: "+31%", highlight: true },
+  {
+    rank: "4th - You",
+    name: "Amit R.",
+    meta: "Finance • Delhi",
+    gain: "+31%",
+    highlight: true,
+  },
   { rank: "5th", name: "Sneha P.", meta: "Marketing • Pune", gain: "+28%" },
 ];
 
@@ -229,7 +229,14 @@ const genderStats = [
   { label: "Other", wellness: 72.4, productivity: 76.0, color: "#9fe14a" },
 ];
 
-const heatmapColumns = ["Engine", "Market", "Finance", "HR", "Operat", "Produc"];
+const heatmapColumns = [
+  "Engine",
+  "Market",
+  "Finance",
+  "HR",
+  "Operat",
+  "Produc",
+];
 const heatmapRows = [
   { city: "Delhi", values: [74, 71, 75, 79, 74, 75] },
   { city: "Mumbai", values: [73, 71, 71, 74, 72, 68] },
@@ -363,7 +370,9 @@ function ChallengeCard({ card }) {
         <Stack direction="row" spacing={1.25} alignItems="flex-start">
           <Box sx={{ lineHeight: 0 }}>{card.icon}</Box>
           <Box>
-            <Typography sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 16 }}>
+            <Typography
+              sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 16 }}
+            >
               {card.title}
             </Typography>
             <Typography sx={{ color: tokens.mutedText, fontSize: 11 }}>
@@ -376,7 +385,12 @@ function ChallengeCard({ card }) {
         </Typography>
 
         {card.action && (
-          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+            flexWrap="wrap"
+          >
             <Box
               sx={{
                 px: 1.5,
@@ -391,7 +405,9 @@ function ChallengeCard({ card }) {
               {card.action}
             </Box>
             {card.meta && (
-              <Typography sx={{ color: card.accent, fontWeight: 800, fontSize: 14 }}>
+              <Typography
+                sx={{ color: card.accent, fontWeight: 800, fontSize: 14 }}
+              >
                 {card.meta}
               </Typography>
             )}
@@ -448,7 +464,9 @@ function BadgeCard({ badge }) {
           ? alpha(badge.color, 0.14)
           : alpha(theme.palette.background.default, 0.16),
         border: `1px solid ${
-          badge.active ? alpha(badge.color, 0.4) : alpha(theme.palette.divider, 0.5)
+          badge.active
+            ? alpha(badge.color, 0.4)
+            : alpha(theme.palette.divider, 0.5)
         }`,
         opacity: badge.active ? 1 : 0.28,
       }}
@@ -457,7 +475,9 @@ function BadgeCard({ badge }) {
         ⬟
       </Typography>
       <Box>
-        <Typography sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 12 }}>
+        <Typography
+          sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 12 }}
+        >
           {badge.name}
         </Typography>
         <Typography sx={{ color: tokens.softText, fontSize: 11 }}>
@@ -480,7 +500,9 @@ function SectionTitle({ title, subtitle }) {
       sx={{ mb: 1.75 }}
     >
       <Box>
-        <Typography sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 16 }}>
+        <Typography
+          sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 16 }}
+        >
           {title}
         </Typography>
         {subtitle ? (
@@ -575,7 +597,9 @@ function SegmentedBars({ title, color, tabs, sections }) {
         alignItems="center"
         sx={{ mb: 1.8 }}
       >
-        <Typography sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 14.5 }}>
+        <Typography
+          sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 14.5 }}
+        >
           {title}
         </Typography>
         <Stack direction="row" spacing={0.8}>
@@ -586,7 +610,10 @@ function SegmentedBars({ title, color, tabs, sections }) {
                 px: 1.2,
                 py: 0.6,
                 borderRadius: 1.2,
-                bgcolor: index === 0 ? alpha(color, 0.22) : alpha(theme.palette.background.default, 0.18),
+                bgcolor:
+                  index === 0
+                    ? alpha(color, 0.22)
+                    : alpha(theme.palette.background.default, 0.18),
                 color: index === 0 ? tokens.strongText : tokens.softText,
                 fontSize: 10,
                 fontWeight: 700,
@@ -601,7 +628,9 @@ function SegmentedBars({ title, color, tabs, sections }) {
       <Stack spacing={1.8}>
         {Object.entries(sections).map(([label, values]) => (
           <Box key={label}>
-            <Typography sx={{ color: tokens.softText, fontSize: 10.5, mb: 0.75 }}>
+            <Typography
+              sx={{ color: tokens.softText, fontSize: 10.5, mb: 0.75 }}
+            >
               {label}
             </Typography>
             <Grid container spacing={1}>
@@ -721,11 +750,6 @@ export default function Dashboard() {
           gap: 3,
         }}
       >
-        <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
-          Static dashboard mockup for admin view based on the provided
-          screenshots.
-        </Typography>
-
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, xl: 6 }}>
             <Panel sx={{ p: 2.2 }}>
@@ -749,7 +773,11 @@ export default function Dashboard() {
                       GOOGLE DASHBOARD
                     </Typography>
                     <Typography
-                      sx={{ color: tokens.softText, fontSize: 10, letterSpacing: 0.8 }}
+                      sx={{
+                        color: tokens.softText,
+                        fontSize: 10,
+                        letterSpacing: 0.8,
+                      }}
                     >
                       WELLNESS INTELLIGENCE PLATFORM
                     </Typography>
@@ -807,14 +835,16 @@ export default function Dashboard() {
                     py: 1.2,
                   }}
                 >
-                  <Typography sx={{ fontSize: 11 }}>Today&apos;s completion</Typography>
+                  <Typography sx={{ fontSize: 11 }}>
+                    Today&apos;s completion
+                  </Typography>
                   <Typography sx={{ fontSize: 11 }}>
                     0/6 challenges • 0 XP earned today
                   </Typography>
                 </Box>
 
                 <SectionTitle
-                  title="Today&apos;s Challenges"
+                  title="Today's Challenges"
                   subtitle="1 to 3 taps each. Simple as that."
                 />
 
@@ -875,17 +905,25 @@ export default function Dashboard() {
                             }}
                           >
                             <Box>
-                              <Typography sx={{ fontWeight: 700, fontSize: 12.5 }}>
+                              <Typography
+                                sx={{ fontWeight: 700, fontSize: 12.5 }}
+                              >
                                 {entry.rank}
                               </Typography>
-                              <Typography sx={{ fontWeight: 700, fontSize: 13.5 }}>
+                              <Typography
+                                sx={{ fontWeight: 700, fontSize: 13.5 }}
+                              >
                                 {entry.name}
                               </Typography>
-                              <Typography sx={{ color: tokens.softText, fontSize: 11 }}>
+                              <Typography
+                                sx={{ color: tokens.softText, fontSize: 11 }}
+                              >
                                 {entry.meta}
                               </Typography>
                             </Box>
-                            <Typography sx={{ color: "#f7b84f", fontWeight: 800 }}>
+                            <Typography
+                              sx={{ color: "#f7b84f", fontWeight: 800 }}
+                            >
                               {entry.gain}
                             </Typography>
                           </Stack>
@@ -920,7 +958,11 @@ export default function Dashboard() {
                       GOOGLE DASHBOARD
                     </Typography>
                     <Typography
-                      sx={{ color: tokens.softText, fontSize: 10, letterSpacing: 0.8 }}
+                      sx={{
+                        color: tokens.softText,
+                        fontSize: 10,
+                        letterSpacing: 0.8,
+                      }}
                     >
                       WELLNESS INTELLIGENCE PLATFORM
                     </Typography>
@@ -964,14 +1006,28 @@ export default function Dashboard() {
                   flexWrap="wrap"
                   useFlexGap
                 >
-                  <Stack direction="row" spacing={1.2} useFlexGap flexWrap="wrap">
+                  <Stack
+                    direction="row"
+                    spacing={1.2}
+                    useFlexGap
+                    flexWrap="wrap"
+                  >
                     {analyticsFilters.map((label) => (
                       <FilterChip key={label} label={`${label}  ▾`} />
                     ))}
                   </Stack>
-                  <Typography sx={{ color: "primary.main", fontWeight: 800, fontSize: 14 }}>
+                  <Typography
+                    sx={{
+                      color: "primary.main",
+                      fontWeight: 800,
+                      fontSize: 14,
+                    }}
+                  >
                     240{" "}
-                    <Box component="span" sx={{ color: tokens.softText, fontWeight: 500 }}>
+                    <Box
+                      component="span"
+                      sx={{ color: tokens.softText, fontWeight: 500 }}
+                    >
                       employees selected
                     </Box>
                   </Typography>
@@ -979,7 +1035,10 @@ export default function Dashboard() {
 
                 <Grid container spacing={1.4}>
                   {analyticsStats.map((item) => (
-                    <Grid key={item.label} size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+                    <Grid
+                      key={item.label}
+                      size={{ xs: 12, sm: 6, md: 4, lg: 2 }}
+                    >
                       <MiniStat item={item} />
                     </Grid>
                   ))}
@@ -1065,7 +1124,13 @@ export default function Dashboard() {
                             boxShadow: "0 0 20px rgba(255, 183, 77, 0.25)",
                           }}
                         >
-                          <Typography sx={{ color: tokens.strongText, fontSize: 8, fontWeight: 800 }}>
+                          <Typography
+                            sx={{
+                              color: tokens.strongText,
+                              fontSize: 8,
+                              fontWeight: 800,
+                            }}
+                          >
                             HR
                           </Typography>
                         </Box>
@@ -1123,7 +1188,11 @@ export default function Dashboard() {
                     {heatmapColumns.map((column) => (
                       <Typography
                         key={column}
-                        sx={{ color: tokens.softText, fontSize: 10.5, textAlign: "center" }}
+                        sx={{
+                          color: tokens.softText,
+                          fontSize: 10.5,
+                          textAlign: "center",
+                        }}
                       >
                         {column}
                       </Typography>
@@ -1131,11 +1200,16 @@ export default function Dashboard() {
 
                     {heatmapRows.map((row) => (
                       <Box key={row.city} sx={{ display: "contents" }}>
-                        <Typography sx={{ color: tokens.strongText, fontSize: 12 }}>
+                        <Typography
+                          sx={{ color: tokens.strongText, fontSize: 12 }}
+                        >
                           {row.city}
                         </Typography>
                         {row.values.map((value, index) => (
-                          <HeatCell key={`${row.city}-${index}`} value={value} />
+                          <HeatCell
+                            key={`${row.city}-${index}`}
+                            value={value}
+                          />
                         ))}
                       </Box>
                     ))}

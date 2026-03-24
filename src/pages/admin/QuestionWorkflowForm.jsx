@@ -48,6 +48,8 @@ const createEmptyOption = (index) => ({
   score: index + 1,
 });
 
+const today = new Date().toISOString().slice(0, 10);
+
 function buildInitialForm(record, themes) {
   const themeOptions = themes.map((theme) => ({
     key: theme.theme_key,
@@ -149,6 +151,8 @@ export default function QuestionWorkflowForm({ mode }) {
     themeKey: "",
     name: "",
     description: "",
+    startDate: today,
+    endDate: today,
   });
 
   useEffect(() => {
@@ -300,14 +304,17 @@ export default function QuestionWorkflowForm({ mode }) {
 
   const handleAddKpi = () => {
     if (!newKpi.themeKey || !newKpi.name.trim()) return;
-    const today = new Date().toISOString().slice(0, 10);
+    if (!newKpi.startDate || !newKpi.endDate || newKpi.startDate > newKpi.endDate) {
+      return;
+    }
 
     dispatch(
       createKpi({
         displayName: newKpi.name.trim(),
+        description: newKpi.description.trim(),
         themeKey: newKpi.themeKey,
-        startDate: today,
-        endDate: today,
+        startDate: newKpi.startDate,
+        endDate: newKpi.endDate,
       }),
     )
       .unwrap()
@@ -322,7 +329,13 @@ export default function QuestionWorkflowForm({ mode }) {
             ? current.selectedKpiKeys
             : [...current.selectedKpiKeys, payload.item.kpi_key],
         }));
-        setNewKpi({ themeKey: "", name: "", description: "" });
+        setNewKpi({
+          themeKey: "",
+          name: "",
+          description: "",
+          startDate: today,
+          endDate: today,
+        });
         setKpiDialogOpen(false);
       })
       .catch(() => {
@@ -686,8 +699,38 @@ export default function QuestionWorkflowForm({ mode }) {
               multiline
               minRows={3}
               fullWidth
-              helperText="KPI API currently uses theme, KPI name, and default start/end date as today."
             />
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="Start Date"
+                type="date"
+                value={newKpi.startDate}
+                onChange={(event) =>
+                  setNewKpi((current) => ({
+                    ...current,
+                    startDate: event.target.value,
+                  }))
+                }
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+              />
+              <TextField
+                label="End Date"
+                type="date"
+                value={newKpi.endDate}
+                onChange={(event) =>
+                  setNewKpi((current) => ({
+                    ...current,
+                    endDate: event.target.value,
+                  }))
+                }
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+              />
+            </Stack>
+            <Typography variant="caption" color="text.secondary">
+              KPI creation from this popup now includes description and date range.
+            </Typography>
           </Stack>
         </DialogContent>
         <DialogActions>

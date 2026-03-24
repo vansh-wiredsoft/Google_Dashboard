@@ -47,6 +47,7 @@ export default function KpiForm({ mode }) {
   } = useSelector((state) => state.kpi);
   const [form, setForm] = useState({
     displayName: "",
+    description: "",
     themeKey: "",
     startDate: today,
     endDate: today,
@@ -65,6 +66,7 @@ export default function KpiForm({ mode }) {
     if (mode === "edit" && selectedKpi) {
       setForm({
         displayName: selectedKpi.display_name || "",
+        description: selectedKpi.description || "",
         themeKey: selectedKpi.theme_key || "",
         startDate: selectedKpi.start_date || today,
         endDate: selectedKpi.end_date || today,
@@ -96,6 +98,10 @@ export default function KpiForm({ mode }) {
       setFormError("Theme, KPI name, start date, and end date are required.");
       return;
     }
+    if (form.startDate > form.endDate) {
+      setFormError("End date must be on or after the start date.");
+      return;
+    }
 
     setFormError("");
 
@@ -105,6 +111,7 @@ export default function KpiForm({ mode }) {
           updateKpi({
             kpiKey: id,
             displayName: form.displayName.trim(),
+            description: form.description.trim(),
             themeKey: form.themeKey,
             startDate: form.startDate,
             endDate: form.endDate,
@@ -126,6 +133,7 @@ export default function KpiForm({ mode }) {
       await dispatch(
         createKpi({
           displayName: form.displayName.trim(),
+          description: form.description.trim(),
           themeKey: form.themeKey,
           startDate: form.startDate,
           endDate: form.endDate,
@@ -240,6 +248,19 @@ export default function KpiForm({ mode }) {
               fullWidth
             />
           </Stack>
+          <TextField
+            label="KPI Description"
+            value={form.description}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                description: event.target.value,
+              }))
+            }
+            multiline
+            minRows={3}
+            fullWidth
+          />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Start Date"

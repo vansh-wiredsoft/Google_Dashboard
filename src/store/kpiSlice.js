@@ -28,6 +28,7 @@ const normalizeKpi = (item, index = 0) => ({
   id: String(item?.kpi_key || index),
   kpi_key: String(item?.kpi_key || index),
   display_name: item?.display_name || "Untitled KPI",
+  description: item?.description || "",
   theme_key: item?.theme_key || "",
   start_date: item?.start_date || "",
   end_date: item?.end_date || "",
@@ -73,10 +74,14 @@ export const fetchKpis = createAsyncThunk(
 
 export const createKpi = createAsyncThunk(
   "kpi/createKpi",
-  async ({ displayName, themeKey, startDate, endDate }, { rejectWithValue }) => {
+  async (
+    { displayName, description, themeKey, startDate, endDate },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await api.post(KPI_PATH, {
         display_name: displayName,
+        description: description || "",
         theme_key: themeKey,
         start_date: startDate,
         end_date: endDate,
@@ -122,12 +127,13 @@ export const fetchKpiById = createAsyncThunk(
 export const updateKpi = createAsyncThunk(
   "kpi/updateKpi",
   async (
-    { kpiKey, displayName, themeKey, startDate, endDate, isActive },
+    { kpiKey, displayName, description, themeKey, startDate, endDate, isActive },
     { rejectWithValue },
   ) => {
     try {
       const response = await api.put(`${KPI_PATH}/${kpiKey}`, {
         display_name: displayName,
+        description: description || "",
         theme_key: themeKey,
         start_date: startDate,
         end_date: endDate,
