@@ -51,6 +51,7 @@ const normalizeCompany = (item, index = 0) => ({
   is_active: Boolean(item?.is_active),
   created_at: item?.created_at || "",
   updated_at: item?.updated_at || "",
+  admin: item?.admin ? normalizeAdmin(item.admin) : null,
 });
 
 const normalizeAdmin = (item) => ({
@@ -394,6 +395,9 @@ const companySlice = createSlice({
         state.assignAdminLoading = false;
         state.assignedAdmin = action.payload.admin;
         state.assignAdminMessage = action.payload.message;
+        if (state.selectedCompany) {
+          state.selectedCompany.admin = action.payload.admin;
+        }
       })
       .addCase(assignCompanyAdmin.rejected, (state, action) => {
         state.assignAdminLoading = false;

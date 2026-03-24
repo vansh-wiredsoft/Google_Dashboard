@@ -139,7 +139,9 @@ export default function CompanyData() {
             <Tooltip title="Edit">
               <IconButton
                 size="small"
-                onClick={() => navigate(`/super-admin/company-data/${row.id}/edit`)}
+                onClick={() =>
+                  navigate(`/super-admin/company-data/${row.id}/edit`)
+                }
               >
                 <EditRoundedIcon fontSize="small" />
               </IconButton>
@@ -166,7 +168,9 @@ export default function CompanyData() {
   return (
     <Layout role="superadmin" title="Company Data">
       <Stack spacing={2}>
-        {feedback && <Alert severity={feedback.severity}>{feedback.message}</Alert>}
+        {feedback && (
+          <Alert severity={feedback.severity}>{feedback.message}</Alert>
+        )}
         {error && <Alert severity="error">{error}</Alert>}
         {deleteError && <Alert severity="error">{deleteError}</Alert>}
         {deleteMessage && <Alert severity="success">{deleteMessage}</Alert>}
@@ -182,7 +186,7 @@ export default function CompanyData() {
           }}
         >
           <Stack
-            direction={{ xs: "column", lg: "row" }}
+            direction={{ xs: "column", md: "row" }}
             justifyContent="space-between"
             spacing={2}
             sx={{ mb: 2.5 }}
@@ -191,17 +195,26 @@ export default function CompanyData() {
               <Typography variant="h5" sx={{ fontWeight: 750 }}>
                 Company Master
               </Typography>
-              <Typography color="text.secondary" sx={{ mt: 0.75, maxWidth: 720 }}>
+              <Typography
+                color="text.secondary"
+                sx={{ mt: 0.75, maxWidth: 720 }}
+              >
                 Super admin company management with API-backed create, update,
                 delete, and company admin assignment.
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="nowrap">
               <Button
                 variant="contained"
                 startIcon={<AddRoundedIcon />}
                 onClick={() => navigate("/super-admin/company-data/add")}
+                sx={{
+                  height: 40,
+                  px: 2.5,
+                  minWidth: "auto",
+                  whiteSpace: "nowrap",
+                }}
               >
                 Add Company
               </Button>
@@ -210,6 +223,13 @@ export default function CompanyData() {
                 startIcon={<RefreshRoundedIcon />}
                 onClick={() => dispatch(fetchCompanies())}
                 disabled={companiesLoading}
+                sx={{
+                  height: 40,
+                  minWidth: 152,
+                  px: 2,
+                  py: 1.1,
+                  whiteSpace: "nowrap",
+                }}
               >
                 Refresh
               </Button>
