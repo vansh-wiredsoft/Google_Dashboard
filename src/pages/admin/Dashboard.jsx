@@ -5,6 +5,8 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 import SpaOutlinedIcon from "@mui/icons-material/SpaOutlined";
 import LocalFireDepartmentOutlinedIcon from "@mui/icons-material/LocalFireDepartmentOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
@@ -235,14 +237,41 @@ const heatmapRows = [
   { city: "Hyderabad", values: [74, 67, 75, 70, 72, 71] },
 ];
 
+function getThemeTokens(theme) {
+  const isDark = theme.palette.mode === "dark";
+
+  return {
+    panelBg: alpha(theme.palette.background.paper, isDark ? 0.9 : 0.82),
+    sectionBg: alpha(theme.palette.background.paper, isDark ? 0.8 : 0.66),
+    navBg: alpha(theme.palette.background.default, isDark ? 0.72 : 0.5),
+    cardBg: alpha(theme.palette.background.paper, isDark ? 0.72 : 0.78),
+    strongText: theme.palette.text.primary,
+    mutedText: alpha(theme.palette.text.secondary, isDark ? 0.9 : 0.95),
+    softText: alpha(theme.palette.text.secondary, isDark ? 0.68 : 0.82),
+    divider: alpha(theme.palette.divider, isDark ? 1 : 1.3),
+    panelBorder: alpha(theme.palette.primary.main, isDark ? 0.2 : 0.12),
+    activePillBg: theme.palette.primary.main,
+    activePillText: theme.palette.primary.contrastText,
+    inactivePillText: alpha(theme.palette.text.secondary, isDark ? 0.8 : 0.9),
+    shadow: isDark
+      ? "0 30px 60px rgba(0,0,0,0.32)"
+      : "0 24px 48px rgba(15, 23, 42, 0.08)",
+    heatBase: isDark ? "45, 212, 191" : "15, 118, 110",
+  };
+}
+
 function Panel({ children, sx }) {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Box
       sx={{
-        bgcolor: "#07150b",
-        border: "1px solid rgba(141, 202, 69, 0.12)",
+        bgcolor: tokens.panelBg,
+        border: `1px solid ${tokens.panelBorder}`,
         borderRadius: 4,
-        boxShadow: "0 30px 60px rgba(0,0,0,0.32)",
+        boxShadow: tokens.shadow,
+        backdropFilter: "blur(10px)",
         overflow: "hidden",
         ...sx,
       }}
@@ -253,17 +282,20 @@ function Panel({ children, sx }) {
 }
 
 function NavPill({ label, active }) {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Box
       sx={{
         px: 2,
         py: 1,
         borderRadius: 2.5,
-        bgcolor: active ? "#82c84a" : "rgba(11, 27, 15, 0.9)",
-        color: active ? "#102206" : "#9aaf90",
+        bgcolor: active ? tokens.activePillBg : tokens.navBg,
+        color: active ? tokens.activePillText : tokens.inactivePillText,
         border: active
-          ? "1px solid rgba(173, 242, 96, 0.45)"
-          : "1px solid transparent",
+          ? `1px solid ${alpha(theme.palette.primary.main, 0.38)}`
+          : `1px solid ${alpha(theme.palette.divider, 0.4)}`,
         fontSize: 12,
         fontWeight: 700,
         lineHeight: 1,
@@ -275,13 +307,16 @@ function NavPill({ label, active }) {
 }
 
 function MetricCard({ item }) {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Box
       sx={{
         minHeight: 118,
         p: 2.25,
         borderRadius: 2.5,
-        bgcolor: "rgba(17, 33, 18, 0.95)",
+        bgcolor: tokens.cardBg,
         border: `1px solid ${item.color}33`,
       }}
     >
@@ -295,14 +330,14 @@ function MetricCard({ item }) {
           }}
         >
           {item.icon}
-          <Typography sx={{ fontSize: 11, color: "#7d9278" }}>
+          <Typography sx={{ fontSize: 11, color: tokens.mutedText }}>
             {item.label}
           </Typography>
         </Box>
         <Typography sx={{ fontSize: 15, color: item.color, fontWeight: 800 }}>
           {item.value}
         </Typography>
-        <Typography sx={{ fontSize: 11, color: "#576b54" }}>
+        <Typography sx={{ fontSize: 11, color: tokens.softText }}>
           {item.subtext}
         </Typography>
       </Stack>
@@ -311,13 +346,16 @@ function MetricCard({ item }) {
 }
 
 function ChallengeCard({ card }) {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Box
       sx={{
         minHeight: 150,
         p: 2.5,
         borderRadius: 2.5,
-        bgcolor: "rgba(14, 28, 18, 0.96)",
+        bgcolor: tokens.cardBg,
         border: `1px solid ${card.accent}33`,
       }}
     >
@@ -325,15 +363,15 @@ function ChallengeCard({ card }) {
         <Stack direction="row" spacing={1.25} alignItems="flex-start">
           <Box sx={{ lineHeight: 0 }}>{card.icon}</Box>
           <Box>
-            <Typography sx={{ color: "#eef8da", fontWeight: 700, fontSize: 16 }}>
+            <Typography sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 16 }}>
               {card.title}
             </Typography>
-            <Typography sx={{ color: "#5b8d61", fontSize: 11 }}>
+            <Typography sx={{ color: tokens.mutedText, fontSize: 11 }}>
               {card.subtitle}
             </Typography>
           </Box>
         </Stack>
-        <Typography sx={{ color: "#91a58f", fontSize: 12 }}>
+        <Typography sx={{ color: tokens.softText, fontSize: 12 }}>
           {card.description}
         </Typography>
 
@@ -394,6 +432,9 @@ function ChallengeCard({ card }) {
 }
 
 function BadgeCard({ badge }) {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Box
       sx={{
@@ -403,9 +444,11 @@ function BadgeCard({ badge }) {
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        bgcolor: badge.active ? `${badge.color}22` : "rgba(255,255,255,0.02)",
+        bgcolor: badge.active
+          ? alpha(badge.color, 0.14)
+          : alpha(theme.palette.background.default, 0.16),
         border: `1px solid ${
-          badge.active ? `${badge.color}66` : "rgba(255,255,255,0.04)"
+          badge.active ? alpha(badge.color, 0.4) : alpha(theme.palette.divider, 0.5)
         }`,
         opacity: badge.active ? 1 : 0.28,
       }}
@@ -414,10 +457,10 @@ function BadgeCard({ badge }) {
         ⬟
       </Typography>
       <Box>
-        <Typography sx={{ color: "#d6e7cf", fontWeight: 700, fontSize: 12 }}>
+        <Typography sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 12 }}>
           {badge.name}
         </Typography>
-        <Typography sx={{ color: "#688066", fontSize: 11 }}>
+        <Typography sx={{ color: tokens.softText, fontSize: 11 }}>
           {badge.tier}
         </Typography>
       </Box>
@@ -426,6 +469,9 @@ function BadgeCard({ badge }) {
 }
 
 function SectionTitle({ title, subtitle }) {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Stack
       direction="row"
@@ -434,11 +480,11 @@ function SectionTitle({ title, subtitle }) {
       sx={{ mb: 1.75 }}
     >
       <Box>
-        <Typography sx={{ color: "#edf9d9", fontWeight: 700, fontSize: 16 }}>
+        <Typography sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 16 }}>
           {title}
         </Typography>
         {subtitle ? (
-          <Typography sx={{ color: "#61785d", fontSize: 11, mt: 0.4 }}>
+          <Typography sx={{ color: tokens.softText, fontSize: 11, mt: 0.4 }}>
             {subtitle}
           </Typography>
         ) : null}
@@ -448,6 +494,9 @@ function SectionTitle({ title, subtitle }) {
 }
 
 function FilterChip({ label }) {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Box
       sx={{
@@ -455,9 +504,9 @@ function FilterChip({ label }) {
         px: 1.6,
         py: 1.1,
         borderRadius: 1.6,
-        bgcolor: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(160, 209, 87, 0.12)",
-        color: "#eaf4d8",
+        bgcolor: alpha(theme.palette.background.default, 0.24),
+        border: `1px solid ${tokens.panelBorder}`,
+        color: tokens.strongText,
         fontSize: 12,
         fontWeight: 600,
       }}
@@ -468,12 +517,15 @@ function FilterChip({ label }) {
 }
 
 function MiniStat({ item }) {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Box
       sx={{
         p: 2,
         borderRadius: 2.2,
-        bgcolor: "rgba(17, 33, 18, 0.95)",
+        bgcolor: tokens.cardBg,
         border: `1px solid ${item.color}33`,
         height: "100%",
       }}
@@ -488,14 +540,14 @@ function MiniStat({ item }) {
           }}
         >
           {item.icon}
-          <Typography sx={{ color: "#7a9276", fontSize: 10.5 }}>
+          <Typography sx={{ color: tokens.mutedText, fontSize: 10.5 }}>
             {item.label}
           </Typography>
         </Box>
         <Typography sx={{ color: item.color, fontWeight: 800, fontSize: 16 }}>
           {item.value}
         </Typography>
-        <Typography sx={{ color: "#61735f", fontSize: 10.5 }}>
+        <Typography sx={{ color: tokens.softText, fontSize: 10.5 }}>
           {item.note}
         </Typography>
       </Stack>
@@ -504,13 +556,16 @@ function MiniStat({ item }) {
 }
 
 function SegmentedBars({ title, color, tabs, sections }) {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Box
       sx={{
         p: 2.2,
         borderRadius: 2.5,
-        bgcolor: "rgba(12, 25, 16, 0.98)",
-        border: "1px solid rgba(160, 209, 87, 0.12)",
+        bgcolor: tokens.sectionBg,
+        border: `1px solid ${tokens.panelBorder}`,
         height: "100%",
       }}
     >
@@ -520,7 +575,7 @@ function SegmentedBars({ title, color, tabs, sections }) {
         alignItems="center"
         sx={{ mb: 1.8 }}
       >
-        <Typography sx={{ color: "#edf7dc", fontWeight: 700, fontSize: 14.5 }}>
+        <Typography sx={{ color: tokens.strongText, fontWeight: 700, fontSize: 14.5 }}>
           {title}
         </Typography>
         <Stack direction="row" spacing={0.8}>
@@ -531,8 +586,8 @@ function SegmentedBars({ title, color, tabs, sections }) {
                 px: 1.2,
                 py: 0.6,
                 borderRadius: 1.2,
-                bgcolor: index === 0 ? `${color}33` : "rgba(255,255,255,0.04)",
-                color: index === 0 ? "#eefadf" : "#6d8368",
+                bgcolor: index === 0 ? alpha(color, 0.22) : alpha(theme.palette.background.default, 0.18),
+                color: index === 0 ? tokens.strongText : tokens.softText,
                 fontSize: 10,
                 fontWeight: 700,
               }}
@@ -546,7 +601,7 @@ function SegmentedBars({ title, color, tabs, sections }) {
       <Stack spacing={1.8}>
         {Object.entries(sections).map(([label, values]) => (
           <Box key={label}>
-            <Typography sx={{ color: "#5d775b", fontSize: 10.5, mb: 0.75 }}>
+            <Typography sx={{ color: tokens.softText, fontSize: 10.5, mb: 0.75 }}>
               {label}
             </Typography>
             <Grid container spacing={1}>
@@ -574,7 +629,7 @@ function SegmentedBars({ title, color, tabs, sections }) {
                     />
                     <Typography
                       sx={{
-                        color: "#5d775b",
+                        color: tokens.softText,
                         fontSize: 9,
                         textAlign: "center",
                         mt: 0.5,
@@ -594,19 +649,22 @@ function SegmentedBars({ title, color, tabs, sections }) {
 }
 
 function GenderBarRow({ item }) {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Box>
       <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.6 }}>
         <Typography sx={{ color: item.color, fontWeight: 700, fontSize: 12 }}>
           {item.label}
         </Typography>
-        <Typography sx={{ color: "#6f8d6b", fontSize: 11 }}>
+        <Typography sx={{ color: tokens.softText, fontSize: 11 }}>
           Wellness{" "}
-          <Box component="span" sx={{ color: "#cbe9b4", fontWeight: 700 }}>
+          <Box component="span" sx={{ color: item.color, fontWeight: 700 }}>
             {item.wellness}
           </Box>
           {" | "}Productivity{" "}
-          <Box component="span" sx={{ color: "#cbe9b4", fontWeight: 700 }}>
+          <Box component="span" sx={{ color: item.color, fontWeight: 700 }}>
             {item.productivity}%
           </Box>
         </Typography>
@@ -617,7 +675,7 @@ function GenderBarRow({ item }) {
         sx={{
           height: 6,
           borderRadius: 999,
-          bgcolor: "rgba(255,255,255,0.06)",
+          bgcolor: alpha(theme.palette.divider, 0.3),
           "& .MuiLinearProgress-bar": {
             borderRadius: 999,
             bgcolor: item.color,
@@ -629,14 +687,17 @@ function GenderBarRow({ item }) {
 }
 
 function HeatCell({ value }) {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Box
       sx={{
         py: 0.7,
         borderRadius: 1,
         textAlign: "center",
-        bgcolor: `rgba(130, 200, 74, ${0.28 + ((value - 65) / 20) * 0.45})`,
-        color: "#e2f1cf",
+        bgcolor: `rgba(${tokens.heatBase}, ${0.2 + ((value - 65) / 20) * 0.38})`,
+        color: tokens.strongText,
         fontWeight: 700,
         fontSize: 11,
       }}
@@ -647,11 +708,14 @@ function HeatCell({ value }) {
 }
 
 export default function Dashboard() {
+  const theme = useTheme();
+  const tokens = getThemeTokens(theme);
+
   return (
     <Layout role="admin" title="Admin Dashboard">
       <Box
         sx={{
-          color: "#f4f7e6",
+          color: tokens.strongText,
           display: "flex",
           flexDirection: "column",
           gap: 3,
@@ -676,16 +740,16 @@ export default function Dashboard() {
                   <Stack spacing={0.25}>
                     <Typography
                       sx={{
-                        color: "#84cb44",
+                        color: "primary.main",
                         fontSize: 28,
                         fontWeight: 900,
                         lineHeight: 1,
                       }}
                     >
-                      AYUMONK
+                      GOOGLE DASHBOARD
                     </Typography>
                     <Typography
-                      sx={{ color: "#4e6a4f", fontSize: 10, letterSpacing: 0.8 }}
+                      sx={{ color: tokens.softText, fontSize: 10, letterSpacing: 0.8 }}
                     >
                       WELLNESS INTELLIGENCE PLATFORM
                     </Typography>
@@ -697,7 +761,7 @@ export default function Dashboard() {
                     sx={{
                       p: 0.7,
                       borderRadius: 2.5,
-                      bgcolor: "rgba(4, 12, 7, 0.94)",
+                      bgcolor: tokens.navBg,
                     }}
                   >
                     {topNav.map((label, index) => (
@@ -705,16 +769,16 @@ export default function Dashboard() {
                     ))}
                   </Stack>
 
-                  <Typography sx={{ color: "#5d7257", fontSize: 11 }}>
+                  <Typography sx={{ color: tokens.softText, fontSize: 11 }}>
                     Sun, 8 Mar, 26
                   </Typography>
                 </Stack>
 
                 <Box
                   sx={{
-                    color: "#678161",
+                    color: tokens.mutedText,
                     fontSize: 12,
-                    borderTop: "1px solid rgba(134, 205, 74, 0.08)",
+                    borderTop: `1px solid ${tokens.divider}`,
                     pt: 1.6,
                   }}
                 >
@@ -736,10 +800,10 @@ export default function Dashboard() {
                     gridTemplateColumns: "1fr auto",
                     gap: 1,
                     alignItems: "center",
-                    color: "#678161",
+                    color: tokens.mutedText,
                     fontSize: 11,
-                    borderTop: "1px solid rgba(134, 205, 74, 0.08)",
-                    borderBottom: "1px solid rgba(134, 205, 74, 0.08)",
+                    borderTop: `1px solid ${tokens.divider}`,
+                    borderBottom: `1px solid ${tokens.divider}`,
                     py: 1.2,
                   }}
                 >
@@ -768,8 +832,8 @@ export default function Dashboard() {
                       sx={{
                         p: 2.2,
                         borderRadius: 2.5,
-                        bgcolor: "rgba(12, 25, 16, 0.98)",
-                        border: "1px solid rgba(160, 209, 87, 0.12)",
+                        bgcolor: tokens.sectionBg,
+                        border: `1px solid ${tokens.panelBorder}`,
                         height: "100%",
                       }}
                     >
@@ -789,8 +853,8 @@ export default function Dashboard() {
                       sx={{
                         p: 2.2,
                         borderRadius: 2.5,
-                        bgcolor: "rgba(12, 25, 16, 0.98)",
-                        border: "1px solid rgba(160, 209, 87, 0.12)",
+                        bgcolor: tokens.sectionBg,
+                        border: `1px solid ${tokens.panelBorder}`,
                         height: "100%",
                       }}
                     >
@@ -804,8 +868,10 @@ export default function Dashboard() {
                             alignItems="center"
                             sx={{
                               py: 0.9,
-                              borderBottom: "1px solid rgba(255,255,255,0.04)",
-                              color: entry.highlight ? "#84cb44" : "#d7e8cf",
+                              borderBottom: `1px solid ${tokens.divider}`,
+                              color: entry.highlight
+                                ? theme.palette.primary.main
+                                : tokens.strongText,
                             }}
                           >
                             <Box>
@@ -815,7 +881,7 @@ export default function Dashboard() {
                               <Typography sx={{ fontWeight: 700, fontSize: 13.5 }}>
                                 {entry.name}
                               </Typography>
-                              <Typography sx={{ color: "#698365", fontSize: 11 }}>
+                              <Typography sx={{ color: tokens.softText, fontSize: 11 }}>
                                 {entry.meta}
                               </Typography>
                             </Box>
@@ -845,16 +911,16 @@ export default function Dashboard() {
                   <Stack spacing={0.25}>
                     <Typography
                       sx={{
-                        color: "#84cb44",
+                        color: "primary.main",
                         fontSize: 28,
                         fontWeight: 900,
                         lineHeight: 1,
                       }}
                     >
-                      AYUMONK
+                      GOOGLE DASHBOARD
                     </Typography>
                     <Typography
-                      sx={{ color: "#4e6a4f", fontSize: 10, letterSpacing: 0.8 }}
+                      sx={{ color: tokens.softText, fontSize: 10, letterSpacing: 0.8 }}
                     >
                       WELLNESS INTELLIGENCE PLATFORM
                     </Typography>
@@ -866,7 +932,7 @@ export default function Dashboard() {
                     sx={{
                       p: 0.7,
                       borderRadius: 2.5,
-                      bgcolor: "rgba(4, 12, 7, 0.94)",
+                      bgcolor: tokens.navBg,
                     }}
                   >
                     {topNav.map((label, index) => (
@@ -874,16 +940,16 @@ export default function Dashboard() {
                     ))}
                   </Stack>
 
-                  <Typography sx={{ color: "#5d7257", fontSize: 11 }}>
+                  <Typography sx={{ color: tokens.softText, fontSize: 11 }}>
                     Sun, 8 Mar, 26
                   </Typography>
                 </Stack>
 
                 <Box
                   sx={{
-                    color: "#678161",
+                    color: tokens.mutedText,
                     fontSize: 12,
-                    borderTop: "1px solid rgba(134, 205, 74, 0.08)",
+                    borderTop: `1px solid ${tokens.divider}`,
                     pt: 1.6,
                   }}
                 >
@@ -903,9 +969,9 @@ export default function Dashboard() {
                       <FilterChip key={label} label={`${label}  ▾`} />
                     ))}
                   </Stack>
-                  <Typography sx={{ color: "#84cb44", fontWeight: 800, fontSize: 14 }}>
+                  <Typography sx={{ color: "primary.main", fontWeight: 800, fontSize: 14 }}>
                     240{" "}
-                    <Box component="span" sx={{ color: "#698365", fontWeight: 500 }}>
+                    <Box component="span" sx={{ color: tokens.softText, fontWeight: 500 }}>
                       employees selected
                     </Box>
                   </Typography>
@@ -945,8 +1011,8 @@ export default function Dashboard() {
                       sx={{
                         p: 2.2,
                         borderRadius: 2.5,
-                        bgcolor: "rgba(12, 25, 16, 0.98)",
-                        border: "1px solid rgba(160, 209, 87, 0.12)",
+                        bgcolor: tokens.sectionBg,
+                        border: `1px solid ${tokens.panelBorder}`,
                         height: "100%",
                       }}
                     >
@@ -964,8 +1030,8 @@ export default function Dashboard() {
                       sx={{
                         p: 2.2,
                         borderRadius: 2.5,
-                        bgcolor: "rgba(12, 25, 16, 0.98)",
-                        border: "1px solid rgba(160, 209, 87, 0.12)",
+                        bgcolor: tokens.sectionBg,
+                        border: `1px solid ${tokens.panelBorder}`,
                         height: "100%",
                       }}
                     >
@@ -978,8 +1044,8 @@ export default function Dashboard() {
                           position: "relative",
                           height: 170,
                           mt: 1,
-                          borderLeft: "1px solid rgba(255,255,255,0.08)",
-                          borderBottom: "1px solid rgba(255,255,255,0.08)",
+                          borderLeft: `1px solid ${tokens.divider}`,
+                          borderBottom: `1px solid ${tokens.divider}`,
                           ml: 2,
                           mr: 3,
                         }}
@@ -999,7 +1065,7 @@ export default function Dashboard() {
                             boxShadow: "0 0 20px rgba(255, 183, 77, 0.25)",
                           }}
                         >
-                          <Typography sx={{ color: "#fff7e7", fontSize: 8, fontWeight: 800 }}>
+                          <Typography sx={{ color: tokens.strongText, fontSize: 8, fontWeight: 800 }}>
                             HR
                           </Typography>
                         </Box>
@@ -1008,7 +1074,7 @@ export default function Dashboard() {
                             position: "absolute",
                             bottom: -18,
                             left: "44%",
-                            color: "#587255",
+                            color: tokens.softText,
                             fontSize: 9,
                           }}
                         >
@@ -1019,7 +1085,7 @@ export default function Dashboard() {
                             position: "absolute",
                             top: "44%",
                             left: -56,
-                            color: "#587255",
+                            color: tokens.softText,
                             fontSize: 9,
                             transform: "rotate(-90deg)",
                           }}
@@ -1035,8 +1101,8 @@ export default function Dashboard() {
                   sx={{
                     p: 2.2,
                     borderRadius: 2.5,
-                    bgcolor: "rgba(12, 25, 16, 0.98)",
-                    border: "1px solid rgba(160, 209, 87, 0.12)",
+                    bgcolor: tokens.sectionBg,
+                    border: `1px solid ${tokens.panelBorder}`,
                   }}
                 >
                   <SectionTitle title="Location × Department Wellness Heatmap" />
@@ -1051,13 +1117,13 @@ export default function Dashboard() {
                       alignItems: "center",
                     }}
                   >
-                    <Typography sx={{ color: "#647c5f", fontSize: 11 }}>
+                    <Typography sx={{ color: tokens.softText, fontSize: 11 }}>
                       Location / Dept
                     </Typography>
                     {heatmapColumns.map((column) => (
                       <Typography
                         key={column}
-                        sx={{ color: "#6f8d69", fontSize: 10.5, textAlign: "center" }}
+                        sx={{ color: tokens.softText, fontSize: 10.5, textAlign: "center" }}
                       >
                         {column}
                       </Typography>
@@ -1065,7 +1131,7 @@ export default function Dashboard() {
 
                     {heatmapRows.map((row) => (
                       <Box key={row.city} sx={{ display: "contents" }}>
-                        <Typography sx={{ color: "#c9dbc0", fontSize: 12 }}>
+                        <Typography sx={{ color: tokens.strongText, fontSize: 12 }}>
                           {row.city}
                         </Typography>
                         {row.values.map((value, index) => (
