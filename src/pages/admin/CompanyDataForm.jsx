@@ -18,6 +18,7 @@ import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import Layout from "../../layouts/commonLayout/Layout";
 import {
+  assignCompanyAdmin,
   clearCompanyCreateState,
   clearCompanyDetailState,
   clearCompanyUpdateState,
@@ -37,6 +38,19 @@ const createCompanyDefaults = {
   is_active: true,
 };
 
+const createAdminDefaults = {
+  username: "",
+  email: "",
+  password: "",
+  emp_id: "",
+  full_name: "",
+  department: "",
+  location: "",
+  gender: "",
+  phone: "",
+  is_active: true,
+};
+
 export default function CompanyDataForm({ mode }) {
   const theme = useTheme();
   const dispatch = useDispatch();
@@ -50,10 +64,16 @@ export default function CompanyDataForm({ mode }) {
     createError,
     updateLoading,
     updateError,
+    assignAdminLoading,
+    assignAdminError,
   } = useSelector((state) => state.company);
   const [companyForm, setCompanyForm] = useState(() =>
     mode === "edit" ? {} : createCompanyDefaults,
   );
+  const [adminForm, setAdminForm] = useState(() =>
+    mode === "edit" ? {} : createAdminDefaults,
+  );
+  const [adminEnabled, setAdminEnabled] = useState(mode === "add");
   const [formError, setFormError] = useState("");
 
   const pageTitle = useMemo(
@@ -90,6 +110,34 @@ export default function CompanyDataForm({ mode }) {
     };
   }, [companyForm, mode, selectedCompany]);
 
+  const resolvedAdminEnabled = useMemo(
+    () => adminEnabled || Boolean(selectedCompany?.admin),
+    [adminEnabled, selectedCompany?.admin],
+  );
+
+  const resolvedAdminForm = useMemo(() => {
+    if (mode !== "edit") {
+      return adminForm;
+    }
+
+    return {
+      username: selectedCompany?.admin?.username || "",
+      email: selectedCompany?.admin?.email || "",
+      password: "",
+      emp_id: selectedCompany?.admin?.emp_id || "",
+      full_name: selectedCompany?.admin?.full_name || "",
+      department: selectedCompany?.admin?.department || "",
+      location: selectedCompany?.admin?.location || "",
+      gender: selectedCompany?.admin?.gender || "",
+      phone: selectedCompany?.admin?.phone || "",
+      is_active:
+        adminForm.is_active ??
+        selectedCompany?.admin?.is_active ??
+        createAdminDefaults.is_active,
+      ...adminForm,
+    };
+  }, [adminForm, mode, selectedCompany]);
+
   const validate = () => {
     if (
       !resolvedCompanyForm.company_name.trim() ||
@@ -99,6 +147,21 @@ export default function CompanyDataForm({ mode }) {
       !resolvedCompanyForm.phone.trim()
     ) {
       return "Complete all required company fields.";
+    }
+
+    if (resolvedAdminEnabled) {
+      if (
+        !resolvedAdminForm.username.trim() ||
+        !resolvedAdminForm.email.trim() ||
+        !resolvedAdminForm.emp_id.trim() ||
+        !resolvedAdminForm.full_name.trim()
+      ) {
+        return "Complete the required admin fields.";
+      }
+
+      if (!resolvedAdminForm.password.trim()) {
+        return "Enter an admin password to save admin details.";
+      }
     }
 
     return "";
@@ -130,12 +193,34 @@ export default function CompanyDataForm({ mode }) {
           }),
         ).unwrap();
 
+        if (resolvedAdminEnabled) {
+          await dispatch(
+            assignCompanyAdmin({
+              companyId: id,
+              admin: {
+                username: resolvedAdminForm.username.trim(),
+                email: resolvedAdminForm.email.trim(),
+                password: resolvedAdminForm.password,
+                emp_id: resolvedAdminForm.emp_id.trim(),
+                full_name: resolvedAdminForm.full_name.trim(),
+                department: resolvedAdminForm.department.trim(),
+                location: resolvedAdminForm.location.trim(),
+                gender: resolvedAdminForm.gender.trim(),
+                phone: resolvedAdminForm.phone.trim(),
+                is_active: resolvedAdminForm.is_active,
+              },
+            }),
+          ).unwrap();
+        }
+
         navigate("/super-admin/company-data", {
           replace: true,
           state: {
             feedback: {
               severity: "success",
-              message: "Company updated successfully.",
+              message: resolvedAdminEnabled
+                ? "Company and admin updated successfully."
+                : "Company updated successfully.",
             },
           },
         });
@@ -152,6 +237,20 @@ export default function CompanyDataForm({ mode }) {
             phone: companyForm.phone.trim(),
             no_of_employees: Number(companyForm.no_of_employees) || 0,
           },
+          admin: resolvedAdminEnabled
+            ? {
+                username: resolvedAdminForm.username.trim(),
+                email: resolvedAdminForm.email.trim(),
+                password: resolvedAdminForm.password,
+                emp_id: resolvedAdminForm.emp_id.trim(),
+                full_name: resolvedAdminForm.full_name.trim(),
+                department: resolvedAdminForm.department.trim(),
+                location: resolvedAdminForm.location.trim(),
+                gender: resolvedAdminForm.gender.trim(),
+                phone: resolvedAdminForm.phone.trim(),
+                is_active: resolvedAdminForm.is_active,
+              }
+            : null,
         }),
       ).unwrap();
 
@@ -160,7 +259,9 @@ export default function CompanyDataForm({ mode }) {
         state: {
           feedback: {
             severity: "success",
-            message: "Company created successfully.",
+            message: resolvedAdminEnabled
+              ? "Company and admin created successfully."
+              : "Company created successfully.",
           },
         },
       });
@@ -224,9 +325,17 @@ export default function CompanyDataForm({ mode }) {
           </Button>
         </Stack>
 
-        {(formError || detailError || createError || updateError) && (
+        {(formError ||
+          detailError ||
+          createError ||
+          updateError ||
+          assignAdminError) && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {formError || detailError || createError || updateError}
+            {formError ||
+              detailError ||
+              createError ||
+              updateError ||
+              assignAdminError}
           </Alert>
         )}
 
@@ -350,12 +459,172 @@ export default function CompanyDataForm({ mode }) {
               </>
             )}
           </Box>
-          {mode === "add" && (
-            <Alert severity="info">
-              Company admin details are optional during creation and will be
-              sent as empty values in the payload.
-            </Alert>
-          )}
+
+          <Box>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              justifyContent="space-between"
+              spacing={2}
+              sx={{ mb: 2 }}
+            >
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  {mode === "edit" ? "Company Admin" : "Optional Company Admin"}
+                </Typography>
+                <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+                  {resolvedAdminEnabled
+                    ? "Admin details will be saved with this form."
+                    : "Leave this off to create or update only the company."}
+                </Typography>
+              </Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={resolvedAdminEnabled}
+                    onChange={(event) => setAdminEnabled(event.target.checked)}
+                  />
+                }
+                label={resolvedAdminEnabled ? "Admin enabled" : "Admin disabled"}
+              />
+            </Stack>
+
+            {resolvedAdminEnabled ? (
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    sm: "repeat(2, minmax(0, 1fr))",
+                  },
+                  gap: 2,
+                }}
+              >
+                <TextField
+                  label="Username"
+                  value={resolvedAdminForm.username}
+                  onChange={(event) =>
+                    setAdminForm((current) => ({
+                      ...current,
+                      username: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+                <TextField
+                  label="Admin Email"
+                  value={resolvedAdminForm.email}
+                  onChange={(event) =>
+                    setAdminForm((current) => ({
+                      ...current,
+                      email: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+                <TextField
+                  label="Password"
+                  type="password"
+                  value={resolvedAdminForm.password}
+                  onChange={(event) =>
+                    setAdminForm((current) => ({
+                      ...current,
+                      password: event.target.value,
+                    }))
+                  }
+                  helperText={
+                    mode === "edit"
+                      ? "Enter a password to update or replace the company admin."
+                      : ""
+                  }
+                  fullWidth
+                />
+                <TextField
+                  label="Employee ID"
+                  value={resolvedAdminForm.emp_id}
+                  onChange={(event) =>
+                    setAdminForm((current) => ({
+                      ...current,
+                      emp_id: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+                <TextField
+                  label="Full Name"
+                  value={resolvedAdminForm.full_name}
+                  onChange={(event) =>
+                    setAdminForm((current) => ({
+                      ...current,
+                      full_name: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+                <TextField
+                  label="Department"
+                  value={resolvedAdminForm.department}
+                  onChange={(event) =>
+                    setAdminForm((current) => ({
+                      ...current,
+                      department: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+                <TextField
+                  label="Location"
+                  value={resolvedAdminForm.location}
+                  onChange={(event) =>
+                    setAdminForm((current) => ({
+                      ...current,
+                      location: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+                <TextField
+                  label="Gender"
+                  value={resolvedAdminForm.gender}
+                  onChange={(event) =>
+                    setAdminForm((current) => ({
+                      ...current,
+                      gender: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+                <TextField
+                  label="Phone"
+                  value={resolvedAdminForm.phone}
+                  onChange={(event) =>
+                    setAdminForm((current) => ({
+                      ...current,
+                      phone: event.target.value,
+                    }))
+                  }
+                  fullWidth
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={resolvedAdminForm.is_active}
+                      onChange={(event) =>
+                        setAdminForm((current) => ({
+                          ...current,
+                          is_active: event.target.checked,
+                        }))
+                      }
+                    />
+                  }
+                  label="Admin is active"
+                />
+              </Box>
+            ) : (
+              <Alert severity="info">
+                The request will be sent with `admin: null`.
+              </Alert>
+            )}
+          </Box>
         </Stack>
 
         <Stack direction="row" spacing={1.25} sx={{ mt: 3 }}>
@@ -363,9 +632,9 @@ export default function CompanyDataForm({ mode }) {
             variant="contained"
             startIcon={<SaveRoundedIcon />}
             onClick={handleSave}
-            disabled={createLoading || updateLoading}
+            disabled={createLoading || updateLoading || assignAdminLoading}
           >
-            {createLoading || updateLoading
+            {createLoading || updateLoading || assignAdminLoading
               ? "Saving..."
               : mode === "edit"
                 ? "Update Company"
