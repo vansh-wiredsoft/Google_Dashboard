@@ -1,0 +1,346 @@
+import { useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  Alert,
+  Box,
+  Chip,
+  Divider,
+  Grid,
+  Paper,
+  Stack,
+  Typography,
+  useTheme,
+} from "@mui/material";
+import ChecklistRoundedIcon from "@mui/icons-material/ChecklistRounded";
+import QueryStatsRoundedIcon from "@mui/icons-material/QueryStatsRounded";
+import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
+import Layout from "../../layouts/commonLayout/Layout";
+import {
+  clearMySubmissionsState,
+  fetchMySubmissions,
+} from "../../store/sessionSlice";
+import { getSurfaceBackground } from "../../theme";
+
+function formatDateTime(value) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+function SummaryCard({ label, value, icon }) {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        borderRadius: 3,
+        border: "1px solid",
+        borderColor: "divider",
+        height: "100%",
+      }}
+    >
+      <Stack direction="row" spacing={1.2} alignItems="center">
+        <Box
+          sx={{
+            width: 38,
+            height: 38,
+            borderRadius: 2.5,
+            display: "grid",
+            placeItems: "center",
+            bgcolor: "action.hover",
+            color: "primary.main",
+          }}
+        >
+          {icon}
+        </Box>
+        <Box>
+          <Typography variant="body2" color="text.secondary">
+            {label}
+          </Typography>
+          <Typography variant="h5" sx={{ fontWeight: 800 }}>
+            {value}
+          </Typography>
+        </Box>
+      </Stack>
+    </Paper>
+  );
+}
+
+export default function MyResponses() {
+  const theme = useTheme();
+  const dispatch = useDispatch();
+  const {
+    mySubmissions,
+    mySubmissionsLoading,
+    mySubmissionsError,
+    mySubmissionsMessage,
+  } = useSelector((state) => state.session);
+
+  useEffect(() => {
+    dispatch(fetchMySubmissions());
+
+    return () => {
+      dispatch(clearMySubmissionsState());
+    };
+  }, [dispatch]);
+
+  const summary = useMemo(() => {
+    const responses = mySubmissions.flatMap((session) => session.responses || []);
+    const totalQuestions = responses.reduce(
+      (total, item) => total + (item.questions?.length || 0),
+      0,
+    );
+    const totalScore = responses.reduce(
+      (total, item) => total + (item.total_score || 0),
+      0,
+    );
+
+    return {
+      sessions: mySubmissions.length,
+      responses: responses.length,
+      questions: totalQuestions,
+      score: totalScore,
+    };
+  }, [mySubmissions]);
+
+  return (
+    <Layout role="user" title="My Responses">
+      <Stack spacing={2.5}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 2, sm: 3 },
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: getSurfaceBackground(theme),
+          }}
+        >
+          <Stack spacing={1}>
+            <Typography variant="h5" sx={{ fontWeight: 800 }}>
+              My Submitted Responses
+            </Typography>
+            <Typography color="text.secondary">
+              Review your submitted session responses, selected answers, and KPI
+              score breakdowns.
+            </Typography>
+          </Stack>
+
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <SummaryCard
+                label="Sessions Submitted"
+                value={summary.sessions}
+                icon={<ChecklistRoundedIcon fontSize="small" />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <SummaryCard
+                label="Total Responses"
+                value={summary.responses}
+                icon={<TaskAltRoundedIcon fontSize="small" />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <SummaryCard
+                label="Questions Answered"
+                value={summary.questions}
+                icon={<QueryStatsRoundedIcon fontSize="small" />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <SummaryCard
+                label="Total Score"
+                value={summary.score}
+                icon={<QueryStatsRoundedIcon fontSize="small" />}
+              />
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {mySubmissionsError && <Alert severity="error">{mySubmissionsError}</Alert>}
+        {!mySubmissionsError && mySubmissionsMessage && (
+          <Alert severity="success">{mySubmissionsMessage}</Alert>
+        )}
+
+        {mySubmissionsLoading ? (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: getSurfaceBackground(theme),
+            }}
+          >
+            <Typography>Loading your submitted responses...</Typography>
+          </Paper>
+        ) : null}
+
+        {!mySubmissionsLoading && !mySubmissions.length ? (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: getSurfaceBackground(theme),
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              No submissions found
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+              Once you submit session forms, they will appear here.
+            </Typography>
+          </Paper>
+        ) : null}
+
+        {!mySubmissionsLoading &&
+          mySubmissions.map((session) => (
+            <Paper
+              key={session.session_id}
+              elevation={0}
+              sx={{
+                p: { xs: 2, sm: 3 },
+                borderRadius: 3,
+                border: "1px solid",
+                borderColor: "divider",
+                bgcolor: getSurfaceBackground(theme),
+              }}
+            >
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                    {session.title}
+                  </Typography>
+                  <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                    {session.description || "No description provided."}
+                  </Typography>
+                </Box>
+
+                {session.responses.map((response, responseIndex) => (
+                  <Paper
+                    key={response.response_id}
+                    variant="outlined"
+                    sx={{ p: 2, borderRadius: 3 }}
+                  >
+                    <Stack spacing={2}>
+                      <Stack
+                        direction={{ xs: "column", md: "row" }}
+                        justifyContent="space-between"
+                        spacing={1.5}
+                      >
+                        <Box>
+                          <Typography sx={{ fontWeight: 700 }}>
+                            Submission {responseIndex + 1}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {response.employee_email || "-"}
+                          </Typography>
+                        </Box>
+                        <Stack
+                          direction={{ xs: "column", sm: "row" }}
+                          spacing={1}
+                          useFlexGap
+                          flexWrap="wrap"
+                        >
+                          <Chip
+                            label={`Submitted: ${formatDateTime(response.submitted_at)}`}
+                            variant="outlined"
+                          />
+                          <Chip
+                            label={`Total Score: ${response.total_score}`}
+                            color="primary"
+                          />
+                        </Stack>
+                      </Stack>
+
+                      {!!response.kpi_scores.length && (
+                        <Box>
+                          <Typography sx={{ fontWeight: 700, mb: 1.2 }}>
+                            KPI Scores
+                          </Typography>
+                          <Grid container spacing={1.25}>
+                            {response.kpi_scores.map((item) => (
+                              <Grid key={item.kpi_key} size={{ xs: 12, md: 6, xl: 4 }}>
+                                <Paper
+                                  variant="outlined"
+                                  sx={{ p: 1.5, borderRadius: 2.5, height: "100%" }}
+                                >
+                                  <Typography sx={{ fontWeight: 700 }}>
+                                    {item.kpi_name}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.6 }}>
+                                    Total Score: {item.total_score}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Questions: {item.question_count}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Average Score: {item.average_score}
+                                  </Typography>
+                                </Paper>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+                      )}
+
+                      <Divider />
+
+                      <Box>
+                        <Typography sx={{ fontWeight: 700, mb: 1.2 }}>
+                          Answered Questions
+                        </Typography>
+                        <Stack spacing={1.25}>
+                          {response.questions.map((question, index) => (
+                            <Paper
+                              key={`${response.response_id}-${question.question_code}-${index}`}
+                              variant="outlined"
+                              sx={{ p: 1.5, borderRadius: 2.5 }}
+                            >
+                              <Stack spacing={0.75}>
+                                <Stack
+                                  direction={{ xs: "column", sm: "row" }}
+                                  justifyContent="space-between"
+                                  spacing={1}
+                                >
+                                  <Typography sx={{ fontWeight: 700 }}>
+                                    {question.question_text}
+                                  </Typography>
+                                  <Chip
+                                    label={`Score: ${question.score}`}
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                  />
+                                </Stack>
+                                <Typography variant="body2" color="text.secondary">
+                                  Code: {question.question_code}
+                                </Typography>
+                                <Typography variant="body2">
+                                  Selected Option:{" "}
+                                  <Box component="span" sx={{ fontWeight: 700 }}>
+                                    {question.selected_option}
+                                  </Box>
+                                </Typography>
+                              </Stack>
+                            </Paper>
+                          ))}
+                        </Stack>
+                      </Box>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            </Paper>
+          ))}
+      </Stack>
+    </Layout>
+  );
+}

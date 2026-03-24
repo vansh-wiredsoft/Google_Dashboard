@@ -36,6 +36,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import CategoryIcon from "@mui/icons-material/Category";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import { useThemeMode } from "../../context/ThemeModeContext";
 
 const drawerWidth = 260;
@@ -55,6 +56,11 @@ const adminItems = [
 
 const userItems = [
   { label: "Dashboard", to: "/user/dashboard", icon: <DashboardIcon /> },
+  {
+    label: "My Responses",
+    to: "/user/my-responses",
+    icon: <AssignmentTurnedInIcon />,
+  },
 ];
 
 export default function Layout({ children, role, title }) {

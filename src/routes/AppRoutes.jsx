@@ -28,6 +28,7 @@ import Profile from "../pages/common/Profile";
 import SessionForm from "../pages/common/SessionForm";
 import SketchLab from "../pages/hidden/SketchLab";
 import UserDashboard from "../pages/user/Dashboard";
+import MyResponses from "../pages/user/MyResponses";
 
 function ProtectedRoute({ children, allowedRole }) {
   const location = useLocation();
@@ -310,6 +311,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="user">
             <UserDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user/my-responses"
+        element={
+          <ProtectedRoute allowedRole="user">
+            <MyResponses />
           </ProtectedRoute>
         }
       />

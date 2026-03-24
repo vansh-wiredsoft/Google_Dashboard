@@ -8,6 +8,7 @@ const initialState = {
   addedQuestions: [],
   sessionQuestions: [],
   sessions: [],
+  mySubmissions: [],
   sessionDetails: null,
   sessionPreview: null,
   sessionForm: null,
@@ -20,6 +21,7 @@ const initialState = {
   updateLoading: false,
   deleteLoading: false,
   listLoading: false,
+  mySubmissionsLoading: false,
   detailLoading: false,
   previewLoading: false,
   publishLoading: false,
@@ -34,6 +36,7 @@ const initialState = {
   updateMessage: "",
   deleteMessage: "",
   listMessage: "",
+  mySubmissionsMessage: "",
   detailMessage: "",
   previewMessage: "",
   publishMessage: "",
@@ -46,6 +49,7 @@ const initialState = {
   updateError: null,
   deleteError: null,
   listError: null,
+  mySubmissionsError: null,
   detailError: null,
   previewError: null,
   publishError: null,
@@ -71,6 +75,50 @@ const extractSessionQuestions = (payload) => {
 
   return source.map(normalizeSessionQuestion);
 };
+
+const normalizeSubmissionQuestion = (item, index) => ({
+  question_code: item?.question_code || `question-${index + 1}`,
+  question_text: item?.question_text || "Untitled Question",
+  selected_option: item?.selected_option || "-",
+  score: Number(item?.score) || 0,
+});
+
+const normalizeKpiScore = (item, index) => ({
+  kpi_key: item?.kpi_key || `kpi-${index + 1}`,
+  kpi_name: item?.kpi_name || "Untitled KPI",
+  total_score: Number(item?.total_score) || 0,
+  question_count: Number(item?.question_count) || 0,
+  average_score: Number(item?.average_score) || 0,
+});
+
+const normalizeSessionSubmission = (item, index) => ({
+  response_id: item?.response_id || `response-${index + 1}`,
+  employee_email: item?.employee_email || "",
+  submitted_at: item?.submitted_at || "",
+  total_score: Number(item?.total_score) || 0,
+  questions: Array.isArray(item?.questions)
+    ? item.questions.map(normalizeSubmissionQuestion)
+    : [],
+  kpi_scores: Array.isArray(item?.kpi_scores)
+    ? item.kpi_scores.map(normalizeKpiScore)
+    : [],
+});
+
+const normalizeSubmissionSession = (item, index) => ({
+  session_id: item?.session_id || `session-${index + 1}`,
+  company_id: item?.company_id || "",
+  title: item?.title || "Untitled Session",
+  description: item?.description || "",
+  responses: Array.isArray(item?.responses)
+    ? [...item.responses]
+        .map(normalizeSessionSubmission)
+        .sort(
+          (left, right) =>
+            new Date(right.submitted_at || 0).getTime() -
+            new Date(left.submitted_at || 0).getTime(),
+        )
+    : [],
+});
 
 export const createSession = createAsyncThunk(
   "session/createSession",
@@ -361,6 +409,42 @@ export const fetchSessions = createAsyncThunk(
   },
 );
 
+export const fetchMySubmissions = createAsyncThunk(
+  "session/fetchMySubmissions",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`${SESSION_PATH}/my-submissions`);
+      const payload = response?.data || {};
+
+      if (!payload?.success) {
+        return rejectWithValue(
+          payload?.message || "Failed to fetch submitted sessions.",
+        );
+      }
+
+      const sessions = Array.isArray(payload?.data)
+        ? payload.data.map(normalizeSubmissionSession)
+        : [];
+
+      return {
+        sessions: sessions.sort((left, right) => {
+          const leftLatest = left.responses[0]?.submitted_at || "";
+          const rightLatest = right.responses[0]?.submitted_at || "";
+          return new Date(rightLatest || 0).getTime() - new Date(leftLatest || 0).getTime();
+        }),
+        message: payload?.message || "Submitted sessions fetched successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to fetch submitted sessions due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
 export const fetchSessionById = createAsyncThunk(
   "session/fetchSessionById",
   async (sessionId, { rejectWithValue }) => {
@@ -513,6 +597,12 @@ const sessionSlice = createSlice({
     },
     clearSessionListError(state) {
       state.listError = null;
+    },
+    clearMySubmissionsState(state) {
+      state.mySubmissions = [];
+      state.mySubmissionsLoading = false;
+      state.mySubmissionsError = null;
+      state.mySubmissionsMessage = "";
     },
     clearSessionDetailError(state) {
       state.detailError = null;
@@ -788,6 +878,21 @@ const sessionSlice = createSlice({
         state.listLoading = false;
         state.listError = action.payload || "Failed to fetch sessions.";
       })
+      .addCase(fetchMySubmissions.pending, (state) => {
+        state.mySubmissionsLoading = true;
+        state.mySubmissionsError = null;
+        state.mySubmissionsMessage = "";
+      })
+      .addCase(fetchMySubmissions.fulfilled, (state, action) => {
+        state.mySubmissionsLoading = false;
+        state.mySubmissions = action.payload.sessions;
+        state.mySubmissionsMessage = action.payload.message;
+      })
+      .addCase(fetchMySubmissions.rejected, (state, action) => {
+        state.mySubmissionsLoading = false;
+        state.mySubmissionsError =
+          action.payload || "Failed to fetch submitted sessions.";
+      })
       .addCase(fetchSessionById.pending, (state) => {
         state.detailLoading = true;
         state.detailError = null;
@@ -875,6 +980,7 @@ const sessionSlice = createSlice({
 export const {
   clearSessionError,
   clearSessionListError,
+  clearMySubmissionsState,
   clearSessionDetailError,
   clearSessionDetails,
   clearSessionPreview,

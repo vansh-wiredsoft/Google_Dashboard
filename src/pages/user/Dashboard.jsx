@@ -15,6 +15,7 @@ import WorkspacePremiumRoundedIcon from "@mui/icons-material/WorkspacePremiumRou
 import {
   Avatar,
   Box,
+  Button,
   Chip,
   Divider,
   Grid,
@@ -25,6 +26,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { useNavigate } from "react-router-dom";
 import {
   Cell,
   Line,
@@ -374,6 +376,7 @@ function HighlightStat({ item }) {
 
 export default function Dashboard() {
   const theme = useTheme();
+  const navigate = useNavigate();
   const chartTooltipStyles = {
     contentStyle: {
       backgroundColor: getSurfaceBackground(theme, 0.98),
@@ -450,6 +453,12 @@ export default function Dashboard() {
                 variant="outlined"
                 sx={{ fontWeight: 700 }}
               />
+              <Button
+                variant="contained"
+                onClick={() => navigate("/user/my-responses")}
+              >
+                View Responses
+              </Button>
             </Stack>
           </Stack>
         </SectionCard>
