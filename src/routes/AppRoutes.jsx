@@ -2,12 +2,12 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 import AdminDashboard from "../pages/admin/Dashboard";
-import CompanyData from "../pages/admin/CompanyData";
-import CompanyDataForm from "../pages/admin/CompanyDataForm";
-import CompanyDataView from "../pages/admin/CompanyDataView";
-import CompanyUsers from "../pages/admin/CompanyUsers";
-import CompanyUsersForm from "../pages/admin/CompanyUsersForm";
-import CompanyUsersView from "../pages/admin/CompanyUsersView";
+import CompanyData from "../pages/superadmin/CompanyData";
+import CompanyDataForm from "../pages/superadmin/CompanyDataForm";
+import CompanyDataView from "../pages/superadmin/CompanyDataView";
+import CompanyUsers from "../pages/superadmin/CompanyUsers";
+import CompanyUsersForm from "../pages/superadmin/CompanyUsersForm";
+import CompanyUsersView from "../pages/superadmin/CompanyUsersView";
 import Questions from "../pages/admin/Questions";
 import QuestionsForm from "../pages/admin/QuestionsForm";
 import QuestionsView from "../pages/admin/QuestionsView";
