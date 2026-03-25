@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./authSlice";
 import sessionReducer from "./sessionSlice";
 import companyReducer from "./companySlice";
+import userReducer from "./userSlice";
 import userUploadReducer from "./userUploadSlice";
 import questionUploadReducer from "./questionUploadSlice";
 import questionHierarchyReducer from "./questionHierarchySlice";
@@ -14,6 +15,7 @@ const store = configureStore({
     auth: authReducer,
     session: sessionReducer,
     company: companyReducer,
+    user: userReducer,
     userUpload: userUploadReducer,
     questionUpload: questionUploadReducer,
     questionHierarchy: questionHierarchyReducer,
