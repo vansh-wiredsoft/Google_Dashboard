@@ -1,17 +1,22 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
   Box,
   Chip,
+  Collapse,
   Divider,
   Grid,
+  IconButton,
   Paper,
   Stack,
+  Tooltip,
   Typography,
   useTheme,
 } from "@mui/material";
 import ChecklistRoundedIcon from "@mui/icons-material/ChecklistRounded";
+import ExpandLessRoundedIcon from "@mui/icons-material/ExpandLessRounded";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import QueryStatsRoundedIcon from "@mui/icons-material/QueryStatsRounded";
 import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import Layout from "../../layouts/commonLayout/Layout";
@@ -71,6 +76,7 @@ function SummaryCard({ label, value, icon }) {
 export default function MyResponses() {
   const theme = useTheme();
   const dispatch = useDispatch();
+  const [expandedSessions, setExpandedSessions] = useState({});
   const {
     mySubmissions,
     mySubmissionsLoading,
@@ -104,6 +110,23 @@ export default function MyResponses() {
       score: totalScore,
     };
   }, [mySubmissions]);
+
+  useEffect(() => {
+    setExpandedSessions((current) =>
+      mySubmissions.reduce((accumulator, session, index) => {
+        accumulator[session.session_id] =
+          current[session.session_id] ?? index === 0;
+        return accumulator;
+      }, {}),
+    );
+  }, [mySubmissions]);
+
+  const toggleSession = (sessionId) => {
+    setExpandedSessions((current) => ({
+      ...current,
+      [sessionId]: !current[sessionId],
+    }));
+  };
 
   return (
     <Layout role="user" title="My Responses">
@@ -214,129 +237,158 @@ export default function MyResponses() {
               }}
             >
               <Stack spacing={2}>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                    {session.title}
-                  </Typography>
-                  <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                    {session.description || "No description provided."}
-                  </Typography>
-                </Box>
-
-                {session.responses.map((response, responseIndex) => (
-                  <Paper
-                    key={response.response_id}
-                    variant="outlined"
-                    sx={{ p: 2, borderRadius: 3 }}
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  justifyContent="space-between"
+                  spacing={1.5}
+                  alignItems={{ sm: "flex-start" }}
+                >
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                      {session.title}
+                    </Typography>
+                    <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                      {session.description || "No description provided."}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      Submissions: {session.responses.length}
+                    </Typography>
+                  </Box>
+                  <Tooltip
+                    title={expandedSessions[session.session_id] ? "Collapse" : "Expand"}
                   >
-                    <Stack spacing={2}>
-                      <Stack
-                        direction={{ xs: "column", md: "row" }}
-                        justifyContent="space-between"
-                        spacing={1.5}
-                      >
-                        <Box>
-                          <Typography sx={{ fontWeight: 700 }}>
-                            Submission {responseIndex + 1}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {response.employee_email || "-"}
-                          </Typography>
-                        </Box>
-                        <Stack
-                          direction={{ xs: "column", sm: "row" }}
-                          spacing={1}
-                          useFlexGap
-                          flexWrap="wrap"
-                        >
-                          <Chip
-                            label={`Submitted: ${formatDateTime(response.submitted_at)}`}
-                            variant="outlined"
-                          />
-                          <Chip
-                            label={`Total Score: ${response.total_score}`}
-                            color="primary"
-                          />
-                        </Stack>
-                      </Stack>
-
-                      {!!response.kpi_scores.length && (
-                        <Box>
-                          <Typography sx={{ fontWeight: 700, mb: 1.2 }}>
-                            KPI Scores
-                          </Typography>
-                          <Grid container spacing={1.25}>
-                            {response.kpi_scores.map((item) => (
-                              <Grid key={item.kpi_key} size={{ xs: 12, md: 6, xl: 4 }}>
-                                <Paper
-                                  variant="outlined"
-                                  sx={{ p: 1.5, borderRadius: 2.5, height: "100%" }}
-                                >
-                                  <Typography sx={{ fontWeight: 700 }}>
-                                    {item.kpi_name}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.6 }}>
-                                    Total Score: {item.total_score}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Questions: {item.question_count}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Average Score: {item.average_score}
-                                  </Typography>
-                                </Paper>
-                              </Grid>
-                            ))}
-                          </Grid>
-                        </Box>
+                    <IconButton onClick={() => toggleSession(session.session_id)}>
+                      {expandedSessions[session.session_id] ? (
+                        <ExpandLessRoundedIcon />
+                      ) : (
+                        <ExpandMoreRoundedIcon />
                       )}
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
 
-                      <Divider />
-
-                      <Box>
-                        <Typography sx={{ fontWeight: 700, mb: 1.2 }}>
-                          Answered Questions
-                        </Typography>
-                        <Stack spacing={1.25}>
-                          {response.questions.map((question, index) => (
-                            <Paper
-                              key={`${response.response_id}-${question.question_code}-${index}`}
-                              variant="outlined"
-                              sx={{ p: 1.5, borderRadius: 2.5 }}
+                <Collapse in={Boolean(expandedSessions[session.session_id])}>
+                  <Stack spacing={2} sx={{ pt: 1 }}>
+                    {session.responses.map((response, responseIndex) => (
+                      <Paper
+                        key={response.response_id}
+                        variant="outlined"
+                        sx={{ p: 2, borderRadius: 3 }}
+                      >
+                        <Stack spacing={2}>
+                          <Stack
+                            direction={{ xs: "column", md: "row" }}
+                            justifyContent="space-between"
+                            spacing={1.5}
+                          >
+                            <Box>
+                              <Typography sx={{ fontWeight: 700 }}>
+                                Submission {responseIndex + 1}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {response.employee_email || "-"}
+                              </Typography>
+                            </Box>
+                            <Stack
+                              direction={{ xs: "column", sm: "row" }}
+                              spacing={1}
+                              useFlexGap
+                              flexWrap="wrap"
                             >
-                              <Stack spacing={0.75}>
-                                <Stack
-                                  direction={{ xs: "column", sm: "row" }}
-                                  justifyContent="space-between"
-                                  spacing={1}
+                              <Chip
+                                label={`Submitted: ${formatDateTime(response.submitted_at)}`}
+                                variant="outlined"
+                              />
+                              <Chip
+                                label={`Total Score: ${response.total_score}`}
+                                color="primary"
+                              />
+                            </Stack>
+                          </Stack>
+
+                          {!!response.kpi_scores.length && (
+                            <Box>
+                              <Typography sx={{ fontWeight: 700, mb: 1.2 }}>
+                                KPI Scores
+                              </Typography>
+                              <Grid container spacing={1.25}>
+                                {response.kpi_scores.map((item) => (
+                                  <Grid key={item.kpi_key} size={{ xs: 12, md: 6, xl: 4 }}>
+                                    <Paper
+                                      variant="outlined"
+                                      sx={{ p: 1.5, borderRadius: 2.5, height: "100%" }}
+                                    >
+                                      <Typography sx={{ fontWeight: 700 }}>
+                                        {item.kpi_name}
+                                      </Typography>
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{ mt: 0.6 }}
+                                      >
+                                        Total Score: {item.total_score}
+                                      </Typography>
+                                      <Typography variant="body2" color="text.secondary">
+                                        Questions: {item.question_count}
+                                      </Typography>
+                                      <Typography variant="body2" color="text.secondary">
+                                        Average Score: {item.average_score}
+                                      </Typography>
+                                    </Paper>
+                                  </Grid>
+                                ))}
+                              </Grid>
+                            </Box>
+                          )}
+
+                          <Divider />
+
+                          <Box>
+                            <Typography sx={{ fontWeight: 700, mb: 1.2 }}>
+                              Answered Questions
+                            </Typography>
+                            <Stack spacing={1.25}>
+                              {response.questions.map((question, index) => (
+                                <Paper
+                                  key={`${response.response_id}-${question.question_code}-${index}`}
+                                  variant="outlined"
+                                  sx={{ p: 1.5, borderRadius: 2.5 }}
                                 >
-                                  <Typography sx={{ fontWeight: 700 }}>
-                                    {question.question_text}
-                                  </Typography>
-                                  <Chip
-                                    label={`Score: ${question.score}`}
-                                    size="small"
-                                    color="primary"
-                                    variant="outlined"
-                                  />
-                                </Stack>
-                                <Typography variant="body2" color="text.secondary">
-                                  Code: {question.question_code}
-                                </Typography>
-                                <Typography variant="body2">
-                                  Selected Option:{" "}
-                                  <Box component="span" sx={{ fontWeight: 700 }}>
-                                    {question.selected_option}
-                                  </Box>
-                                </Typography>
-                              </Stack>
-                            </Paper>
-                          ))}
+                                  <Stack spacing={0.75}>
+                                    <Stack
+                                      direction={{ xs: "column", sm: "row" }}
+                                      justifyContent="space-between"
+                                      spacing={1}
+                                    >
+                                      <Typography sx={{ fontWeight: 700 }}>
+                                        {question.question_text}
+                                      </Typography>
+                                      <Chip
+                                        label={`Score: ${question.score}`}
+                                        size="small"
+                                        color="primary"
+                                        variant="outlined"
+                                      />
+                                    </Stack>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Code: {question.question_code}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                      Selected Option:{" "}
+                                      <Box component="span" sx={{ fontWeight: 700 }}>
+                                        {question.selected_option}
+                                      </Box>
+                                    </Typography>
+                                  </Stack>
+                                </Paper>
+                              ))}
+                            </Stack>
+                          </Box>
                         </Stack>
-                      </Box>
-                    </Stack>
-                  </Paper>
-                ))}
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Collapse>
               </Stack>
             </Paper>
           ))}
