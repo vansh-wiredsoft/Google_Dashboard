@@ -3,43 +3,29 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Alert,
-  Autocomplete,
   Box,
   Button,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
   FormControlLabel,
-  IconButton,
   MenuItem,
   Paper,
   Stack,
+  Switch,
   TextField,
   Typography,
-  Switch,
   useTheme,
 } from "@mui/material";
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
-import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
+import { fetchThemes } from "../../store/themeSlice";
+import { fetchKpis } from "../../store/kpiSlice";
 import {
-  clearQuestionHierarchyError,
-  fetchQuestionHierarchy,
-} from "../../store/questionHierarchySlice";
-import {
-  clearThemeCreateState,
-  createTheme,
-} from "../../store/themeSlice";
-import {
-  clearKpiCreateState,
-  createKpi,
-} from "../../store/kpiSlice";
-import { entityConfigs } from "../../data/adminEntityConfigs";
-import { loadEntityRows, saveEntityRows } from "../../utils/entityStorage";
+  clearQuestionCreateState,
+  clearQuestionDetailState,
+  clearQuestionUpdateState,
+  createQuestion,
+  fetchQuestionById,
+  updateQuestion,
+} from "../../store/questionSlice";
 import { getSurfaceBackground } from "../../theme";
 
 const createEmptyOption = (index) => ({
@@ -48,316 +34,149 @@ const createEmptyOption = (index) => ({
   score: index + 1,
 });
 
-const today = new Date().toISOString().slice(0, 10);
-
-function buildInitialForm(record, themes) {
-  const themeOptions = themes.map((theme) => ({
-    key: theme.theme_key,
-    label: theme.theme_display_name,
-    description: theme.description || "",
-  }));
-
-  const selectedThemeKeys = Array.isArray(record?.theme_keys)
-    ? record.theme_keys
-    : themeOptions
-        .filter((theme) =>
-          String(record?.Theme || "")
-            .split(",")
-            .map((item) => item.trim())
-            .includes(theme.label),
-        )
-        .map((theme) => theme.key);
-
-  const kpiOptions = themes
-    .filter((theme) => selectedThemeKeys.includes(theme.theme_key))
-    .flatMap((theme) =>
-      (theme.kpis || []).map((kpi) => ({
-        key: kpi.kpi_key,
-        label: kpi.display_name,
-        themeKey: theme.theme_key,
-        description: kpi.description || "",
-      })),
-    );
-
-  const selectedKpiKeys = Array.isArray(record?.kpi_keys)
-    ? record.kpi_keys
-    : kpiOptions
-        .filter((kpi) =>
-          String(record?.KPI || "")
-            .split(",")
-            .map((item) => item.trim())
-            .includes(kpi.label),
-        )
-        .map((kpi) => kpi.key);
-
-  const options = Array.isArray(record?.options) && record.options.length
-    ? record.options.map((option, index) => ({
-        option_number: option.option_number ?? index + 1,
-        option_text: option.option_text ?? "",
-        score: option.score ?? index + 1,
-      }))
-    : [1, 2, 3, 4, 5]
-        .map((number) => ({
-          option_number: number,
-          option_text: record?.[String(number)] || "",
-          score: number,
-        }))
-        .filter((option) => option.option_text || option.option_number <= 2);
-
-  return {
-    selectedThemeKeys,
-    selectedKpiKeys,
-    questionCode: record?.Question_Code || "",
-    questionText: record?.Question || "",
-    reverseCoded:
-      typeof record?.reverse_coded === "boolean"
-        ? record.reverse_coded
-        : String(record?.Reverse_Coded || "").toLowerCase() === "yes",
-    options:
-      options.length > 0
-        ? options
-        : [createEmptyOption(0), createEmptyOption(1)],
-  };
-}
+const emptyForm = {
+  theme_key: "",
+  kpi_key: "",
+  question_code: "",
+  question_text: "",
+  reverse_code: false,
+  options: Array.from({ length: 5 }, (_, index) => createEmptyOption(index)),
+};
 
 export default function QuestionWorkflowForm({ mode }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
-  const { items: apiHierarchy, loading, error } = useSelector(
-    (state) => state.questionHierarchy,
-  );
+  const { items: themeItems } = useSelector((state) => state.theme);
+  const { items: kpiItems } = useSelector((state) => state.kpi);
   const {
-    createLoading: createThemeLoading,
-    createError: createThemeError,
-  } = useSelector((state) => state.theme);
-  const {
-    createLoading: createKpiLoading,
-    createError: createKpiError,
-  } = useSelector((state) => state.kpi);
-  const config = entityConfigs.question;
-  const records = useMemo(
-    () => loadEntityRows(config.storageKey, config.initialRows),
-    [config.initialRows, config.storageKey],
-  );
-  const record = mode === "edit" ? records.find((item) => item.id === id) : null;
-  const [form, setForm] = useState(() => buildInitialForm(record, apiHierarchy));
-  const [errors, setErrors] = useState({});
-  const [themeDialogOpen, setThemeDialogOpen] = useState(false);
-  const [kpiDialogOpen, setKpiDialogOpen] = useState(false);
-  const [newTheme, setNewTheme] = useState({ name: "", description: "" });
-  const [newKpi, setNewKpi] = useState({
-    themeKey: "",
-    name: "",
-    description: "",
-    startDate: today,
-    endDate: today,
-  });
+    selectedQuestion,
+    detailLoading,
+    detailError,
+    createLoading,
+    createError,
+    updateLoading,
+    updateError,
+  } = useSelector((state) => state.question);
+  const [form, setForm] = useState(emptyForm);
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
-    dispatch(fetchQuestionHierarchy());
-    return () => {
-      dispatch(clearQuestionHierarchyError());
-      dispatch(clearThemeCreateState());
-      dispatch(clearKpiCreateState());
-    };
-  }, [dispatch]);
+    dispatch(fetchThemes({ isActive: true }));
+    dispatch(fetchKpis({ isActive: true }));
 
-  useEffect(() => {
-    if (mode === "edit" && record) {
-      setForm(buildInitialForm(record, apiHierarchy));
+    if (mode === "edit" && id) {
+      dispatch(fetchQuestionById(id));
     }
-  }, [apiHierarchy, mode, record]);
 
-  const themeOptions = useMemo(
+    return () => {
+      dispatch(clearQuestionCreateState());
+      dispatch(clearQuestionUpdateState());
+      dispatch(clearQuestionDetailState());
+    };
+  }, [dispatch, id, mode]);
+
+  useEffect(() => {
+    if (mode === "edit" && selectedQuestion) {
+      setForm({
+        theme_key: selectedQuestion.theme_key || "",
+        kpi_key: selectedQuestion.kpi_key || "",
+        question_code: selectedQuestion.question_code || "",
+        question_text: selectedQuestion.question_text || "",
+        reverse_code: Boolean(selectedQuestion.reverse_code),
+        options:
+          selectedQuestion.options?.length === 5
+            ? selectedQuestion.options.map((item, index) => ({
+                option_number: item.option_number ?? index + 1,
+                option_text: item.option_text || "",
+                score: item.score ?? index + 1,
+              }))
+            : Array.from({ length: 5 }, (_, index) => {
+                const current = selectedQuestion.options?.[index];
+                return {
+                  option_number: index + 1,
+                  option_text: current?.option_text || "",
+                  score: current?.score ?? index + 1,
+                };
+              }),
+      });
+    }
+  }, [mode, selectedQuestion]);
+
+  const filteredKpis = useMemo(
     () =>
-      apiHierarchy.map((theme) => ({
-        key: theme.theme_key,
-        label: theme.theme_display_name,
-        description: theme.description || "",
-      })),
-    [apiHierarchy],
-  );
-
-  const selectedThemes = themeOptions.filter((theme) =>
-    form.selectedThemeKeys.includes(theme.key),
-  );
-
-  const kpiOptions = useMemo(
-    () =>
-      apiHierarchy
-        .filter((theme) => form.selectedThemeKeys.includes(theme.theme_key))
-        .flatMap((theme) =>
-          (theme.kpis || []).map((kpi) => ({
-            key: kpi.kpi_key,
-            label: kpi.display_name,
-            themeKey: theme.theme_key,
-            themeLabel: theme.theme_display_name,
-            description: kpi.description || "",
-          })),
-        ),
-    [form.selectedThemeKeys, apiHierarchy],
-  );
-
-  const selectedKpis = kpiOptions.filter((kpi) =>
-    form.selectedKpiKeys.includes(kpi.key),
+      form.theme_key
+        ? kpiItems.filter((item) => item.theme_key === form.theme_key)
+        : kpiItems,
+    [form.theme_key, kpiItems],
   );
 
   const validate = () => {
-    const nextErrors = {};
-
-    if (!form.selectedThemeKeys.length) {
-      nextErrors.themes = "Select at least one theme.";
+    if (!form.theme_key || !form.kpi_key) {
+      return "Theme and KPI are required.";
     }
-    if (!form.selectedKpiKeys.length) {
-      nextErrors.kpis = "Select at least one KPI.";
-    }
-    if (!form.questionCode.trim()) {
-      nextErrors.questionCode = "Question Code is required.";
-    }
-    if (!form.questionText.trim()) {
-      nextErrors.questionText = "Question text is required.";
+    if (!form.question_code.trim() || !form.question_text.trim()) {
+      return "Question code and question text are required.";
     }
 
-    const validOptions = form.options.filter((option) => option.option_text.trim());
-    if (validOptions.length < 2) {
-      nextErrors.options = "Add at least two options.";
+    const hasInvalidOption = form.options.some(
+      (option) =>
+        !option.option_text.trim() || Number.isNaN(Number(option.score)),
+    );
+
+    if (hasInvalidOption) {
+      return "All five options must have text and valid scores.";
     }
 
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    return "";
   };
 
-  const handleSave = () => {
-    if (!validate()) return;
-
-    const validOptions = form.options
-      .filter((option) => option.option_text.trim())
-      .map((option, index) => ({
-        option_number: index + 1,
-        option_text: option.option_text.trim(),
-        score: Number(option.score) || index + 1,
-      }));
-
-    const nextRecord = {
-      id: mode === "edit" && record ? record.id : String(Date.now()),
-      Theme: selectedThemes.map((theme) => theme.label).join(", "),
-      KPI: selectedKpis.map((kpi) => kpi.label).join(", "),
-      Question_Code: form.questionCode.trim(),
-      Question: form.questionText.trim(),
-      Reverse_Coded: form.reverseCoded ? "Yes" : "No",
-      reverse_coded: form.reverseCoded,
-      theme_keys: form.selectedThemeKeys,
-      kpi_keys: form.selectedKpiKeys,
-      options: validOptions,
-      "1": validOptions[0]?.option_text || "",
-      "2": validOptions[1]?.option_text || "",
-      "3": validOptions[2]?.option_text || "",
-      "4": validOptions[3]?.option_text || "",
-      "5": validOptions[4]?.option_text || "",
-    };
-
-    const nextRows =
-      mode === "edit" && record
-        ? records.map((item) => (item.id === record.id ? nextRecord : item))
-        : [nextRecord, ...records];
-
-    saveEntityRows(config.storageKey, nextRows);
-    navigate(config.basePath, {
-      replace: true,
-      state: {
-        feedback: {
-          severity: "success",
-          message: `Question ${mode === "edit" ? "updated" : "added"} successfully.`,
-        },
-      },
-    });
-  };
-
-  const handleAddTheme = () => {
-    if (!newTheme.name.trim()) return;
-
-    dispatch(
-      createTheme({
-        themeDisplayName: newTheme.name.trim(),
-      }),
-    )
-      .unwrap()
-      .then((payload) => {
-        dispatch(fetchQuestionHierarchy());
-        setForm((current) => ({
-          ...current,
-          selectedThemeKeys: current.selectedThemeKeys.includes(
-            payload.item.theme_key,
-          )
-            ? current.selectedThemeKeys
-            : [...current.selectedThemeKeys, payload.item.theme_key],
-        }));
-        setNewTheme({ name: "", description: "" });
-        setThemeDialogOpen(false);
-      })
-      .catch(() => {
-        // Error is already handled in redux state.
-      });
-  };
-
-  const handleAddKpi = () => {
-    if (!newKpi.themeKey || !newKpi.name.trim()) return;
-    if (!newKpi.startDate || !newKpi.endDate || newKpi.startDate > newKpi.endDate) {
+  const handleSave = async () => {
+    const nextError = validate();
+    if (nextError) {
+      setFormError(nextError);
       return;
     }
 
-    dispatch(
-      createKpi({
-        displayName: newKpi.name.trim(),
-        description: newKpi.description.trim(),
-        themeKey: newKpi.themeKey,
-        startDate: newKpi.startDate,
-        endDate: newKpi.endDate,
-      }),
-    )
-      .unwrap()
-      .then((payload) => {
-        dispatch(fetchQuestionHierarchy());
-        setForm((current) => ({
-          ...current,
-          selectedThemeKeys: current.selectedThemeKeys.includes(newKpi.themeKey)
-            ? current.selectedThemeKeys
-            : [...current.selectedThemeKeys, newKpi.themeKey],
-          selectedKpiKeys: current.selectedKpiKeys.includes(payload.item.kpi_key)
-            ? current.selectedKpiKeys
-            : [...current.selectedKpiKeys, payload.item.kpi_key],
-        }));
-        setNewKpi({
-          themeKey: "",
-          name: "",
-          description: "",
-          startDate: today,
-          endDate: today,
-        });
-        setKpiDialogOpen(false);
-      })
-      .catch(() => {
-        // Error is already handled in redux state.
+    setFormError("");
+
+    const payload = {
+      theme_key: form.theme_key,
+      kpi_key: form.kpi_key,
+      question_code: form.question_code.trim(),
+      question_text: form.question_text.trim(),
+      reverse_code: form.reverse_code,
+      options: form.options.map((option, index) => ({
+        option_number: index + 1,
+        option_text: option.option_text.trim(),
+        score: Number(option.score) || 0,
+      })),
+    };
+
+    try {
+      if (mode === "edit") {
+        await dispatch(updateQuestion({ questionId: id, question: payload })).unwrap();
+      } else {
+        await dispatch(createQuestion(payload)).unwrap();
+      }
+
+      navigate("/admin/questions", {
+        replace: true,
+        state: {
+          feedback: {
+            severity: "success",
+            message: `Question ${mode === "edit" ? "updated" : "created"} successfully.`,
+          },
+        },
       });
+    } catch {
+      // Redux state already stores the API error.
+    }
   };
 
-  if (mode === "edit" && !record) {
+  if (mode === "edit" && detailLoading) {
     return (
-      <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid", borderColor: "divider", bgcolor: getSurfaceBackground(theme) }}>
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          This question record could not be found.
-        </Alert>
-        <Button startIcon={<ArrowBackRoundedIcon />} onClick={() => navigate(config.basePath)}>
-          Back to Question Bank
-        </Button>
-      </Paper>
-    );
-  }
-
-  return (
-    <>
       <Paper
         elevation={0}
         sx={{
@@ -368,382 +187,215 @@ export default function QuestionWorkflowForm({ mode }) {
           bgcolor: getSurfaceBackground(theme),
         }}
       >
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ mb: 3 }}
+        <Typography>Loading question...</Typography>
+      </Paper>
+    );
+  }
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: { xs: 2, sm: 3 },
+        borderRadius: 3,
+        border: "1px solid",
+        borderColor: "divider",
+        bgcolor: getSurfaceBackground(theme),
+      }}
+    >
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        spacing={2}
+        sx={{ mb: 3 }}
+      >
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 750 }}>
+            {mode === "edit" ? "Edit Question" : "Add Question"}
+          </Typography>
+          <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+            Manage KPI question content and its five scored response options.
+          </Typography>
+        </Box>
+        <Button
+          startIcon={<ArrowBackRoundedIcon />}
+          onClick={() => navigate("/admin/questions")}
         >
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 750 }}>
-              {mode === "edit" ? "Edit Question" : "Add Question"}
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.75, maxWidth: 760 }}>
-              Select themes and KPIs from hierarchy, build question options dynamically, and optionally create new themes or KPIs from the popup actions.
-            </Typography>
-          </Box>
-          <Button startIcon={<ArrowBackRoundedIcon />} onClick={() => navigate(config.basePath)}>
-            Back to list
-          </Button>
-        </Stack>
+          Back to list
+        </Button>
+      </Stack>
 
-        {error && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        {createThemeError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {createThemeError}
-          </Alert>
-        )}
-        {createKpiError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {createKpiError}
-          </Alert>
-        )}
+      {(formError || detailError || createError || updateError) && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {formError || detailError || createError || updateError}
+        </Alert>
+      )}
 
-        <Stack direction={{ xs: "column", md: "row" }} spacing={1.25} sx={{ mb: 2.5 }}>
-          <Button variant="outlined" startIcon={<AddRoundedIcon />} onClick={() => setThemeDialogOpen(true)}>
-            Add Theme
-          </Button>
-          <Button variant="outlined" startIcon={<AddRoundedIcon />} onClick={() => setKpiDialogOpen(true)}>
-            Add KPI
-          </Button>
-        </Stack>
-
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" },
-            gap: 2,
-          }}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+          gap: 2,
+        }}
+      >
+        <TextField
+          label="Theme"
+          select
+          value={form.theme_key}
+          onChange={(event) =>
+            setForm((current) => ({
+              ...current,
+              theme_key: event.target.value,
+              kpi_key:
+                current.kpi_key &&
+                !kpiItems.some(
+                  (item) =>
+                    item.kpi_key === current.kpi_key &&
+                    item.theme_key === event.target.value,
+                )
+                  ? ""
+                  : current.kpi_key,
+            }))
+          }
+          fullWidth
         >
-          <Autocomplete
-            multiple
-            options={themeOptions}
-            loading={loading}
-            value={selectedThemes}
-            onChange={(_, value) =>
-              setForm((current) => ({
-                ...current,
-                selectedThemeKeys: value.map((item) => item.key),
-                selectedKpiKeys: current.selectedKpiKeys.filter((key) =>
-                  apiHierarchy
-                    .filter((theme) => value.some((item) => item.key === theme.theme_key))
-                    .flatMap((theme) => (theme.kpis || []).map((kpi) => kpi.kpi_key))
-                    .includes(key),
-                ),
-              }))
-            }
-            getOptionLabel={(option) => option.label}
-            renderInput={(params) => (
+          <MenuItem value="">Select Theme</MenuItem>
+          {themeItems.map((item) => (
+            <MenuItem key={item.theme_key} value={item.theme_key}>
+              {item.theme_display_name}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          label="KPI"
+          select
+          value={form.kpi_key}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, kpi_key: event.target.value }))
+          }
+          fullWidth
+        >
+          <MenuItem value="">Select KPI</MenuItem>
+          {filteredKpis.map((item) => (
+            <MenuItem key={item.kpi_key} value={item.kpi_key}>
+              {item.display_name}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          label="Question Code"
+          value={form.question_code}
+          onChange={(event) =>
+            setForm((current) => ({
+              ...current,
+              question_code: event.target.value,
+            }))
+          }
+          fullWidth
+        />
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={form.reverse_code}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  reverse_code: event.target.checked,
+                }))
+              }
+            />
+          }
+          label="Reverse coded"
+          sx={{ px: 1, py: 1 }}
+        />
+
+        <TextField
+          label="Question Text"
+          value={form.question_text}
+          onChange={(event) =>
+            setForm((current) => ({
+              ...current,
+              question_text: event.target.value,
+            }))
+          }
+          multiline
+          minRows={4}
+          fullWidth
+          sx={{ gridColumn: "1 / -1" }}
+        />
+      </Box>
+
+      <Typography variant="h6" sx={{ fontWeight: 700, mt: 3, mb: 2 }}>
+        Question Options
+      </Typography>
+
+      <Stack spacing={1.5}>
+        {form.options.map((option, index) => (
+          <Paper key={option.option_number} variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={1.5}
+              alignItems={{ md: "center" }}
+            >
+              <Typography sx={{ minWidth: 84, fontWeight: 700 }}>
+                Option {index + 1}
+              </Typography>
               <TextField
-                {...params}
-                label="Themes"
-                error={Boolean(errors.themes)}
-                helperText={errors.themes || "You can select multiple themes"}
-              />
-            )}
-          />
-
-          <Autocomplete
-            multiple
-            options={kpiOptions}
-            loading={loading}
-            value={selectedKpis}
-            onChange={(_, value) =>
-              setForm((current) => ({
-                ...current,
-                selectedKpiKeys: value.map((item) => item.key),
-              }))
-            }
-            getOptionLabel={(option) => `${option.label} (${option.themeLabel})`}
-            isOptionEqualToValue={(option, value) => option.key === value.key}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="KPIs"
-                error={Boolean(errors.kpis)}
-                helperText={errors.kpis || "KPI list changes based on selected themes"}
-              />
-            )}
-          />
-
-          <TextField
-            label="Question Code"
-            value={form.questionCode}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, questionCode: event.target.value }))
-            }
-            error={Boolean(errors.questionCode)}
-            helperText={errors.questionCode || ""}
-            fullWidth
-          />
-
-          <FormControlLabel
-            control={
-              <Switch
-                checked={form.reverseCoded}
+                label="Option Text"
+                value={option.option_text}
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
-                    reverseCoded: event.target.checked,
+                    options: current.options.map((item, itemIndex) =>
+                      itemIndex === index
+                        ? { ...item, option_text: event.target.value }
+                        : item,
+                    ),
                   }))
                 }
-              />
-            }
-            label="Reverse coded"
-            sx={{ px: 1, py: 1 }}
-          />
-
-          <TextField
-            label="Question"
-            value={form.questionText}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, questionText: event.target.value }))
-            }
-            error={Boolean(errors.questionText)}
-            helperText={errors.questionText || ""}
-            multiline
-            minRows={4}
-            fullWidth
-            sx={{ gridColumn: "1 / -1" }}
-          />
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          justifyContent="space-between"
-          spacing={1}
-          sx={{ mb: 2 }}
-        >
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              Question Options
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Add as many response options as needed. Scores can be adjusted individually.
-            </Typography>
-          </Box>
-          <Button
-            variant="outlined"
-            startIcon={<AddRoundedIcon />}
-            onClick={() =>
-              setForm((current) => ({
-                ...current,
-                options: [...current.options, createEmptyOption(current.options.length)],
-              }))
-            }
-          >
-            Add Option
-          </Button>
-        </Stack>
-
-        {errors.options && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {errors.options}
-          </Alert>
-        )}
-
-        <Stack spacing={1.5}>
-          {form.options.map((option, index) => (
-            <Paper key={`${option.option_number}-${index}`} variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
-              <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }}>
-                <Chip label={`Option ${index + 1}`} color="primary" variant="outlined" />
-                <TextField
-                  label="Option Text"
-                  value={option.option_text}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      options: current.options.map((item, itemIndex) =>
-                        itemIndex === index
-                          ? { ...item, option_text: event.target.value }
-                          : item,
-                      ),
-                    }))
-                  }
-                  fullWidth
-                />
-                <TextField
-                  label="Score"
-                  type="number"
-                  value={option.score}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      options: current.options.map((item, itemIndex) =>
-                        itemIndex === index
-                          ? { ...item, score: event.target.value }
-                          : item,
-                      ),
-                    }))
-                  }
-                  sx={{ width: { xs: "100%", md: 110 } }}
-                />
-                <IconButton
-                  color="error"
-                  onClick={() =>
-                    setForm((current) => ({
-                      ...current,
-                      options:
-                        current.options.length > 2
-                          ? current.options
-                              .filter((_, itemIndex) => itemIndex !== index)
-                              .map((item, itemIndex) => ({
-                                ...item,
-                                option_number: itemIndex + 1,
-                              }))
-                          : current.options,
-                    }))
-                  }
-                  disabled={form.options.length <= 2}
-                >
-                  <DeleteOutlineRoundedIcon />
-                </IconButton>
-              </Stack>
-            </Paper>
-          ))}
-        </Stack>
-
-        <Stack direction="row" spacing={1.25} sx={{ mt: 3 }}>
-          <Button variant="contained" startIcon={<SaveRoundedIcon />} onClick={handleSave}>
-            {mode === "edit" ? "Update Question" : "Add Question"}
-          </Button>
-          <Button variant="outlined" onClick={() => navigate(config.basePath)}>
-            Cancel
-          </Button>
-        </Stack>
-      </Paper>
-
-      <Dialog open={themeDialogOpen} onClose={() => setThemeDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Add Theme</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            <TextField
-              label="Theme Name"
-              value={newTheme.name}
-              onChange={(event) =>
-                setNewTheme((current) => ({ ...current, name: event.target.value }))
-              }
-              fullWidth
-            />
-            <TextField
-              label="Description"
-              value={newTheme.description}
-              onChange={(event) =>
-                setNewTheme((current) => ({
-                  ...current,
-                  description: event.target.value,
-                }))
-              }
-              multiline
-              minRows={3}
-              fullWidth
-              helperText="Theme API currently uses only the theme name."
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setThemeDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleAddTheme}
-            disabled={createThemeLoading}
-          >
-            {createThemeLoading ? "Saving..." : "Save Theme"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={kpiDialogOpen} onClose={() => setKpiDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Add KPI</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            <TextField
-              label="Theme"
-              value={newKpi.themeKey}
-              onChange={(event) =>
-                setNewKpi((current) => ({ ...current, themeKey: event.target.value }))
-              }
-              select
-              fullWidth
-            >
-              <MenuItem value="">Select Theme</MenuItem>
-              {themeOptions.map((theme) => (
-                <MenuItem key={theme.key} value={theme.key}>
-                  {theme.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              label="KPI Name"
-              value={newKpi.name}
-              onChange={(event) =>
-                setNewKpi((current) => ({ ...current, name: event.target.value }))
-              }
-              fullWidth
-            />
-            <TextField
-              label="Description"
-              value={newKpi.description}
-              onChange={(event) =>
-                setNewKpi((current) => ({
-                  ...current,
-                  description: event.target.value,
-                }))
-              }
-              multiline
-              minRows={3}
-              fullWidth
-            />
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-              <TextField
-                label="Start Date"
-                type="date"
-                value={newKpi.startDate}
-                onChange={(event) =>
-                  setNewKpi((current) => ({
-                    ...current,
-                    startDate: event.target.value,
-                  }))
-                }
-                InputLabelProps={{ shrink: true }}
                 fullWidth
               />
               <TextField
-                label="End Date"
-                type="date"
-                value={newKpi.endDate}
+                label="Score"
+                type="number"
+                value={option.score}
                 onChange={(event) =>
-                  setNewKpi((current) => ({
+                  setForm((current) => ({
                     ...current,
-                    endDate: event.target.value,
+                    options: current.options.map((item, itemIndex) =>
+                      itemIndex === index
+                        ? { ...item, score: event.target.value }
+                        : item,
+                    ),
                   }))
                 }
-                InputLabelProps={{ shrink: true }}
-                fullWidth
+                sx={{ width: { xs: "100%", md: 110 } }}
               />
             </Stack>
-            <Typography variant="caption" color="text.secondary">
-              KPI creation from this popup now includes description and date range.
-            </Typography>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setKpiDialogOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleAddKpi}
-            disabled={createKpiLoading}
-          >
-            {createKpiLoading ? "Saving..." : "Save KPI"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+          </Paper>
+        ))}
+      </Stack>
+
+      <Stack direction="row" spacing={1.25} sx={{ mt: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<SaveRoundedIcon />}
+          onClick={handleSave}
+          disabled={createLoading || updateLoading}
+        >
+          {createLoading || updateLoading
+            ? "Saving..."
+            : mode === "edit"
+              ? "Update Question"
+              : "Create Question"}
+        </Button>
+        <Button variant="outlined" onClick={() => navigate("/admin/questions")}>
+          Cancel
+        </Button>
+      </Stack>
+    </Paper>
   );
 }

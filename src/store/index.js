@@ -3,6 +3,7 @@ import authReducer from "./authSlice";
 import sessionReducer from "./sessionSlice";
 import companyReducer from "./companySlice";
 import userReducer from "./userSlice";
+import questionReducer from "./questionSlice";
 import userUploadReducer from "./userUploadSlice";
 import questionUploadReducer from "./questionUploadSlice";
 import questionHierarchyReducer from "./questionHierarchySlice";
@@ -16,6 +17,7 @@ const store = configureStore({
     session: sessionReducer,
     company: companyReducer,
     user: userReducer,
+    question: questionReducer,
     userUpload: userUploadReducer,
     questionUpload: questionUploadReducer,
     questionHierarchy: questionHierarchyReducer,

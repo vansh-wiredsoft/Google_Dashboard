@@ -1,30 +1,403 @@
-import { useLocation } from "react-router-dom";
-import { Alert, Stack } from "@mui/material";
-import Layout from "../../layouts/commonLayout/Layout";
-import EntityManagementTable from "../../components/shared/EntityManagementTable";
-import { entityConfigs } from "../../data/adminEntityConfigs";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import {
-  clearQuestionUploadError,
-  resetQuestionUpload,
-  uploadQuestionFile,
-} from "../../store/questionUploadSlice";
+  Alert,
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  MenuItem,
+  Paper,
+  Stack,
+  Tooltip,
+  Typography,
+  useTheme,
+  TextField,
+} from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import Layout from "../../layouts/commonLayout/Layout";
+import {
+  clearQuestionDeleteState,
+  clearQuestionListError,
+  deleteQuestion,
+  fetchQuestions,
+} from "../../store/questionSlice";
+import { fetchThemes } from "../../store/themeSlice";
+import { fetchKpis } from "../../store/kpiSlice";
+import { getSurfaceBackground } from "../../theme";
 
 export default function Questions() {
+  const theme = useTheme();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const location = useLocation();
   const feedback = location.state?.feedback;
-  const config = entityConfigs.question;
+  const { items: themeItems } = useSelector((state) => state.theme);
+  const { items: kpiItems } = useSelector((state) => state.kpi);
+  const {
+    items,
+    total,
+    listLoading,
+    listError,
+    deleteLoading,
+    deleteError,
+    deleteMessage,
+  } = useSelector((state) => state.question);
+  const [filters, setFilters] = useState({
+    themeKey: "",
+    kpiKey: "",
+    search: "",
+    status: "all",
+  });
+
+  const isActive =
+    filters.status === "all" ? undefined : filters.status === "active";
+
+  useEffect(() => {
+    dispatch(fetchThemes({ isActive: true }));
+    dispatch(fetchKpis({ isActive: true }));
+  }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(
+      fetchQuestions({
+        skip: 0,
+        limit: 50,
+        themeKey: filters.themeKey,
+        kpiKey: filters.kpiKey,
+        search: filters.search,
+        isActive,
+      }),
+    );
+  }, [dispatch, filters.kpiKey, filters.search, filters.themeKey, isActive]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearQuestionListError());
+      dispatch(clearQuestionDeleteState());
+    };
+  }, [dispatch]);
+
+  const filteredKpis = useMemo(
+    () =>
+      filters.themeKey
+        ? kpiItems.filter((item) => item.theme_key === filters.themeKey)
+        : kpiItems,
+    [filters.themeKey, kpiItems],
+  );
+
+  const themeNameByKey = useMemo(
+    () =>
+      themeItems.reduce((accumulator, item) => {
+        accumulator[item.theme_key] = item.theme_display_name;
+        return accumulator;
+      }, {}),
+    [themeItems],
+  );
+
+  const kpiNameByKey = useMemo(
+    () =>
+      kpiItems.reduce((accumulator, item) => {
+        accumulator[item.kpi_key] = item.display_name;
+        return accumulator;
+      }, {}),
+    [kpiItems],
+  );
+
+  const handleDelete = async (questionId, questionCode) => {
+    if (!window.confirm(`Delete question "${questionCode}"?`)) return;
+
+    try {
+      await dispatch(deleteQuestion(questionId)).unwrap();
+    } catch {
+      // Redux state already stores the error.
+    }
+  };
+
+  const columns = useMemo(
+    () => [
+      {
+        field: "question_code",
+        headerName: "Question Code",
+        minWidth: 170,
+      },
+      {
+        field: "question_text",
+        headerName: "Question",
+        flex: 1.5,
+        minWidth: 320,
+      },
+      {
+        field: "theme_key",
+        headerName: "Theme",
+        minWidth: 220,
+        valueGetter: (_, row) => themeNameByKey[row.theme_key] || row.theme_key,
+      },
+      {
+        field: "kpi_key",
+        headerName: "KPI",
+        minWidth: 220,
+        valueGetter: (_, row) => kpiNameByKey[row.kpi_key] || row.kpi_key,
+      },
+      {
+        field: "reverse_code",
+        headerName: "Reverse Code",
+        minWidth: 130,
+        renderCell: ({ value }) => (
+          <Chip
+            size="small"
+            label={value ? "Yes" : "No"}
+            color={value ? "warning" : "default"}
+            variant={value ? "filled" : "outlined"}
+          />
+        ),
+      },
+      {
+        field: "is_active",
+        headerName: "Status",
+        minWidth: 120,
+        renderCell: ({ value }) => (
+          <Chip
+            size="small"
+            label={value ? "Active" : "Inactive"}
+            color={value ? "success" : "default"}
+            variant={value ? "filled" : "outlined"}
+          />
+        ),
+      },
+      {
+        field: "options",
+        headerName: "Options",
+        minWidth: 110,
+        valueGetter: (_, row) => row.options?.length || 0,
+      },
+      {
+        field: "actions",
+        headerName: "Actions",
+        sortable: false,
+        filterable: false,
+        minWidth: 170,
+        renderCell: ({ row }) => (
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title="View">
+              <IconButton
+                size="small"
+                onClick={() => navigate(`/admin/questions/${row.id}`)}
+              >
+                <PreviewRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Edit">
+              <IconButton
+                size="small"
+                onClick={() => navigate(`/admin/questions/${row.id}/edit`)}
+              >
+                <EditRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <span>
+                <IconButton
+                  size="small"
+                  color="error"
+                  disabled={deleteLoading}
+                  onClick={() => handleDelete(row.id, row.question_code)}
+                >
+                  <DeleteOutlineRoundedIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Stack>
+        ),
+      },
+    ],
+    [deleteLoading, kpiNameByKey, navigate, themeNameByKey],
+  );
 
   return (
     <Layout role="admin" title="Question Bank">
       <Stack spacing={2}>
-        {feedback && <Alert severity={feedback.severity}>{feedback.message}</Alert>}
-        <EntityManagementTable
-          {...config}
-          uploadSelector={(state) => state.questionUpload}
-          uploadThunk={uploadQuestionFile}
-          resetUploadAction={resetQuestionUpload}
-          clearUploadErrorAction={clearQuestionUploadError}
-        />
+        {feedback && (
+          <Alert severity={feedback.severity}>{feedback.message}</Alert>
+        )}
+        {listError && <Alert severity="error">{listError}</Alert>}
+        {deleteError && <Alert severity="error">{deleteError}</Alert>}
+        {deleteMessage && <Alert severity="success">{deleteMessage}</Alert>}
+
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 2, sm: 3 },
+            borderRadius: 3,
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: getSurfaceBackground(theme),
+          }}
+        >
+          <Stack
+            direction={{ xs: "column", lg: "row" }}
+            justifyContent="space-between"
+            spacing={2}
+            sx={{ mb: 2.5 }}
+          >
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 750 }}>
+                Question Bank
+              </Typography>
+              <Typography
+                color="text.secondary"
+                sx={{ mt: 0.75, maxWidth: 760 }}
+              >
+                Manage KPI questions with API-backed create, update, view, and
+                delete operations.
+              </Typography>
+            </Box>
+
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              <Button
+                variant="contained"
+                startIcon={<AddRoundedIcon />}
+                onClick={() => navigate("/admin/questions/add")}
+              >
+                Add Question
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshRoundedIcon />}
+                onClick={() =>
+                  dispatch(
+                    fetchQuestions({
+                      skip: 0,
+                      limit: 50,
+                      themeKey: filters.themeKey,
+                      kpiKey: filters.kpiKey,
+                      search: filters.search,
+                      isActive,
+                    }),
+                  )
+                }
+                disabled={listLoading}
+              >
+                Refresh
+              </Button>
+            </Stack>
+          </Stack>
+
+          <Box
+            sx={{
+              display: "grid",
+              gap: 1.5,
+              mb: 2,
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+                lg: "repeat(4, minmax(0, 1fr))",
+              },
+            }}
+          >
+            <TextField
+              label="Theme"
+              select
+              value={filters.themeKey}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  themeKey: event.target.value,
+                  kpiKey:
+                    current.kpiKey &&
+                    !kpiItems.some(
+                      (item) =>
+                        item.kpi_key === current.kpiKey &&
+                        item.theme_key === event.target.value,
+                    )
+                      ? ""
+                      : current.kpiKey,
+                }))
+              }
+              fullWidth
+            >
+              <MenuItem value="">All Themes</MenuItem>
+              {themeItems.map((item) => (
+                <MenuItem key={item.theme_key} value={item.theme_key}>
+                  {item.theme_display_name}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="KPI"
+              select
+              value={filters.kpiKey}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  kpiKey: event.target.value,
+                }))
+              }
+              fullWidth
+            >
+              <MenuItem value="">All KPIs</MenuItem>
+              {filteredKpis.map((item) => (
+                <MenuItem key={item.kpi_key} value={item.kpi_key}>
+                  {item.display_name}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Search"
+              value={filters.search}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  search: event.target.value,
+                }))
+              }
+              fullWidth
+            />
+            <TextField
+              label="Status"
+              select
+              value={filters.status}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
+              fullWidth
+            >
+              <MenuItem value="all">All Status</MenuItem>
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="inactive">Inactive</MenuItem>
+            </TextField>
+          </Box>
+
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Showing {items.length} of {total} questions
+          </Typography>
+
+          <Box sx={{ width: "100%", overflowX: "auto" }}>
+            <Box sx={{ height: 560, width: "max-content", minWidth: "100%" }}>
+              <DataGrid
+                rows={items}
+                columns={columns}
+                loading={listLoading}
+                disableRowSelectionOnClick
+                pageSizeOptions={[10, 25, 50]}
+                initialState={{
+                  pagination: {
+                    paginationModel: { pageSize: 10, page: 0 },
+                  },
+                }}
+              />
+            </Box>
+          </Box>
+        </Paper>
       </Stack>
     </Layout>
   );
