@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   FormControlLabel,
+  IconButton,
   MenuItem,
   Paper,
   Stack,
@@ -15,6 +16,8 @@ import {
   useTheme,
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import { fetchThemes } from "../../store/themeSlice";
 import { fetchKpis } from "../../store/kpiSlice";
@@ -40,7 +43,7 @@ const emptyForm = {
   question_code: "",
   question_text: "",
   reverse_code: false,
-  options: Array.from({ length: 5 }, (_, index) => createEmptyOption(index)),
+  options: [createEmptyOption(0), createEmptyOption(1)],
 };
 
 export default function QuestionWorkflowForm({ mode }) {
@@ -86,20 +89,13 @@ export default function QuestionWorkflowForm({ mode }) {
         question_text: selectedQuestion.question_text || "",
         reverse_code: Boolean(selectedQuestion.reverse_code),
         options:
-          selectedQuestion.options?.length === 5
+          selectedQuestion.options?.length > 0
             ? selectedQuestion.options.map((item, index) => ({
                 option_number: item.option_number ?? index + 1,
                 option_text: item.option_text || "",
                 score: item.score ?? index + 1,
               }))
-            : Array.from({ length: 5 }, (_, index) => {
-                const current = selectedQuestion.options?.[index];
-                return {
-                  option_number: index + 1,
-                  option_text: current?.option_text || "",
-                  score: current?.score ?? index + 1,
-                };
-              }),
+            : [createEmptyOption(0), createEmptyOption(1)],
       });
     }
   }, [mode, selectedQuestion]);
@@ -120,13 +116,17 @@ export default function QuestionWorkflowForm({ mode }) {
       return "Question code and question text are required.";
     }
 
+    if (form.options.length < 2) {
+      return "Add at least two options.";
+    }
+
     const hasInvalidOption = form.options.some(
       (option) =>
         !option.option_text.trim() || Number.isNaN(Number(option.score)),
     );
 
     if (hasInvalidOption) {
-      return "All five options must have text and valid scores.";
+      return "All options must have text and valid scores.";
     }
 
     return "";
@@ -214,7 +214,7 @@ export default function QuestionWorkflowForm({ mode }) {
             {mode === "edit" ? "Edit Question" : "Add Question"}
           </Typography>
           <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-            Manage KPI question content and its five scored response options.
+            Manage KPI question content and its scored response options.
           </Typography>
         </Box>
         <Button
@@ -328,9 +328,33 @@ export default function QuestionWorkflowForm({ mode }) {
         />
       </Box>
 
-      <Typography variant="h6" sx={{ fontWeight: 700, mt: 3, mb: 2 }}>
-        Question Options
-      </Typography>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        spacing={1}
+        sx={{ mt: 3, mb: 2 }}
+      >
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            Question Options
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Add or remove options as needed. At least two are required.
+          </Typography>
+        </Box>
+        <Button
+          variant="outlined"
+          startIcon={<AddRoundedIcon />}
+          onClick={() =>
+            setForm((current) => ({
+              ...current,
+              options: [...current.options, createEmptyOption(current.options.length)],
+            }))
+          }
+        >
+          Add Option
+        </Button>
+      </Stack>
 
       <Stack spacing={1.5}>
         {form.options.map((option, index) => (
@@ -374,6 +398,23 @@ export default function QuestionWorkflowForm({ mode }) {
                 }
                 sx={{ width: { xs: "100%", md: 110 } }}
               />
+              <IconButton
+                color="error"
+                disabled={form.options.length <= 2}
+                onClick={() =>
+                  setForm((current) => ({
+                    ...current,
+                    options: current.options
+                      .filter((_, itemIndex) => itemIndex !== index)
+                      .map((item, itemIndex) => ({
+                        ...item,
+                        option_number: itemIndex + 1,
+                      })),
+                  }))
+                }
+              >
+                <DeleteOutlineRoundedIcon />
+              </IconButton>
             </Stack>
           </Paper>
         ))}
