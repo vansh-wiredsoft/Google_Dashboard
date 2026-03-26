@@ -621,7 +621,7 @@ export default function CompanyDataForm({ mode }) {
               </Box>
             ) : (
               <Alert severity="info">
-                The request will be sent with `admin: null`.
+                Creating company without admin
               </Alert>
             )}
           </Box>

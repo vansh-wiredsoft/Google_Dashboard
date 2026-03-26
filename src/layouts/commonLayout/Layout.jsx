@@ -36,6 +36,8 @@ import PersonIcon from "@mui/icons-material/Person";
 import CategoryIcon from "@mui/icons-material/Category";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { useThemeMode } from "../../context/ThemeModeContext";

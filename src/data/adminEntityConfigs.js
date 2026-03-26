@@ -1,5 +1,10 @@
 export const companyFields = [
-  { name: "company_name", label: "Company Name", required: true, minWidth: 220 },
+  {
+    name: "company_name",
+    label: "Company Name",
+    required: true,
+    minWidth: 220,
+  },
   { name: "industry", label: "Industry", required: true },
   {
     name: "size_bucket",
@@ -66,7 +71,12 @@ export const userFields = [
   },
   { name: "phone", label: "Phone", required: true, minWidth: 150 },
   { name: "email", label: "Email", required: true, minWidth: 220 },
-  { name: "company_name", label: "Company Name", required: true, minWidth: 220 },
+  {
+    name: "company_name",
+    label: "Company Name",
+    required: true,
+    minWidth: 220,
+  },
 ];
 
 export const userRows = [
@@ -102,7 +112,12 @@ export const questionFields = [
   { name: "5", label: "Scale 5", required: true, minWidth: 120 },
   { name: "Theme", label: "Theme", required: true, minWidth: 220 },
   { name: "KPI", label: "KPI", required: true, minWidth: 180 },
-  { name: "Question_Code", label: "Question Code", required: true, minWidth: 160 },
+  {
+    name: "Question_Code",
+    label: "Question Code",
+    required: true,
+    minWidth: 160,
+  },
   {
     name: "Question",
     label: "Question",
@@ -121,34 +136,7 @@ export const questionFields = [
   },
 ];
 
-export const questionRows = [
-  {
-    id: "question-1",
-    1: "<5",
-    2: "5-6",
-    3: "6-7",
-    4: "7-8",
-    5: ">8",
-    Theme: "My Body Is My Armor (Immunity & Hygiene)",
-    KPI: "Physical Vitality",
-    Question_Code: "Sleep_Hours",
-    Question: "How many hours do you sleep daily?",
-    Reverse_Coded: "No",
-  },
-  {
-    id: "question-2",
-    1: "Never",
-    2: "Rarely",
-    3: "Sometimes",
-    4: "Often",
-    5: "Always",
-    Theme: "Stress and Recovery",
-    KPI: "Mental Balance",
-    Question_Code: "Stress_Level",
-    Question: "How often do you feel mentally exhausted by the end of the day?",
-    Reverse_Coded: "Yes",
-  },
-];
+export const questionRows = [];
 
 export const entityConfigs = {
   company: {
