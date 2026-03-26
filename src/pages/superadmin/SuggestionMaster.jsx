@@ -1,23 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Alert,
   Avatar,
   Box,
   Button,
   Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControlLabel,
   Grid,
   IconButton,
   MenuItem,
   Paper,
   Stack,
-  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -37,32 +31,20 @@ import SpaRoundedIcon from "@mui/icons-material/SpaRounded";
 import TipsAndUpdatesRoundedIcon from "@mui/icons-material/TipsAndUpdatesRounded";
 import Layout from "../../layouts/commonLayout/Layout";
 import {
-  clearAdminSuggestionCreateState,
   clearAdminSuggestionDeleteState,
-  clearAdminSuggestionDetailState,
   clearAdminSuggestionListState,
-  clearAdminSuggestionUpdateState,
-  createAdminSuggestion,
   deleteAdminSuggestion,
-  fetchAdminSuggestionById,
   fetchAdminSuggestions,
-  updateAdminSuggestion,
 } from "../../store/adminSuggestionSlice";
 import { getRaisedGradient, getSurfaceBackground } from "../../theme";
 
 const suggestionTypeOptions = ["aahar", "vihar", "aushadh"];
 const doshaOptions = ["all", "vata", "pitta", "kapha"];
 const difficultyOptions = ["easy", "moderate", "advanced"];
-
-const defaultFormValues = {
-  suggestion_type: "aahar",
-  title: "",
-  description: "",
-  url: "",
-  dosha_type: "all",
-  difficulty: "easy",
-  duration_mins: "",
-  is_active: true,
+const filterFieldSx = {
+  "& .MuiInputBase-root": {
+    minHeight: 56,
+  },
 };
 
 function SectionCard({ children, sx }) {
@@ -131,95 +113,20 @@ function MetricCard({ label, value, note, color, icon }) {
   );
 }
 
-const normalizeFormValues = (item) => ({
-  suggestion_type: item?.suggestion_type || "aahar",
-  title: item?.title || "",
-  description: item?.description || "",
-  url: item?.url || "",
-  dosha_type: item?.dosha_type || "all",
-  difficulty: item?.difficulty || "easy",
-  duration_mins:
-    item?.duration_mins === null || item?.duration_mins === undefined
-      ? ""
-      : String(item.duration_mins),
-  is_active: item?.is_active ?? true,
-});
-
-const buildPayload = (values) => ({
-  suggestion_type: values.suggestion_type,
-  title: values.title.trim(),
-  description: values.description.trim(),
-  url: values.url.trim(),
-  dosha_type: values.dosha_type,
-  difficulty: values.difficulty,
-  duration_mins: Number(values.duration_mins || 0),
-  is_active: Boolean(values.is_active),
-});
-
-const validateForm = (values) => {
-  if (!values.title.trim()) return "Title is required.";
-  if (!values.description.trim()) return "Description is required.";
-  if (!values.suggestion_type) return "Suggestion type is required.";
-  if (!values.dosha_type) return "Dosha type is required.";
-  if (!values.difficulty) return "Difficulty is required.";
-  if (values.duration_mins === "") return "Duration is required.";
-
-  const duration = Number(values.duration_mins);
-  if (!Number.isFinite(duration) || duration < 0) {
-    return "Duration must be 0 or more.";
-  }
-
-  return "";
-};
-
-function DetailRow({ label, value }) {
-  return (
-    <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-        {label}
-      </Typography>
-      <Typography variant="body2" sx={{ fontWeight: 600, whiteSpace: "pre-wrap" }}>
-        {value || "-"}
-      </Typography>
-    </Box>
-  );
-}
-
 export default function SuggestionMaster() {
   const theme = useTheme();
   const dispatch = useDispatch();
-  const {
-    items,
-    total,
-    listLoading,
-    detailLoading,
-    createLoading,
-    updateLoading,
-    deleteLoading,
-    listError,
-    detailError,
-    createError,
-    updateError,
-    deleteError,
-    createMessage,
-    updateMessage,
-    deleteMessage,
-    selectedSuggestion,
-  } = useSelector((state) => state.adminSuggestion);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const feedback = location.state?.feedback;
+  const { items, total, listLoading, listError, deleteLoading, deleteError, deleteMessage } =
+    useSelector((state) => state.adminSuggestion);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [doshaFilter, setDoshaFilter] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dialogMode, setDialogMode] = useState("create");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [activeSuggestionId, setActiveSuggestionId] = useState("");
-  const [formValues, setFormValues] = useState(defaultFormValues);
-  const [formError, setFormError] = useState("");
-
-  const isSubmitting = createLoading || updateLoading;
-  const isReadOnly = dialogMode === "view";
 
   const fetchList = () => {
     const params = {
@@ -249,18 +156,9 @@ export default function SuggestionMaster() {
   useEffect(() => {
     return () => {
       dispatch(clearAdminSuggestionListState());
-      dispatch(clearAdminSuggestionCreateState());
-      dispatch(clearAdminSuggestionUpdateState());
       dispatch(clearAdminSuggestionDeleteState());
-      dispatch(clearAdminSuggestionDetailState());
     };
   }, [dispatch]);
-
-  useEffect(() => {
-    if ((dialogMode === "edit" || dialogMode === "view") && selectedSuggestion) {
-      setFormValues(normalizeFormValues(selectedSuggestion));
-    }
-  }, [dialogMode, selectedSuggestion]);
 
   const filteredRows = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -305,85 +203,13 @@ export default function SuggestionMaster() {
     return { activeCount, inactiveCount, avgDuration };
   }, [items]);
 
-  const openCreateDialog = () => {
-    setDialogMode("create");
-    setActiveSuggestionId("");
-    setFormValues(defaultFormValues);
-    setFormError("");
-    setDialogOpen(true);
-    dispatch(clearAdminSuggestionCreateState());
-    dispatch(clearAdminSuggestionUpdateState());
-    dispatch(clearAdminSuggestionDetailState());
-  };
-
-  const openSuggestionDialog = async (mode, suggestionId) => {
-    setDialogMode(mode);
-    setActiveSuggestionId(suggestionId);
-    setFormValues(defaultFormValues);
-    setFormError("");
-    setDialogOpen(true);
-    dispatch(clearAdminSuggestionDetailState());
-    dispatch(clearAdminSuggestionCreateState());
-    dispatch(clearAdminSuggestionUpdateState());
-
-    try {
-      await dispatch(fetchAdminSuggestionById(suggestionId)).unwrap();
-    } catch {
-      // Error state is shown from redux.
-    }
-  };
-
-  const closeDialog = () => {
-    if (isSubmitting) return;
-    setDialogOpen(false);
-    setActiveSuggestionId("");
-    setFormError("");
-    dispatch(clearAdminSuggestionDetailState());
-  };
-
-  const handleFormChange = (field, value) => {
-    setFormValues((current) => ({
-      ...current,
-      [field]: value,
-    }));
-    setFormError("");
-  };
-
-  const handleSubmit = async () => {
-    const errorMessage = validateForm(formValues);
-    if (errorMessage) {
-      setFormError(errorMessage);
-      return;
-    }
-
-    const payload = buildPayload(formValues);
-
-    try {
-      if (dialogMode === "edit" && activeSuggestionId) {
-        await dispatch(
-          updateAdminSuggestion({
-            suggestionId: activeSuggestionId,
-            suggestion: payload,
-          }),
-        ).unwrap();
-      } else {
-        await dispatch(createAdminSuggestion(payload)).unwrap();
-      }
-      setDialogOpen(false);
-      setActiveSuggestionId("");
-      setFormError("");
-    } catch {
-      // Error state is shown from redux.
-    }
-  };
-
   const handleDelete = async (suggestionId, title) => {
     if (!window.confirm(`Delete suggestion "${title}"?`)) return;
 
     try {
       await dispatch(deleteAdminSuggestion(suggestionId)).unwrap();
     } catch {
-      // Error state is shown from redux.
+      // Redux state already stores the error.
     }
   };
 
@@ -407,17 +233,29 @@ export default function SuggestionMaster() {
         field: "suggestion_type",
         headerName: "Type",
         minWidth: 130,
+        align: "center",
+        headerAlign: "center",
         renderCell: ({ value }) => (
-          <Chip
-            size="small"
-            label={value}
+          <Box
             sx={{
-              textTransform: "capitalize",
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              color: "primary.main",
-              fontWeight: 700,
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
-          />
+          >
+            <Chip
+              size="small"
+              label={value}
+              sx={{
+                textTransform: "capitalize",
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                color: "primary.main",
+                fontWeight: 700,
+              }}
+            />
+          </Box>
         ),
       },
       {
@@ -425,59 +263,92 @@ export default function SuggestionMaster() {
         headerName: "Title",
         flex: 1.1,
         minWidth: 220,
+        headerAlign: "left",
       },
       {
         field: "description",
         headerName: "Description",
         flex: 1.4,
         minWidth: 280,
+        headerAlign: "left",
       },
       {
         field: "dosha_type",
         headerName: "Dosha",
         minWidth: 120,
+        align: "center",
+        headerAlign: "center",
         renderCell: ({ value }) => (
-          <Chip
-            size="small"
-            label={value}
-            variant="outlined"
-            sx={{ textTransform: "capitalize", fontWeight: 700 }}
-          />
+          <Box
+            sx={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Chip
+              size="small"
+              label={value}
+              variant="outlined"
+              sx={{ textTransform: "capitalize", fontWeight: 700 }}
+            />
+          </Box>
         ),
       },
       {
         field: "difficulty",
         headerName: "Difficulty",
         minWidth: 130,
+        align: "center",
+        headerAlign: "center",
         renderCell: ({ value }) => (
-          <Chip
-            size="small"
-            label={value}
-            color={
-              value === "easy"
-                ? "success"
-                : value === "moderate"
-                  ? "warning"
-                  : "error"
-            }
-            variant="outlined"
-            sx={{ textTransform: "capitalize", fontWeight: 700 }}
-          />
+          <Box
+            sx={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Chip
+              size="small"
+              label={value}
+              color={
+                value === "easy"
+                  ? "success"
+                  : value === "moderate"
+                    ? "warning"
+                    : "error"
+              }
+              variant="outlined"
+              sx={{ textTransform: "capitalize", fontWeight: 700 }}
+            />
+          </Box>
         ),
       },
       {
         field: "duration_mins",
         headerName: "Duration",
         minWidth: 120,
+        headerAlign: "left",
         valueGetter: (_, row) => `${Number(row.duration_mins || 0)} mins`,
       },
       {
         field: "url",
         headerName: "URL",
         flex: 1,
-        minWidth: 220,
+        minWidth: 340,
+        headerAlign: "left",
         renderCell: ({ value }) => (
-          <Stack direction="row" spacing={0.8} alignItems="center" sx={{ minWidth: 0 }}>
+          <Stack
+            direction="row"
+            spacing={0.8}
+            alignItems="center"
+            sx={{ minWidth: 0, width: "100%", height: "100%" }}
+          >
             <LinkRoundedIcon sx={{ fontSize: 16, color: "text.secondary" }} />
             <Typography variant="body2" noWrap>
               {value || "-"}
@@ -489,20 +360,33 @@ export default function SuggestionMaster() {
         field: "is_active",
         headerName: "Status",
         minWidth: 120,
+        align: "center",
+        headerAlign: "center",
         renderCell: ({ value }) => (
-          <Chip
-            size="small"
-            label={value ? "Active" : "Inactive"}
-            color={value ? "success" : "default"}
-            variant={value ? "filled" : "outlined"}
-          />
+          <Box
+            sx={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Chip
+              size="small"
+              label={value ? "Active" : "Inactive"}
+              color={value ? "success" : "default"}
+              variant={value ? "filled" : "outlined"}
+            />
+          </Box>
         ),
       },
       {
         field: "created_at",
         headerName: "Created At",
-        flex: 1,
-        minWidth: 190,
+        flex: 1.05,
+        minWidth: 220,
+        headerAlign: "left",
         valueFormatter: (value) =>
           value ? new Date(value).toLocaleString() : "-",
       },
@@ -512,63 +396,64 @@ export default function SuggestionMaster() {
         sortable: false,
         filterable: false,
         minWidth: 160,
+        align: "center",
+        headerAlign: "center",
         renderCell: ({ row }) => (
-          <Stack direction="row" spacing={0.5}>
-            <Tooltip title="View">
-              <IconButton size="small" onClick={() => openSuggestionDialog("view", row.id)}>
-                <PreviewRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Edit">
-              <IconButton size="small" onClick={() => openSuggestionDialog("edit", row.id)}>
-                <EditRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <span>
+          <Box
+            sx={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Stack direction="row" spacing={0.5}>
+              <Tooltip title="View">
                 <IconButton
                   size="small"
-                  color="error"
-                  disabled={deleteLoading}
-                  onClick={() => handleDelete(row.id, row.title)}
+                  onClick={() => navigate(`/super-admin/suggestion-master/${row.id}`)}
                 >
-                  <DeleteOutlineRoundedIcon fontSize="small" />
+                  <PreviewRoundedIcon fontSize="small" />
                 </IconButton>
-              </span>
-            </Tooltip>
-          </Stack>
+              </Tooltip>
+              <Tooltip title="Edit">
+                <IconButton
+                  size="small"
+                  onClick={() =>
+                    navigate(`/super-admin/suggestion-master/${row.id}/edit`)
+                  }
+                >
+                  <EditRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete">
+                <span>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    disabled={deleteLoading}
+                    onClick={() => handleDelete(row.id, row.title)}
+                  >
+                    <DeleteOutlineRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Stack>
+          </Box>
         ),
       },
     ],
-    [deleteLoading, theme.palette.primary.main],
+    [deleteLoading, navigate, theme.palette.primary.main],
   );
-
-  const dialogTitle =
-    dialogMode === "create"
-      ? "Add Suggestion"
-      : dialogMode === "edit"
-        ? "Edit Suggestion"
-        : "Suggestion Details";
 
   return (
     <Layout role="superadmin" title="Suggestion Master">
       <Stack spacing={2.5}>
-        {(listError || detailError || createError || updateError || deleteError) && (
-          <Stack spacing={1.25}>
-            {listError && <Alert severity="error">{listError}</Alert>}
-            {detailError && <Alert severity="error">{detailError}</Alert>}
-            {createError && <Alert severity="error">{createError}</Alert>}
-            {updateError && <Alert severity="error">{updateError}</Alert>}
-            {deleteError && <Alert severity="error">{deleteError}</Alert>}
-          </Stack>
-        )}
-        {(createMessage || updateMessage || deleteMessage) && (
-          <Stack spacing={1.25}>
-            {createMessage && <Alert severity="success">{createMessage}</Alert>}
-            {updateMessage && <Alert severity="success">{updateMessage}</Alert>}
-            {deleteMessage && <Alert severity="success">{deleteMessage}</Alert>}
-          </Stack>
-        )}
+        {feedback && <Alert severity={feedback.severity}>{feedback.message}</Alert>}
+        {listError && <Alert severity="error">{listError}</Alert>}
+        {deleteError && <Alert severity="error">{deleteError}</Alert>}
+        {deleteMessage && <Alert severity="success">{deleteMessage}</Alert>}
 
         <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, md: 4 }}>
@@ -612,15 +497,15 @@ export default function SuggestionMaster() {
                     Suggestion Library
                   </Typography>
                   <Typography color="text.secondary" variant="body2">
-                    Live suggestion records from the admin APIs with create, view,
-                    update, and delete controls.
+                    Live suggestion records from the admin APIs with dedicated add,
+                    view, and edit pages.
                   </Typography>
                 </Box>
                 <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
                   <Button
                     variant="contained"
                     startIcon={<AddRoundedIcon />}
-                    onClick={openCreateDialog}
+                    onClick={() => navigate("/super-admin/suggestion-master/add")}
                   >
                     Add Suggestion
                   </Button>
@@ -644,7 +529,7 @@ export default function SuggestionMaster() {
                     xs: "1fr",
                     sm: "repeat(2, minmax(0, 1fr))",
                     lg: "repeat(3, minmax(0, 1fr))",
-                    xl: "1.4fr 1fr 1fr 1fr 1fr auto auto",
+                    xl: "repeat(5, minmax(0, 1fr)) auto auto",
                   },
                   alignItems: { xl: "end" },
                 }}
@@ -654,6 +539,7 @@ export default function SuggestionMaster() {
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   fullWidth
+                  sx={filterFieldSx}
                 />
                 <TextField
                   label="Type"
@@ -661,6 +547,7 @@ export default function SuggestionMaster() {
                   value={typeFilter}
                   onChange={(event) => setTypeFilter(event.target.value)}
                   fullWidth
+                  sx={filterFieldSx}
                 >
                   <MenuItem value="">All Types</MenuItem>
                   {suggestionTypeOptions.map((option) => (
@@ -675,6 +562,7 @@ export default function SuggestionMaster() {
                   value={doshaFilter}
                   onChange={(event) => setDoshaFilter(event.target.value)}
                   fullWidth
+                  sx={filterFieldSx}
                 >
                   <MenuItem value="">All Dosha</MenuItem>
                   {doshaOptions.map((option) => (
@@ -689,6 +577,7 @@ export default function SuggestionMaster() {
                   value={difficultyFilter}
                   onChange={(event) => setDifficultyFilter(event.target.value)}
                   fullWidth
+                  sx={filterFieldSx}
                 >
                   <MenuItem value="">All Levels</MenuItem>
                   {difficultyOptions.map((option) => (
@@ -703,6 +592,7 @@ export default function SuggestionMaster() {
                   value={statusFilter}
                   onChange={(event) => setStatusFilter(event.target.value)}
                   fullWidth
+                  sx={filterFieldSx}
                 >
                   <MenuItem value="all">All Status</MenuItem>
                   <MenuItem value="active">Active</MenuItem>
@@ -736,6 +626,19 @@ export default function SuggestionMaster() {
                     columns={columns}
                     loading={listLoading}
                     disableRowSelectionOnClick
+                    rowHeight={74}
+                    sx={{
+                      "& .MuiDataGrid-columnHeaders": {
+                        bgcolor: alpha(theme.palette.common.black, 0.02),
+                      },
+                      "& .MuiDataGrid-columnHeader, & .MuiDataGrid-cell": {
+                        px: 2,
+                      },
+                      "& .MuiDataGrid-cell": {
+                        display: "flex",
+                        alignItems: "center",
+                      },
+                    }}
                     pageSizeOptions={[10, 25, 50]}
                     initialState={{
                       pagination: {
@@ -750,169 +653,38 @@ export default function SuggestionMaster() {
               </Box>
             </SectionCard>
           </Grid>
+
+          <Grid size={{ xs: 12, xl: 4 }}>
+            <SectionCard>
+              <Stack direction="row" spacing={1.2} alignItems="center" sx={{ mb: 1.5 }}>
+                <Avatar
+                  sx={{
+                    bgcolor: alpha(theme.palette.success.main, 0.12),
+                    color: "success.main",
+                  }}
+                >
+                  <SpaRoundedIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                    API Coverage
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Bound against the new admin suggestion endpoints.
+                  </Typography>
+                </Box>
+              </Stack>
+              <Stack spacing={1}>
+                <Chip label="GET /config/api/v1/admin/suggestions" variant="outlined" />
+                <Chip label="GET /api/v1/admin/suggestions/{id}" variant="outlined" />
+                <Chip label="POST /api/v1/admin/suggestions" variant="outlined" />
+                <Chip label="PUT /api/v1/admin/suggestions/{id}" variant="outlined" />
+                <Chip label="DELETE /api/v1/admin/suggestions/{id}" variant="outlined" />
+              </Stack>
+            </SectionCard>
+          </Grid>
         </Grid>
       </Stack>
-
-      <Dialog
-        open={dialogOpen}
-        onClose={closeDialog}
-        fullWidth
-        maxWidth="md"
-      >
-        <DialogTitle>{dialogTitle}</DialogTitle>
-        <DialogContent dividers>
-          {(detailLoading && isReadOnly) || (detailLoading && dialogMode === "edit") ? (
-            <Stack alignItems="center" justifyContent="center" sx={{ py: 6 }}>
-              <CircularProgress size={28} />
-            </Stack>
-          ) : isReadOnly ? (
-            <Stack spacing={2} sx={{ pt: 1 }}>
-              <DetailRow label="Suggestion Type" value={selectedSuggestion?.suggestion_type} />
-              <DetailRow label="Title" value={selectedSuggestion?.title} />
-              <DetailRow label="Description" value={selectedSuggestion?.description} />
-              <DetailRow label="URL" value={selectedSuggestion?.url} />
-              <DetailRow label="Dosha Type" value={selectedSuggestion?.dosha_type} />
-              <DetailRow label="Difficulty" value={selectedSuggestion?.difficulty} />
-              <DetailRow
-                label="Duration"
-                value={
-                  selectedSuggestion?.duration_mins !== undefined
-                    ? `${selectedSuggestion?.duration_mins} mins`
-                    : "-"
-                }
-              />
-              <DetailRow
-                label="Status"
-                value={selectedSuggestion?.is_active ? "Active" : "Inactive"}
-              />
-              <DetailRow
-                label="Created At"
-                value={
-                  selectedSuggestion?.created_at
-                    ? new Date(selectedSuggestion.created_at).toLocaleString()
-                    : "-"
-                }
-              />
-              <DetailRow
-                label="Updated At"
-                value={
-                  selectedSuggestion?.updated_at
-                    ? new Date(selectedSuggestion.updated_at).toLocaleString()
-                    : "-"
-                }
-              />
-            </Stack>
-          ) : (
-            <Stack spacing={2} sx={{ pt: 1 }}>
-              {formError && <Alert severity="error">{formError}</Alert>}
-              <Box
-                sx={{
-                  display: "grid",
-                  gap: 2,
-                  gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
-                }}
-              >
-                <TextField
-                  label="Suggestion Type"
-                  select
-                  value={formValues.suggestion_type}
-                  onChange={(event) =>
-                    handleFormChange("suggestion_type", event.target.value)
-                  }
-                  fullWidth
-                >
-                  {suggestionTypeOptions.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  label="Title"
-                  value={formValues.title}
-                  onChange={(event) => handleFormChange("title", event.target.value)}
-                  fullWidth
-                />
-                <TextField
-                  label="Dosha Type"
-                  select
-                  value={formValues.dosha_type}
-                  onChange={(event) => handleFormChange("dosha_type", event.target.value)}
-                  fullWidth
-                >
-                  {doshaOptions.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  label="Difficulty"
-                  select
-                  value={formValues.difficulty}
-                  onChange={(event) => handleFormChange("difficulty", event.target.value)}
-                  fullWidth
-                >
-                  {difficultyOptions.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <TextField
-                  label="Duration (mins)"
-                  type="number"
-                  value={formValues.duration_mins}
-                  onChange={(event) => handleFormChange("duration_mins", event.target.value)}
-                  fullWidth
-                  inputProps={{ min: 0 }}
-                />
-                <TextField
-                  label="URL"
-                  value={formValues.url}
-                  onChange={(event) => handleFormChange("url", event.target.value)}
-                  fullWidth
-                />
-              </Box>
-              <TextField
-                label="Description"
-                value={formValues.description}
-                onChange={(event) => handleFormChange("description", event.target.value)}
-                fullWidth
-                multiline
-                minRows={4}
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formValues.is_active}
-                    onChange={(event) =>
-                      handleFormChange("is_active", event.target.checked)
-                    }
-                  />
-                }
-                label="Active"
-              />
-            </Stack>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialog} disabled={isSubmitting}>
-            {isReadOnly ? "Close" : "Cancel"}
-          </Button>
-          {!isReadOnly && (
-            <Button onClick={handleSubmit} variant="contained" disabled={isSubmitting || detailLoading}>
-              {isSubmitting
-                ? dialogMode === "edit"
-                  ? "Saving..."
-                  : "Creating..."
-                : dialogMode === "edit"
-                  ? "Save Changes"
-                  : "Create Suggestion"}
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
     </Layout>
   );
 }

@@ -31,6 +31,8 @@ import UserDashboard from "../pages/user/Dashboard";
 import MyResponses from "../pages/user/MyResponses";
 import SuperAdminDashboard from "../pages/superadmin/Dashboard";
 import SuggestionMaster from "../pages/superadmin/SuggestionMaster";
+import SuggestionForm from "../pages/superadmin/SuggestionForm";
+import SuggestionView from "../pages/superadmin/SuggestionView";
 import ClientPage from "../pages/hidden/ClientPage";
 
 const getHomePathForRole = (role) => {
@@ -330,6 +332,30 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="superadmin">
             <SuggestionMaster />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super-admin/suggestion-master/add"
+        element={
+          <ProtectedRoute allowedRole="superadmin">
+            <SuggestionForm mode="add" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super-admin/suggestion-master/:id"
+        element={
+          <ProtectedRoute allowedRole="superadmin">
+            <SuggestionView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super-admin/suggestion-master/:id/edit"
+        element={
+          <ProtectedRoute allowedRole="superadmin">
+            <SuggestionForm mode="edit" />
           </ProtectedRoute>
         }
       />
