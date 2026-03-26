@@ -38,6 +38,8 @@ const normalizeChallenge = (item, index = 0) => ({
   icon: item?.icon || "",
   is_daily: Boolean(item?.is_daily),
   is_active: Boolean(item?.is_active),
+  start_date: item?.start_date || "",
+  end_date: item?.end_date || "",
   created_at: item?.created_at || "",
   updated_at: item?.updated_at || "",
 });
@@ -70,6 +72,9 @@ export const fetchChallenges = createAsyncThunk(
           skip,
           limit,
           ...(typeof isActive === "boolean" ? { is_active: isActive } : {}),
+          ...(kpiKey ? { kpi_key: kpiKey } : {}),
+          ...(startDate ? { start_date: startDate } : {}),
+          ...(endDate ? { end_date: endDate } : {}),
         },
       });
 

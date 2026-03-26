@@ -101,7 +101,9 @@ export default function Challenges() {
     dispatch(fetchChallenges(challengeQuery));
   };
 
-  const handleDelete = async (challengeKey) => {
+  const handleDelete = async (challengeKey, challengeName) => {
+    if (!window.confirm(`Delete challenge "${challengeName}"?`)) return;
+
     try {
       await dispatch(deleteChallenge(challengeKey)).unwrap();
       dispatch(fetchChallenges(challengeQuery));
@@ -163,6 +165,18 @@ export default function Challenges() {
             variant={value ? "filled" : "outlined"}
           />
         ),
+      },
+      {
+        field: "start_date",
+        headerName: "Start Date",
+        minWidth: 130,
+        valueGetter: (_, row) => row.start_date || "-",
+      },
+      {
+        field: "end_date",
+        headerName: "End Date",
+        minWidth: 130,
+        valueGetter: (_, row) => row.end_date || "-",
       },
       {
         field: "is_active",
@@ -227,7 +241,7 @@ export default function Challenges() {
                   size="small"
                   color="error"
                   disabled={deleteLoading}
-                  onClick={() => handleDelete(row.challenge_key)}
+                  onClick={() => handleDelete(row.challenge_key, row.name)}
                 >
                   <DeleteOutlineRoundedIcon fontSize="small" />
                 </IconButton>
