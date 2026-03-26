@@ -30,6 +30,7 @@ import SketchLab from "../pages/hidden/SketchLab";
 import UserDashboard from "../pages/user/Dashboard";
 import MyResponses from "../pages/user/MyResponses";
 import SuperAdminDashboard from "../pages/superadmin/Dashboard";
+import SuggestionMaster from "../pages/superadmin/SuggestionMaster";
 import ClientPage from "../ClientPage.jsx";
 
 const getHomePathForRole = (role) => {
@@ -321,6 +322,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="superadmin">
             <SuperAdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super-admin/suggestion-master"
+        element={
+          <ProtectedRoute allowedRole="superadmin">
+            <SuggestionMaster />
           </ProtectedRoute>
         }
       />

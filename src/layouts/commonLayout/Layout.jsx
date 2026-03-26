@@ -36,6 +36,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import CategoryIcon from "@mui/icons-material/Category";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import TipsAndUpdatesRoundedIcon from "@mui/icons-material/TipsAndUpdatesRounded";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
@@ -75,6 +76,11 @@ const superAdminItems = [
     label: "Company Data",
     to: "/super-admin/company-data",
     icon: <BusinessIcon />,
+  },
+  {
+    label: "Suggestion Master",
+    to: "/super-admin/suggestion-master",
+    icon: <TipsAndUpdatesRoundedIcon />,
   },
 ];
 
