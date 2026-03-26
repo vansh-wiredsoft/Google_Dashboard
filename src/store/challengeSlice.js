@@ -31,7 +31,12 @@ const normalizeChallenge = (item, index = 0) => ({
   id: String(item?.challenge_key || index),
   challenge_key: String(item?.challenge_key || index),
   name: item?.name || "Untitled Challenge",
+  challenge_type: item?.challenge_type || "",
   description: item?.description || "",
+  target_value: Number(item?.target_value) || 0,
+  xp_reward: Number(item?.xp_reward) || 0,
+  icon: item?.icon || "",
+  is_daily: Boolean(item?.is_daily),
   is_active: Boolean(item?.is_active),
   created_at: item?.created_at || "",
   updated_at: item?.updated_at || "",
@@ -55,7 +60,10 @@ const normalizeChallengeDetail = (payload) => ({
 
 export const fetchChallenges = createAsyncThunk(
   "challenge/fetchChallenges",
-  async ({ skip = 0, limit = 50, isActive = true } = {}, { rejectWithValue }) => {
+  async (
+    { skip = 0, limit = 50, isActive = true, kpiKey, startDate, endDate } = {},
+    { rejectWithValue },
+  ) => {
     try {
       const response = await api.get(CHALLENGE_PATH, {
         params: {
@@ -67,7 +75,9 @@ export const fetchChallenges = createAsyncThunk(
 
       const payload = response?.data || {};
       if (!payload?.success) {
-        return rejectWithValue(payload?.message || "Failed to fetch challenges.");
+        return rejectWithValue(
+          payload?.message || "Failed to fetch challenges.",
+        );
       }
 
       const data = payload?.data || {};
@@ -92,22 +102,53 @@ export const fetchChallenges = createAsyncThunk(
 
 export const createChallenge = createAsyncThunk(
   "challenge/createChallenge",
-  async ({ name, description, kpiMappings }, { rejectWithValue }) => {
+  async (
+    {
+      name,
+      challengeType,
+      description,
+      targetValue,
+      xpReward,
+      icon,
+      isDaily,
+      kpiMappings,
+    },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await api.post(CHALLENGE_PATH, {
         name,
+        challenge_type: challengeType,
         description,
+        target_value: targetValue,
+        xp_reward: xpReward,
+        icon,
+        is_daily: isDaily,
         kpi_mappings: kpiMappings,
       });
 
       const payload = response?.data || {};
-      if (!payload?.success || !payload?.data?.challenge?.challenge_key) {
-        return rejectWithValue(payload?.message || "Challenge creation failed.");
+      const createdChallenge =
+        payload?.data?.challenge ||
+        payload?.data ||
+        (payload?.name ? payload : null);
+
+      if (!createdChallenge) {
+        return rejectWithValue(
+          payload?.message || "Challenge creation failed.",
+        );
       }
 
       return {
-        item: normalizeChallenge(payload.data.challenge),
-        detail: normalizeChallengeDetail(payload.data),
+        item: normalizeChallenge(createdChallenge),
+        detail: {
+          ...normalizeChallenge(createdChallenge),
+          kpi_mappings: Array.isArray(createdChallenge?.kpi_mappings)
+            ? createdChallenge.kpi_mappings.map(normalizeKpiMapping)
+            : Array.isArray(kpiMappings)
+              ? kpiMappings.map(normalizeKpiMapping)
+              : [],
+        },
         message: payload?.message || "Challenge created successfully.",
       };
     } catch (error) {
@@ -129,7 +170,9 @@ export const fetchChallengeById = createAsyncThunk(
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data?.challenge) {
-        return rejectWithValue(payload?.message || "Failed to fetch challenge.");
+        return rejectWithValue(
+          payload?.message || "Failed to fetch challenge.",
+        );
       }
 
       return normalizeChallengeDetail(payload.data);
@@ -146,17 +189,39 @@ export const fetchChallengeById = createAsyncThunk(
 
 export const updateChallenge = createAsyncThunk(
   "challenge/updateChallenge",
-  async ({ challengeKey, name, description, isActive }, { rejectWithValue }) => {
+  async (
+    {
+      challengeKey,
+      name,
+      challengeType,
+      description,
+      targetValue,
+      xpReward,
+      icon,
+      isDaily,
+      isActive,
+      kpiMappings,
+    },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await api.put(`${CHALLENGE_PATH}/${challengeKey}`, {
         name,
+        challenge_type: challengeType,
         description,
+        target_value: targetValue,
+        xp_reward: xpReward,
+        icon,
+        is_daily: isDaily,
         is_active: isActive,
+        kpi_mappings: kpiMappings,
       });
 
       const payload = response?.data || {};
       if (!payload?.success || !payload?.data) {
-        return rejectWithValue(payload?.message || "Failed to update challenge.");
+        return rejectWithValue(
+          payload?.message || "Failed to update challenge.",
+        );
       }
 
       return {
@@ -182,7 +247,9 @@ export const deleteChallenge = createAsyncThunk(
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
-        return rejectWithValue(payload?.message || "Failed to delete challenge.");
+        return rejectWithValue(
+          payload?.message || "Failed to delete challenge.",
+        );
       }
 
       return {
@@ -204,15 +271,20 @@ export const addChallengeKpiMapping = createAsyncThunk(
   "challenge/addChallengeKpiMapping",
   async ({ challengeKey, kpiKey, startDate, endDate }, { rejectWithValue }) => {
     try {
-      const response = await api.post(`${CHALLENGE_PATH}/${challengeKey}/kpi-mappings`, {
-        kpi_key: kpiKey,
-        start_date: startDate,
-        end_date: endDate,
-      });
+      const response = await api.post(
+        `${CHALLENGE_PATH}/${challengeKey}/kpi-mappings`,
+        {
+          kpi_key: kpiKey,
+          start_date: startDate,
+          end_date: endDate,
+        },
+      );
 
       const payload = response?.data || {};
       if (!payload?.success || !payload?.data) {
-        return rejectWithValue(payload?.message || "Failed to add KPI mapping.");
+        return rejectWithValue(
+          payload?.message || "Failed to add KPI mapping.",
+        );
       }
 
       return {
@@ -294,6 +366,7 @@ const challengeSlice = createSlice({
         state.createLoading = false;
         state.createMessage = action.payload.message;
         state.selectedChallenge = action.payload.detail;
+        state.items = [action.payload.item, ...state.items];
       })
       .addCase(createChallenge.rejected, (state, action) => {
         state.createLoading = false;
@@ -323,7 +396,8 @@ const challengeSlice = createSlice({
         state.items = replaceChallenge(state.items, action.payload.item);
 
         if (
-          state.selectedChallenge?.challenge_key === action.payload.item.challenge_key
+          state.selectedChallenge?.challenge_key ===
+          action.payload.item.challenge_key
         ) {
           state.selectedChallenge = {
             ...state.selectedChallenge,
@@ -346,7 +420,8 @@ const challengeSlice = createSlice({
         state.items = replaceChallenge(state.items, action.payload.item);
 
         if (
-          state.selectedChallenge?.challenge_key === action.payload.item.challenge_key
+          state.selectedChallenge?.challenge_key ===
+          action.payload.item.challenge_key
         ) {
           state.selectedChallenge = {
             ...state.selectedChallenge,

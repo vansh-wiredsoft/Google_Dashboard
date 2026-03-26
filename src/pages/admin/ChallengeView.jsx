@@ -149,6 +149,46 @@ export default function ChallengeView() {
               </Paper>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
                 <Typography variant="caption" color="text.secondary">
+                  Challenge Type
+                </Typography>
+                <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                  {selectedChallenge.challenge_type || "-"}
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Target Value
+                </Typography>
+                <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                  {selectedChallenge.target_value ?? "-"}
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+                <Typography variant="caption" color="text.secondary">
+                  XP Reward
+                </Typography>
+                <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                  {selectedChallenge.xp_reward ?? "-"}
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Icon
+                </Typography>
+                <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                  {selectedChallenge.icon || "-"}
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Daily Challenge
+                </Typography>
+                <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                  {selectedChallenge.is_daily ? "Yes" : "No"}
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+                <Typography variant="caption" color="text.secondary">
                   Created At
                 </Typography>
                 <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
@@ -207,6 +247,13 @@ export default function ChallengeView() {
                   >
                     <Typography sx={{ fontWeight: 600 }}>
                       {mapping.display_name}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 0.25 }}
+                    >
+                      KPI Key: {mapping.kpi_key || "-"}
                     </Typography>
 
                     <Typography

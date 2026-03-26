@@ -30,6 +30,8 @@ import SketchLab from "../pages/hidden/SketchLab";
 import UserDashboard from "../pages/user/Dashboard";
 import MyResponses from "../pages/user/MyResponses";
 import SuperAdminDashboard from "../pages/superadmin/Dashboard";
+// import Ayumonk-complete-dashboard-v6 from "../Ayumonk-complete-dashboard-v6.jsx";
+
 
 const getHomePathForRole = (role) => {
   switch (role) {
@@ -63,10 +65,9 @@ function ProtectedRoute({ children, allowedRole }) {
 function LoginRoute({ fallback }) {
   const location = useLocation();
   const authenticated = useSelector((state) => state.auth.isAuthenticated);
-  const redirectTarget =
-    location.state?.from?.pathname
-      ? `${location.state.from.pathname}${location.state.from.search || ""}${location.state.from.hash || ""}`
-      : fallback;
+  const redirectTarget = location.state?.from?.pathname
+    ? `${location.state.from.pathname}${location.state.from.search || ""}${location.state.from.hash || ""}`
+    : fallback;
 
   return authenticated ? <Navigate to={redirectTarget} replace /> : <Login />;
 }
@@ -82,10 +83,7 @@ export default function AppRoutes() {
         path="/"
         element={<Navigate to={authenticated ? fallback : "/login"} replace />}
       />
-      <Route
-        path="/login"
-        element={<LoginRoute fallback={fallback} />}
-      />
+      <Route path="/login" element={<LoginRoute fallback={fallback} />} />
 
       <Route
         path="/admin/dashboard"
@@ -359,14 +357,16 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/vault/ink-room-7f3a"
+      {/* <Route
+        path="/client/dashboard"
         element={
           <ProtectedRoute>
-            <SketchLab />
+            <Ayumonk-complete-dashboard-v6 />
           </ProtectedRoute>
         }
-      />
+      /> */}
+
+      <Route path="/vault/ink-room-7f3a" element={<SketchLab />} />
 
       <Route
         path="*"

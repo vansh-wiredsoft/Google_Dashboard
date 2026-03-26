@@ -33,8 +33,6 @@ import {
 } from "../../store/challengeSlice";
 import { getSurfaceBackground } from "../../theme";
 
-const today = new Date().toISOString().slice(0, 10);
-
 const defaultMapping = () => ({
   localId: `${Date.now()}-${Math.random()}`,
   kpiKey: "",
@@ -62,7 +60,12 @@ export default function ChallengeForm({ mode }) {
   } = useSelector((state) => state.challenge);
   const [form, setForm] = useState({
     name: "",
+    challengeType: "",
     description: "",
+    targetValue: 0,
+    xpReward: 0,
+    icon: "",
+    isDaily: true,
     isActive: true,
   });
   const [mappings, setMappings] = useState([defaultMapping()]);
@@ -85,7 +88,12 @@ export default function ChallengeForm({ mode }) {
     if (mode === "edit" && selectedChallenge) {
       setForm({
         name: selectedChallenge.name || "",
+        challengeType: selectedChallenge.challenge_type || "",
         description: selectedChallenge.description || "",
+        targetValue: selectedChallenge.target_value || 0,
+        xpReward: selectedChallenge.xp_reward || 0,
+        icon: selectedChallenge.icon || "",
+        isDaily: Boolean(selectedChallenge.is_daily),
         isActive: Boolean(selectedChallenge.is_active),
       });
     }
@@ -139,8 +147,8 @@ export default function ChallengeForm({ mode }) {
     Boolean(startDate) && Boolean(endDate) && startDate <= endDate;
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.description.trim()) {
-      setFormError("Challenge name and description are required.");
+    if (!form.name.trim() || !form.challengeType.trim() || !form.description.trim()) {
+      setFormError("Challenge name, type, and description are required.");
       return;
     }
 
@@ -172,8 +180,18 @@ export default function ChallengeForm({ mode }) {
           updateChallenge({
             challengeKey: id,
             name: form.name.trim(),
+            challengeType: form.challengeType.trim(),
             description: form.description.trim(),
+            targetValue: Number(form.targetValue) || 0,
+            xpReward: Number(form.xpReward) || 0,
+            icon: form.icon.trim(),
+            isDaily: form.isDaily,
             isActive: form.isActive,
+            kpiMappings: (selectedChallenge?.kpi_mappings || []).map((mapping) => ({
+              kpi_key: mapping.kpi_key,
+              start_date: mapping.start_date,
+              end_date: mapping.end_date,
+            })),
           }),
         ).unwrap();
         navigate("/admin/challenges", {
@@ -191,7 +209,12 @@ export default function ChallengeForm({ mode }) {
       await dispatch(
         createChallenge({
           name: form.name.trim(),
+          challengeType: form.challengeType.trim(),
           description: form.description.trim(),
+          targetValue: Number(form.targetValue) || 0,
+          xpReward: Number(form.xpReward) || 0,
+          icon: form.icon.trim(),
+          isDaily: form.isDaily,
           kpiMappings: mappings.map((mapping) => ({
             kpi_key: mapping.kpiKey,
             start_date: mapping.startDate,
@@ -373,6 +396,18 @@ export default function ChallengeForm({ mode }) {
               fullWidth
             />
             <TextField
+              label="Challenge Type"
+              value={form.challengeType}
+              onChange={(event) => {
+                setFormError("");
+                setForm((current) => ({
+                  ...current,
+                  challengeType: event.target.value,
+                }));
+              }}
+              fullWidth
+            />
+            <TextField
               label="Description"
               value={form.description}
               onChange={(event) => {
@@ -386,23 +421,74 @@ export default function ChallengeForm({ mode }) {
               minRows={4}
               fullWidth
             />
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="Target Value"
+                type="number"
+                value={form.targetValue}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    targetValue: event.target.value,
+                  }))
+                }
+                fullWidth
+              />
+              <TextField
+                label="XP Reward"
+                type="number"
+                value={form.xpReward}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    xpReward: event.target.value,
+                  }))
+                }
+                fullWidth
+              />
+            </Stack>
+            <TextField
+              label="Icon"
+              value={form.icon}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, icon: event.target.value }))
+              }
+              fullWidth
+            />
 
-            {mode === "edit" && (
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <FormControlLabel
                 control={
                   <Switch
-                    checked={form.isActive}
+                    checked={form.isDaily}
                     onChange={(event) =>
                       setForm((current) => ({
                         ...current,
-                        isActive: event.target.checked,
+                        isDaily: event.target.checked,
                       }))
                     }
                   />
                 }
-                label="Active"
+                label="Daily Challenge"
               />
-            )}
+
+              {mode === "edit" && (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={form.isActive}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          isActive: event.target.checked,
+                        }))
+                      }
+                    />
+                  }
+                  label="Active"
+                />
+              )}
+            </Stack>
           </Stack>
 
           {mode === "add" && (
@@ -576,6 +662,9 @@ export default function ChallengeForm({ mode }) {
                       {(kpiItems.find((kpi) => kpi.kpi_key === mapping.kpi_key)?.display_name ||
                         mapping.kpi_key ||
                         "Unknown KPI")}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      KPI Key: {mapping.kpi_key || "-"}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                       {mapping.start_date || "-"} to {mapping.end_date || "-"}
