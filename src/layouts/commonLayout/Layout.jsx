@@ -37,6 +37,7 @@ import CategoryIcon from "@mui/icons-material/Category";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import TipsAndUpdatesRoundedIcon from "@mui/icons-material/TipsAndUpdatesRounded";
+import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
@@ -81,6 +82,11 @@ const superAdminItems = [
     label: "Suggestion Master",
     to: "/super-admin/suggestion-master",
     icon: <TipsAndUpdatesRoundedIcon />,
+  },
+  {
+    label: "KPI Suggestion Mapping",
+    to: "/super-admin/kpi-suggestion-mapping",
+    icon: <LinkRoundedIcon />,
   },
 ];
 
@@ -190,7 +196,9 @@ export default function Layout({ children, role, title }) {
 
       <List sx={{ p: 0 }}>
         {navItems.map((item) => {
-          const isActive = location.pathname === item.to;
+          const isActive =
+            location.pathname === item.to ||
+            location.pathname.startsWith(`${item.to}/`);
           const navButton = (
             <ListItemButton
               key={item.to}

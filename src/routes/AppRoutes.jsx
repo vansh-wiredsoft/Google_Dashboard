@@ -33,6 +33,9 @@ import SuperAdminDashboard from "../pages/superadmin/Dashboard";
 import SuggestionMaster from "../pages/superadmin/SuggestionMaster";
 import SuggestionForm from "../pages/superadmin/SuggestionForm";
 import SuggestionView from "../pages/superadmin/SuggestionView";
+import KpiSuggestionMapping from "../pages/superadmin/KpiSuggestionMapping";
+import KpiSuggestionMappingForm from "../pages/superadmin/KpiSuggestionMappingForm";
+import KpiSuggestionMappingView from "../pages/superadmin/KpiSuggestionMappingView";
 import ClientPage from "../pages/hidden/ClientPage";
 
 const getHomePathForRole = (role) => {
@@ -356,6 +359,38 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="superadmin">
             <SuggestionForm mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super-admin/kpi-suggestion-mapping"
+        element={
+          <ProtectedRoute allowedRole="superadmin">
+            <KpiSuggestionMapping />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super-admin/kpi-suggestion-mapping/add"
+        element={
+          <ProtectedRoute allowedRole="superadmin">
+            <KpiSuggestionMappingForm mode="add" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super-admin/kpi-suggestion-mapping/:id"
+        element={
+          <ProtectedRoute allowedRole="superadmin">
+            <KpiSuggestionMappingView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super-admin/kpi-suggestion-mapping/:id/edit"
+        element={
+          <ProtectedRoute allowedRole="superadmin">
+            <KpiSuggestionMappingForm mode="edit" />
           </ProtectedRoute>
         }
       />
