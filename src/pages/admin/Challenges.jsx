@@ -306,7 +306,9 @@ export default function Challenges() {
               gridTemplateColumns: {
                 xs: "1fr",
                 sm: "repeat(2, minmax(0, 1fr))",
-                lg: "1.15fr 1fr 1fr 1.6fr auto auto",
+                md: "repeat(2, minmax(0, 1fr))",
+                lg: "repeat(4, minmax(0, 1fr))",
+                xl: "1.15fr 1fr 1fr 1.4fr 0.9fr auto",
               },
               alignItems: { lg: "end" },
             }}
