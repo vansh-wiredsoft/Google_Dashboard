@@ -10,6 +10,7 @@ import questionHierarchyReducer from "./questionHierarchySlice";
 import themeReducer from "./themeSlice";
 import kpiReducer from "./kpiSlice";
 import challengeReducer from "./challengeSlice";
+import adminSuggestionReducer from "./adminSuggestionSlice";
 
 const store = configureStore({
   reducer: {
@@ -24,6 +25,7 @@ const store = configureStore({
     theme: themeReducer,
     kpi: kpiReducer,
     challenge: challengeReducer,
+    adminSuggestion: adminSuggestionReducer,
   },
 });
 

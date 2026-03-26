@@ -1,10 +1,14 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
 
-const ADMIN_SUGGESTION_PATH = "/config/api/v1/admin-suggestions";
+const ADMIN_SUGGESTION_LIST_PATH = "/config/api/v1/admin/suggestions";
+const ADMIN_SUGGESTION_DETAIL_PATH = "/config/api/v1/admin/suggestions";
 
 const initialState = {
   items: [],
+  total: 0,
+  skip: 0,
+  limit: 50,
   selectedSuggestion: null,
   listLoading: false,
   detailLoading: false,
@@ -19,15 +23,6 @@ const initialState = {
   createMessage: "",
   updateMessage: "",
   deleteMessage: "",
-};
-
-const pickArray = (payload) => {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.items)) return payload.items;
-  if (Array.isArray(payload?.results)) return payload.results;
-  if (Array.isArray(payload?.data?.items)) return payload.data.items;
-  return [];
 };
 
 const normalizeSuggestion = (item, index = 0) => ({
@@ -47,11 +42,34 @@ const normalizeSuggestion = (item, index = 0) => ({
   updated_at: item?.updated_at || "",
 });
 
+const buildListParams = (params = {}) => {
+  const query = {
+    skip: params.skip ?? 0,
+    limit: params.limit ?? 50,
+  };
+
+  if (params.search?.trim()) {
+    query.search = params.search.trim();
+  }
+
+  if (params.suggestion_type) {
+    query.suggestion_type = params.suggestion_type;
+  }
+
+  if (typeof params.is_active === "boolean") {
+    query.is_active = params.is_active;
+  }
+
+  return query;
+};
+
 export const fetchAdminSuggestions = createAsyncThunk(
   "adminSuggestion/fetchAdminSuggestions",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get(ADMIN_SUGGESTION_PATH);
+      const response = await api.get(ADMIN_SUGGESTION_LIST_PATH, {
+        params: buildListParams(params),
+      });
       const payload = response?.data || {};
 
       if (!payload?.success) {
@@ -60,7 +78,16 @@ export const fetchAdminSuggestions = createAsyncThunk(
         );
       }
 
-      return pickArray(payload).map(normalizeSuggestion);
+      const data = payload?.data || {};
+
+      return {
+        items: Array.isArray(data?.items)
+          ? data.items.map(normalizeSuggestion)
+          : [],
+        total: Number(data?.total || 0),
+        skip: Number(data?.skip || params.skip || 0),
+        limit: Number(data?.limit || params.limit || 50),
+      };
     } catch (error) {
       return rejectWithValue(
         getApiErrorMessage(
@@ -76,7 +103,9 @@ export const fetchAdminSuggestionById = createAsyncThunk(
   "adminSuggestion/fetchAdminSuggestionById",
   async (suggestionId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${ADMIN_SUGGESTION_PATH}/${suggestionId}`);
+      const response = await api.get(
+        `${ADMIN_SUGGESTION_DETAIL_PATH}/${suggestionId}`,
+      );
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -101,7 +130,7 @@ export const createAdminSuggestion = createAsyncThunk(
   "adminSuggestion/createAdminSuggestion",
   async (suggestion, { rejectWithValue }) => {
     try {
-      const response = await api.post(ADMIN_SUGGESTION_PATH, suggestion);
+      const response = await api.post(ADMIN_SUGGESTION_DETAIL_PATH, suggestion);
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -130,7 +159,7 @@ export const updateAdminSuggestion = createAsyncThunk(
   async ({ suggestionId, suggestion }, { rejectWithValue }) => {
     try {
       const response = await api.put(
-        `${ADMIN_SUGGESTION_PATH}/${suggestionId}`,
+        `${ADMIN_SUGGESTION_DETAIL_PATH}/${suggestionId}`,
         suggestion,
       );
       const payload = response?.data || {};
@@ -161,7 +190,7 @@ export const deleteAdminSuggestion = createAsyncThunk(
   async (suggestionId, { rejectWithValue }) => {
     try {
       const response = await api.delete(
-        `${ADMIN_SUGGESTION_PATH}/${suggestionId}`,
+        `${ADMIN_SUGGESTION_DETAIL_PATH}/${suggestionId}`,
       );
       const payload = response?.data || {};
 
@@ -194,6 +223,10 @@ const adminSuggestionSlice = createSlice({
       state.listError = "";
       state.deleteError = "";
       state.deleteMessage = "";
+      state.createError = "";
+      state.createMessage = "";
+      state.updateError = "";
+      state.updateMessage = "";
     },
     clearAdminSuggestionDetailState(state) {
       state.selectedSuggestion = null;
@@ -224,7 +257,10 @@ const adminSuggestionSlice = createSlice({
       })
       .addCase(fetchAdminSuggestions.fulfilled, (state, action) => {
         state.listLoading = false;
-        state.items = action.payload;
+        state.items = action.payload.items;
+        state.total = action.payload.total;
+        state.skip = action.payload.skip;
+        state.limit = action.payload.limit;
       })
       .addCase(fetchAdminSuggestions.rejected, (state, action) => {
         state.listLoading = false;
@@ -252,6 +288,7 @@ const adminSuggestionSlice = createSlice({
         state.createLoading = false;
         state.createMessage = action.payload.message;
         state.items = [action.payload.item, ...state.items];
+        state.total += 1;
       })
       .addCase(createAdminSuggestion.rejected, (state, action) => {
         state.createLoading = false;
@@ -287,6 +324,7 @@ const adminSuggestionSlice = createSlice({
         state.items = state.items.filter(
           (item) => item.id !== action.payload.item.id,
         );
+        state.total = Math.max(0, state.total - 1);
         if (state.selectedSuggestion?.id === action.payload.item.id) {
           state.selectedSuggestion = null;
         }

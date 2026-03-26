@@ -31,7 +31,7 @@ import UserDashboard from "../pages/user/Dashboard";
 import MyResponses from "../pages/user/MyResponses";
 import SuperAdminDashboard from "../pages/superadmin/Dashboard";
 import SuggestionMaster from "../pages/superadmin/SuggestionMaster";
-import ClientPage from "../ClientPage.jsx";
+import ClientPage from "../pages/hidden/ClientPage";
 
 const getHomePathForRole = (role) => {
   switch (role) {
