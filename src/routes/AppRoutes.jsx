@@ -30,8 +30,7 @@ import SketchLab from "../pages/hidden/SketchLab";
 import UserDashboard from "../pages/user/Dashboard";
 import MyResponses from "../pages/user/MyResponses";
 import SuperAdminDashboard from "../pages/superadmin/Dashboard";
-// import Ayumonk-complete-dashboard-v6 from "../Ayumonk-complete-dashboard-v6.jsx";
-
+import ClientPage from "../ClientPage.jsx";
 
 const getHomePathForRole = (role) => {
   switch (role) {
@@ -357,14 +356,14 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* <Route
+      <Route
         path="/client/dashboard"
         element={
           <ProtectedRoute>
-            <Ayumonk-complete-dashboard-v6 />
+            <ClientPage />
           </ProtectedRoute>
         }
-      /> */}
+      />
 
       <Route path="/vault/ink-room-7f3a" element={<SketchLab />} />
 

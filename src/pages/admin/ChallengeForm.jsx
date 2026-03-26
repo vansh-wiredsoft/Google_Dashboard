@@ -5,6 +5,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   FormControlLabel,
   IconButton,
   MenuItem,
@@ -32,6 +33,21 @@ import {
   updateChallenge,
 } from "../../store/challengeSlice";
 import { getSurfaceBackground } from "../../theme";
+
+const CHALLENGE_ICON_OPTIONS = [
+  { value: "🏆", label: "Trophy" },
+  { value: "🎯", label: "Target" },
+  { value: "🔥", label: "Streak" },
+  { value: "⚡", label: "Energy" },
+  { value: "🌟", label: "Star" },
+  { value: "💪", label: "Strength" },
+  { value: "🚀", label: "Boost" },
+  { value: "🥇", label: "Winner" },
+  { value: "🎉", label: "Celebrate" },
+  { value: "🧠", label: "Focus" },
+  { value: "💧", label: "Hydration" },
+  { value: "🌿", label: "Wellness" },
+];
 
 const defaultMapping = () => ({
   localId: `${Date.now()}-${Math.random()}`,
@@ -447,14 +463,125 @@ export default function ChallengeForm({ mode }) {
                 fullWidth
               />
             </Stack>
-            <TextField
-              label="Icon"
-              value={form.icon}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, icon: event.target.value }))
-              }
-              fullWidth
-            />
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                borderRadius: 2.5,
+                bgcolor: "background.default",
+              }}
+            >
+              <Stack spacing={2}>
+                <Box>
+                  <Typography sx={{ fontWeight: 700 }}>Challenge Icon</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Pick an icon that will look good on the user dashboard, or enter a custom
+                    emoji/icon below.
+                  </Typography>
+                </Box>
+
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={2}
+                  alignItems={{ xs: "stretch", md: "center" }}
+                >
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      width: { xs: "100%", md: 160 },
+                      minHeight: 132,
+                      px: 2,
+                      py: 2.5,
+                      borderRadius: 3,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                      bgcolor: "background.paper",
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 36, lineHeight: 1 }}>
+                      {form.icon || "✨"}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Live Preview
+                    </Typography>
+                    <Chip
+                      size="small"
+                      label={form.icon ? "Selected" : "Default Preview"}
+                      color={form.icon ? "primary" : "default"}
+                      variant={form.icon ? "filled" : "outlined"}
+                    />
+                  </Paper>
+
+                  <Box sx={{ flex: 1 }}>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                          xs: "repeat(4, minmax(0, 1fr))",
+                          sm: "repeat(6, minmax(0, 1fr))",
+                        },
+                        gap: 1,
+                      }}
+                    >
+                      {CHALLENGE_ICON_OPTIONS.map((iconOption) => {
+                        const selected = form.icon === iconOption.value;
+
+                        return (
+                          <Button
+                            key={iconOption.value}
+                            variant={selected ? "contained" : "outlined"}
+                            color={selected ? "primary" : "inherit"}
+                            onClick={() =>
+                              setForm((current) => ({
+                                ...current,
+                                icon: iconOption.value,
+                              }))
+                            }
+                            sx={{
+                              minWidth: 0,
+                              minHeight: 72,
+                              borderRadius: 2.5,
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 0.5,
+                              px: 1,
+                            }}
+                          >
+                            <Box component="span" sx={{ fontSize: 24, lineHeight: 1 }}>
+                              {iconOption.value}
+                            </Box>
+                            <Box
+                              component="span"
+                              sx={{
+                                fontSize: 11,
+                                lineHeight: 1.2,
+                                textTransform: "none",
+                                textAlign: "center",
+                              }}
+                            >
+                              {iconOption.label}
+                            </Box>
+                          </Button>
+                        );
+                      })}
+                    </Box>
+                  </Box>
+                </Stack>
+
+                <TextField
+                  label="Custom Icon / Emoji"
+                  value={form.icon}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, icon: event.target.value }))
+                  }
+                  helperText="You can paste any emoji or short icon text that should appear on the user dashboard."
+                  fullWidth
+                />
+              </Stack>
+            </Paper>
 
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <FormControlLabel
