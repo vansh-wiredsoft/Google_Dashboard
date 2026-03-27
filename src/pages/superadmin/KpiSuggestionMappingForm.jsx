@@ -228,7 +228,6 @@ export default function KpiSuggestionMappingForm({ mode }) {
         if (value === "kpi_risk") {
           nextValues.question_key = "";
         }
-
         if (value === "question_score") {
           nextValues.risk_level = "";
         }
@@ -239,7 +238,7 @@ export default function KpiSuggestionMappingForm({ mode }) {
           current.question_key &&
           !questionItems.some(
             (item) =>
-              item.question_code === current.question_key &&
+              item.id === current.question_key &&
               item.kpi_key === value,
           )
             ? ""
@@ -251,7 +250,7 @@ export default function KpiSuggestionMappingForm({ mode }) {
     setFormError("");
   };
 
-  const filteredQuestionItems = useMemo(() => {
+  const questionDropdownItems = useMemo(() => {
     if (!formValues.kpi_key) {
       return questionItems;
     }
@@ -435,8 +434,8 @@ export default function KpiSuggestionMappingForm({ mode }) {
               }
             >
               <MenuItem value="">Select Question</MenuItem>
-              {filteredQuestionItems.map((item) => (
-                <MenuItem key={item.id} value={item.question_code}>
+              {questionDropdownItems.map((item) => (
+                <MenuItem key={item.id} value={item.id}>
                   {item.question_code}
                 </MenuItem>
               ))}
