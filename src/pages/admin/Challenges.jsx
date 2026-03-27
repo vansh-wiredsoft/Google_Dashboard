@@ -29,6 +29,7 @@ import {
   fetchChallenges,
 } from "../../store/challengeSlice";
 import { fetchKpis } from "../../store/kpiSlice";
+import { fetchThemes } from "../../store/themeSlice";
 import { getSurfaceBackground } from "../../theme";
 
 const filterFieldSx = {
@@ -44,6 +45,7 @@ export default function Challenges() {
   const location = useLocation();
   const feedback = location.state?.feedback;
   const { items: kpiItems } = useSelector((state) => state.kpi);
+  const { items: themeItems } = useSelector((state) => state.theme);
   const {
     items,
     total,
@@ -89,6 +91,7 @@ export default function Challenges() {
   );
 
   useEffect(() => {
+    dispatch(fetchThemes({ isActive: true }));
     dispatch(fetchKpis({ isActive: true }));
   }, [dispatch]);
 
@@ -115,6 +118,15 @@ export default function Challenges() {
         .some((value) => value.toLowerCase().includes(term)),
     );
   }, [appliedFilters.search, items]);
+
+  const themeNameByKey = useMemo(
+    () =>
+      themeItems.reduce((accumulator, item) => {
+        accumulator[item.theme_key] = item.theme_display_name;
+        return accumulator;
+      }, {}),
+    [themeItems],
+  );
 
   const handleRefresh = () => {
     dispatch(fetchChallenges(challengeQuery));
@@ -385,7 +397,7 @@ export default function Challenges() {
               <MenuItem value="">All KPI</MenuItem>
               {kpiItems.map((kpi) => (
                 <MenuItem key={kpi.kpi_key} value={kpi.kpi_key}>
-                  {kpi.display_name}
+                  {`${themeNameByKey[kpi.theme_key] || kpi.theme_key || "Unknown Theme"} - ${kpi.display_name}`}
                 </MenuItem>
               ))}
             </TextField>

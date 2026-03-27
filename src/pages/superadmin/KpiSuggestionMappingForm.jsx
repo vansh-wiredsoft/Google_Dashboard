@@ -28,6 +28,7 @@ import {
   updateKpiSuggestionMapping,
 } from "../../store/kpiSuggestionMappingSlice";
 import { fetchQuestions } from "../../store/questionSlice";
+import { fetchThemes } from "../../store/themeSlice";
 import { getSurfaceBackground } from "../../theme";
 
 const triggerModeOptions = [
@@ -166,6 +167,7 @@ export default function KpiSuggestionMappingForm({ mode }) {
   const { items: kpiItems } = useSelector((state) => state.kpi);
   const { items: questionItems } = useSelector((state) => state.question);
   const { items: suggestionItems } = useSelector((state) => state.adminSuggestion);
+  const { items: themeItems } = useSelector((state) => state.theme);
   const {
     selectedMapping,
     detailLoading,
@@ -198,6 +200,7 @@ export default function KpiSuggestionMappingForm({ mode }) {
   );
 
   useEffect(() => {
+    dispatch(fetchThemes({ limit: 100, isActive: true }));
     dispatch(fetchKpis({ limit: 100, isActive: true }));
     dispatch(fetchQuestions({ limit: 100, isActive: true }));
     dispatch(fetchAdminSuggestions({ limit: 100, is_active: true }));
@@ -255,6 +258,15 @@ export default function KpiSuggestionMappingForm({ mode }) {
 
     return questionItems.filter((item) => item.kpi_key === formValues.kpi_key);
   }, [formValues.kpi_key, questionItems]);
+
+  const themeNameByKey = useMemo(
+    () =>
+      themeItems.reduce((accumulator, item) => {
+        accumulator[item.theme_key] = item.theme_display_name;
+        return accumulator;
+      }, {}),
+    [themeItems],
+  );
 
   const handleSave = async () => {
     const nextError = validate(formValues, suggestionItems);
@@ -371,7 +383,7 @@ export default function KpiSuggestionMappingForm({ mode }) {
               <MenuItem value="">Select KPI</MenuItem>
               {kpiItems.map((item) => (
                 <MenuItem key={item.kpi_key} value={item.kpi_key}>
-                  {item.display_name}
+                  {`${themeNameByKey[item.theme_key] || item.theme_key || "Unknown Theme"} - ${item.display_name}`}
                 </MenuItem>
               ))}
             </TextField>

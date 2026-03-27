@@ -31,6 +31,7 @@ import {
   fetchKpiSuggestionMappings,
 } from "../../store/kpiSuggestionMappingSlice";
 import { fetchQuestions } from "../../store/questionSlice";
+import { fetchThemes } from "../../store/themeSlice";
 import { getSurfaceBackground } from "../../theme";
 
 const statusOptions = [
@@ -61,6 +62,7 @@ export default function KpiSuggestionMapping() {
   const { items: kpiItems } = useSelector((state) => state.kpi);
   const { items: questionItems } = useSelector((state) => state.question);
   const { items: suggestionItems } = useSelector((state) => state.adminSuggestion);
+  const { items: themeItems } = useSelector((state) => state.theme);
   const {
     items,
     total,
@@ -109,6 +111,7 @@ export default function KpiSuggestionMapping() {
   }, [dispatch, filters]);
 
   useEffect(() => {
+    dispatch(fetchThemes({ limit: 100, isActive: true }));
     dispatch(fetchKpis({ limit: 100, isActive: true }));
     dispatch(fetchQuestions({ limit: 100, isActive: true }));
     dispatch(fetchAdminSuggestions({ limit: 100, is_active: true }));
@@ -264,6 +267,15 @@ export default function KpiSuggestionMapping() {
     return questionItems.filter((item) => item.kpi_key === filters.kpi_key);
   }, [filters.kpi_key, questionItems]);
 
+  const themeNameByKey = useMemo(
+    () =>
+      themeItems.reduce((accumulator, item) => {
+        accumulator[item.theme_key] = item.theme_display_name;
+        return accumulator;
+      }, {}),
+    [themeItems],
+  );
+
   return (
     <Layout role="superadmin" title="KPI Suggestion Mapping">
       <Stack spacing={2}>
@@ -356,7 +368,7 @@ export default function KpiSuggestionMapping() {
               <MenuItem value="">All KPI</MenuItem>
               {kpiItems.map((item) => (
                 <MenuItem key={item.kpi_key} value={item.kpi_key}>
-                  {item.display_name}
+                  {`${themeNameByKey[item.theme_key] || item.theme_key || "Unknown Theme"} - ${item.display_name}`}
                 </MenuItem>
               ))}
             </TextField>
