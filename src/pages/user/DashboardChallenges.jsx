@@ -339,7 +339,7 @@ export default function DashboardChallenges({ challenges, loading, error }) {
               createChallengeStateFromItems([challenge])[challenge.challenge_key];
             const done = isDone(challenge);
             const xp = getXp(challenge);
-            const color = challenge.color || theme.palette.primary.main;
+            const color = challenge.displayColor || challenge.color || theme.palette.primary.main;
 
             return (
               <Grid key={challenge.challenge_key} size={{ xs: 12, md: 6, xl: 4 }}>

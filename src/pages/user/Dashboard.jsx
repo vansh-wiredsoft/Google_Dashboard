@@ -60,6 +60,27 @@ const METRIC_ICON_SET = [
   <FavoriteRoundedIcon fontSize="small" />,
 ];
 
+const METRIC_COLOR_SET = [
+  "#7c3aed",
+  "#ea580c",
+  "#0f766e",
+  "#0284c7",
+  "#ca8a04",
+  "#c026d3",
+  "#16a34a",
+  "#d946ef",
+  "#2563eb",
+];
+
+const CHALLENGE_TYPE_COLORS = {
+  counter: "#f97316",
+  toggle: "#ec4899",
+  choice: "#2563eb",
+  multi: "#eab308",
+  timer: "#8b5cf6",
+  rating: "#14b8a6",
+};
+
 const formatMetricLabel = (name = "") =>
   name
     .replace(/\bKPI\b/gi, "")
@@ -79,6 +100,10 @@ const formatChange = (value) => {
 };
 
 const getMetricIcon = (index) => METRIC_ICON_SET[index % METRIC_ICON_SET.length];
+const getMetricColor = (index) => METRIC_COLOR_SET[index % METRIC_COLOR_SET.length];
+const getChallengeColor = (challengeType, index) =>
+  CHALLENGE_TYPE_COLORS[String(challengeType || "").toLowerCase()] ||
+  METRIC_COLOR_SET[index % METRIC_COLOR_SET.length];
 
 const getChallengeTypeOptions = (challengeType) => {
   const type = String(challengeType || "").toLowerCase();
@@ -954,7 +979,7 @@ export default function Dashboard() {
         score: Number(item.latest_score) || 0,
         progress: clampPercent(item.latest_score),
         change: formatChange(item.trend_percent),
-        color: item.color || ["#7c3aed", "#ea580c", "#16a34a", "#0284c7"][index % 4],
+        color: getMetricColor(index),
         icon: getMetricIcon(index),
       })),
     [dashboardItems],
@@ -963,10 +988,10 @@ export default function Dashboard() {
   const challengeItems = useMemo(
     () =>
       dashboardItems.flatMap((item) =>
-        (Array.isArray(item.challenges) ? item.challenges : []).map((challenge) => ({
+        (Array.isArray(item.challenges) ? item.challenges : []).map((challenge, challengeIndex) => ({
           ...challenge,
           kpi_name: item.kpi_name,
-          color: item.color || "#0284c7",
+          displayColor: getChallengeColor(challenge.challenge_type, challengeIndex),
         })),
       ),
     [dashboardItems],
