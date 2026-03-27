@@ -60,6 +60,10 @@ const buildListParams = (params = {}) => {
     query.suggestion_id = params.suggestion_id.trim();
   }
 
+  if (params.question_key?.trim()) {
+    query.question_key = params.question_key.trim();
+  }
+
   if (params.trigger_mode?.trim()) {
     query.trigger_mode = params.trigger_mode.trim();
   }

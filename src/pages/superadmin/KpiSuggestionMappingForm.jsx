@@ -17,6 +17,8 @@ import {
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import Layout from "../../layouts/commonLayout/Layout";
+import { fetchAdminSuggestions } from "../../store/adminSuggestionSlice";
+import { fetchKpis } from "../../store/kpiSlice";
 import {
   clearKpiSuggestionMappingCreateState,
   clearKpiSuggestionMappingDetailState,
@@ -25,6 +27,7 @@ import {
   fetchKpiSuggestionMappingById,
   updateKpiSuggestionMapping,
 } from "../../store/kpiSuggestionMappingSlice";
+import { fetchQuestions } from "../../store/questionSlice";
 import { getSurfaceBackground } from "../../theme";
 
 const triggerModeOptions = [
@@ -121,6 +124,9 @@ export default function KpiSuggestionMappingForm({ mode }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
+  const { items: kpiItems } = useSelector((state) => state.kpi);
+  const { items: questionItems } = useSelector((state) => state.question);
+  const { items: suggestionItems } = useSelector((state) => state.adminSuggestion);
   const {
     selectedMapping,
     detailLoading,
@@ -130,14 +136,22 @@ export default function KpiSuggestionMappingForm({ mode }) {
     updateLoading,
     updateError,
   } = useSelector((state) => state.kpiSuggestionMapping);
-  const [formValues, setFormValues] = useState(defaultFormValues);
+  const isEdit = mode === "edit";
+  const [draftFormValues, setDraftFormValues] = useState(defaultFormValues);
+  const [hasStartedEditing, setHasStartedEditing] = useState(false);
   const [formError, setFormError] = useState("");
+  const formValues = useMemo(() => {
+    if (isEdit && selectedMapping && !hasStartedEditing) {
+      return normalizeFormValues(selectedMapping);
+    }
+
+    return draftFormValues;
+  }, [draftFormValues, hasStartedEditing, isEdit, selectedMapping]);
   const needsRiskLevel =
     formValues.trigger_mode === "kpi_risk" || formValues.trigger_mode === "both";
   const needsQuestionKey =
     formValues.trigger_mode === "question_score" || formValues.trigger_mode === "both";
 
-  const isEdit = mode === "edit";
   const isSubmitting = createLoading || updateLoading;
   const pageTitle = useMemo(
     () => (isEdit ? "Edit KPI Suggestion Mapping" : "Add KPI Suggestion Mapping"),
@@ -145,6 +159,10 @@ export default function KpiSuggestionMappingForm({ mode }) {
   );
 
   useEffect(() => {
+    dispatch(fetchKpis({ limit: 100, isActive: true }));
+    dispatch(fetchQuestions({ limit: 100, isActive: true }));
+    dispatch(fetchAdminSuggestions({ limit: 100, is_active: true }));
+
     if (isEdit && id) {
       dispatch(fetchKpiSuggestionMappingById(id));
     }
@@ -156,14 +174,9 @@ export default function KpiSuggestionMappingForm({ mode }) {
     };
   }, [dispatch, id, isEdit]);
 
-  useEffect(() => {
-    if (isEdit && selectedMapping) {
-      setFormValues(normalizeFormValues(selectedMapping));
-    }
-  }, [isEdit, selectedMapping]);
-
   const handleChange = (field, value) => {
-    setFormValues((current) => {
+    setHasStartedEditing(true);
+    setDraftFormValues((current) => {
       const nextValues = {
         ...current,
         [field]: value,
@@ -179,10 +192,30 @@ export default function KpiSuggestionMappingForm({ mode }) {
         }
       }
 
+      if (field === "kpi_key") {
+        nextValues.question_key =
+          current.question_key &&
+          !questionItems.some(
+            (item) =>
+              item.question_code === current.question_key &&
+              item.kpi_key === value,
+          )
+            ? ""
+            : current.question_key;
+      }
+
       return nextValues;
     });
     setFormError("");
   };
+
+  const filteredQuestionItems = useMemo(() => {
+    if (!formValues.kpi_key) {
+      return questionItems;
+    }
+
+    return questionItems.filter((item) => item.kpi_key === formValues.kpi_key);
+  }, [formValues.kpi_key, questionItems]);
 
   const handleSave = async () => {
     const nextError = validate(formValues);
@@ -290,11 +323,19 @@ export default function KpiSuggestionMappingForm({ mode }) {
             }}
           >
             <TextField
-              label="KPI Key"
+              label="KPI"
+              select
               value={formValues.kpi_key}
               onChange={(event) => handleChange("kpi_key", event.target.value)}
               fullWidth
-            />
+            >
+              <MenuItem value="">Select KPI</MenuItem>
+              {kpiItems.map((item) => (
+                <MenuItem key={item.kpi_key} value={item.kpi_key}>
+                  {item.display_name}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Trigger Mode"
               select
@@ -330,7 +371,8 @@ export default function KpiSuggestionMappingForm({ mode }) {
               ))}
             </TextField>
             <TextField
-              label="Question Key"
+              label="Question"
+              select
               value={formValues.question_key}
               onChange={(event) => handleChange("question_key", event.target.value)}
               fullWidth
@@ -340,7 +382,14 @@ export default function KpiSuggestionMappingForm({ mode }) {
                   ? "Required for question_score and both."
                   : "Not used when trigger mode is kpi_risk only."
               }
-            />
+            >
+              <MenuItem value="">Select Question</MenuItem>
+              {filteredQuestionItems.map((item) => (
+                <MenuItem key={item.id} value={item.question_code}>
+                  {item.question_code}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Score Threshold Below"
               type="number"
@@ -370,12 +419,20 @@ export default function KpiSuggestionMappingForm({ mode }) {
               helperText="Optional combined precision trigger. Leave blank to ignore."
             />
             <TextField
-              label="Suggestion ID"
+              label="Suggestion"
+              select
               value={formValues.suggestion_id}
               onChange={(event) => handleChange("suggestion_id", event.target.value)}
               fullWidth
               helperText="Suggestion to serve when all trigger conditions are met."
-            />
+            >
+              <MenuItem value="">Select Suggestion</MenuItem>
+              {suggestionItems.map((item) => (
+                <MenuItem key={item.id} value={item.id}>
+                  {item.title}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Priority"
               type="number"

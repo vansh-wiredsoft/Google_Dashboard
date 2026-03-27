@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -22,12 +22,15 @@ import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import Layout from "../../layouts/commonLayout/Layout";
+import { fetchAdminSuggestions } from "../../store/adminSuggestionSlice";
+import { fetchKpis } from "../../store/kpiSlice";
 import {
   clearKpiSuggestionMappingDeleteState,
   clearKpiSuggestionMappingListState,
   deleteKpiSuggestionMapping,
   fetchKpiSuggestionMappings,
 } from "../../store/kpiSuggestionMappingSlice";
+import { fetchQuestions } from "../../store/questionSlice";
 import { getSurfaceBackground } from "../../theme";
 
 const statusOptions = [
@@ -55,6 +58,9 @@ export default function KpiSuggestionMapping() {
   const navigate = useNavigate();
   const location = useLocation();
   const feedback = location.state?.feedback;
+  const { items: kpiItems } = useSelector((state) => state.kpi);
+  const { items: questionItems } = useSelector((state) => state.question);
+  const { items: suggestionItems } = useSelector((state) => state.adminSuggestion);
   const {
     items,
     total,
@@ -67,12 +73,13 @@ export default function KpiSuggestionMapping() {
 
   const [filters, setFilters] = useState({
     kpi_key: "",
+    question_key: "",
     suggestion_id: "",
     trigger_mode: "",
     status: "all",
   });
 
-  const fetchList = () => {
+  const fetchList = useCallback(() => {
     const params = {
       skip: 0,
       limit: 50,
@@ -86,6 +93,10 @@ export default function KpiSuggestionMapping() {
       params.suggestion_id = filters.suggestion_id.trim();
     }
 
+    if (filters.question_key.trim()) {
+      params.question_key = filters.question_key.trim();
+    }
+
     if (filters.trigger_mode.trim()) {
       params.trigger_mode = filters.trigger_mode.trim();
     }
@@ -95,11 +106,14 @@ export default function KpiSuggestionMapping() {
     }
 
     dispatch(fetchKpiSuggestionMappings(params));
-  };
+  }, [dispatch, filters]);
 
   useEffect(() => {
+    dispatch(fetchKpis({ limit: 100, isActive: true }));
+    dispatch(fetchQuestions({ limit: 100, isActive: true }));
+    dispatch(fetchAdminSuggestions({ limit: 100, is_active: true }));
     fetchList();
-  }, []);
+  }, [dispatch, fetchList]);
 
   useEffect(() => {
     return () => {
@@ -108,7 +122,7 @@ export default function KpiSuggestionMapping() {
     };
   }, [dispatch]);
 
-  const handleDelete = async (mappingId) => {
+  const handleDelete = useCallback(async (mappingId) => {
     if (!window.confirm("Delete this KPI suggestion mapping?")) return;
 
     try {
@@ -116,11 +130,12 @@ export default function KpiSuggestionMapping() {
     } catch {
       // Redux state already stores the error.
     }
-  };
+  }, [dispatch]);
 
   const resetFilters = () => {
     const nextFilters = {
       kpi_key: "",
+      question_key: "",
       suggestion_id: "",
       trigger_mode: "",
       status: "all",
@@ -238,8 +253,16 @@ export default function KpiSuggestionMapping() {
         ),
       },
     ],
-    [deleteLoading, navigate],
+    [deleteLoading, handleDelete, navigate],
   );
+
+  const filteredQuestionItems = useMemo(() => {
+    if (!filters.kpi_key) {
+      return questionItems;
+    }
+
+    return questionItems.filter((item) => item.kpi_key === filters.kpi_key);
+  }, [filters.kpi_key, questionItems]);
 
   return (
     <Layout role="superadmin" title="KPI Suggestion Mapping">
@@ -309,16 +332,57 @@ export default function KpiSuggestionMapping() {
             }}
           >
             <TextField
-              label="KPI Key"
+              label="KPI"
+              select
               value={filters.kpi_key}
               onChange={(event) =>
-                setFilters((current) => ({ ...current, kpi_key: event.target.value }))
+                setFilters((current) => ({
+                  ...current,
+                  kpi_key: event.target.value,
+                  question_key:
+                    current.question_key &&
+                    !questionItems.some(
+                      (item) =>
+                        item.question_code === current.question_key &&
+                        item.kpi_key === event.target.value,
+                    )
+                      ? ""
+                      : current.question_key,
+                }))
               }
               fullWidth
               sx={filterFieldSx}
-            />
+            >
+              <MenuItem value="">All KPI</MenuItem>
+              {kpiItems.map((item) => (
+                <MenuItem key={item.kpi_key} value={item.kpi_key}>
+                  {item.display_name}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
-              label="Suggestion ID"
+              label="Question"
+              select
+              value={filters.question_key}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  question_key: event.target.value,
+                }))
+              }
+              fullWidth
+              sx={filterFieldSx}
+            >
+              <MenuItem value="">All Questions</MenuItem>
+              {filteredQuestionItems.map((item) => (
+                <MenuItem key={item.id} value={item.question_code}>
+                  {item.question_code}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Suggestion"
+              select
               value={filters.suggestion_id}
               onChange={(event) =>
                 setFilters((current) => ({
@@ -328,7 +392,14 @@ export default function KpiSuggestionMapping() {
               }
               fullWidth
               sx={filterFieldSx}
-            />
+            >
+              <MenuItem value="">All Suggestions</MenuItem>
+              {suggestionItems.map((item) => (
+                <MenuItem key={item.id} value={item.id}>
+                  {item.title}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Trigger Mode"
               select
