@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import BedtimeRoundedIcon from "@mui/icons-material/BedtimeRounded";
 import BoltRoundedIcon from "@mui/icons-material/BoltRounded";
 import DirectionsRunRoundedIcon from "@mui/icons-material/DirectionsRunRounded";
@@ -14,6 +14,7 @@ import StarsRoundedIcon from "@mui/icons-material/StarsRounded";
 import WaterDropRoundedIcon from "@mui/icons-material/WaterDropRounded";
 import WorkspacePremiumRoundedIcon from "@mui/icons-material/WorkspacePremiumRounded";
 import {
+  Alert,
   Avatar,
   Box,
   Button,
@@ -42,82 +43,78 @@ import {
   YAxis,
 } from "recharts";
 import Layout from "../../layouts/commonLayout/Layout";
+import DashboardChallenges from "./DashboardChallenges";
+import api from "../../services/api";
 import { getRaisedGradient, getSurfaceBackground } from "../../theme";
 
-const metrics = [
-  {
-    label: "Sleep",
-    score: 4.5,
-    progress: 82,
-    change: "+62%",
-    color: "#7c3aed",
-    icon: <BedtimeRoundedIcon fontSize="small" />,
-  },
-  {
-    label: "Stress",
-    score: 5.0,
-    progress: 88,
-    change: "+47%",
-    color: "#ea580c",
-    icon: <PsychologyRoundedIcon fontSize="small" />,
-  },
-  {
-    label: "Nutrition",
-    score: 4.4,
-    progress: 79,
-    change: "+41%",
-    color: "#16a34a",
-    icon: <LocalDiningRoundedIcon fontSize="small" />,
-  },
-  {
-    label: "Hydration",
-    score: 4.6,
-    progress: 84,
-    change: "+55%",
-    color: "#0284c7",
-    icon: <WaterDropRoundedIcon fontSize="small" />,
-  },
-  {
-    label: "Digestion",
-    score: 5.0,
-    progress: 91,
-    change: "+56%",
-    color: "#65a30d",
-    icon: <SpaRoundedIcon fontSize="small" />,
-  },
-  {
-    label: "Activity",
-    score: 4.5,
-    progress: 77,
-    change: "+56%",
-    color: "#f59e0b",
-    icon: <DirectionsRunRoundedIcon fontSize="small" />,
-  },
-  {
-    label: "Pain/Posture",
-    score: 4.8,
-    progress: 81,
-    change: "+45%",
-    color: "#c026d3",
-    icon: <SelfImprovementRoundedIcon fontSize="small" />,
-  },
-  {
-    label: "Energy",
-    score: 4.2,
-    progress: 74,
-    change: "+35%",
-    color: "#ca8a04",
-    icon: <BoltRoundedIcon fontSize="small" />,
-  },
-  {
-    label: "Emotional",
-    score: 5.0,
-    progress: 90,
-    change: "+67%",
-    color: "#059669",
-    icon: <FavoriteRoundedIcon fontSize="small" />,
-  },
+const METRIC_ICON_SET = [
+  <BedtimeRoundedIcon fontSize="small" />,
+  <PsychologyRoundedIcon fontSize="small" />,
+  <LocalDiningRoundedIcon fontSize="small" />,
+  <WaterDropRoundedIcon fontSize="small" />,
+  <SpaRoundedIcon fontSize="small" />,
+  <DirectionsRunRoundedIcon fontSize="small" />,
+  <SelfImprovementRoundedIcon fontSize="small" />,
+  <BoltRoundedIcon fontSize="small" />,
+  <FavoriteRoundedIcon fontSize="small" />,
 ];
+
+const formatMetricLabel = (name = "") =>
+  name
+    .replace(/\bKPI\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim() || "Wellness KPI";
+
+const clampPercent = (value) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.min(100, Math.max(0, number));
+};
+
+const formatChange = (value) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "No trend";
+  return `${number >= 0 ? "+" : ""}${number.toFixed(0)}%`;
+};
+
+const getMetricIcon = (index) => METRIC_ICON_SET[index % METRIC_ICON_SET.length];
+
+const getChallengeTypeOptions = (challengeType) => {
+  const type = String(challengeType || "").toLowerCase();
+
+  if (type === "choice") {
+    return ["Option 1", "Option 2", "Option 3"];
+  }
+
+  if (type === "multi") {
+    return ["Choice 1", "Choice 2", "Choice 3"];
+  }
+
+  if (type === "rating") {
+    return ["😞", "😕", "😐", "🙂", "😄"];
+  }
+
+  if (type === "toggle") {
+    return ["Mark Complete"];
+  }
+
+  return [];
+};
+
+const createChallengeStateFromItems = (challenges) =>
+  challenges.reduce((accumulator, challenge) => {
+    const challengeType = String(challenge.challenge_type || "").toLowerCase();
+
+    accumulator[challenge.challenge_key] = {
+      count: 0,
+      done: false,
+      chosen: challengeType === "multi" ? [] : null,
+      timer: challengeType === "timer" ? Math.max(1, Number(challenge.target_value) || 60) : 0,
+      rating: null,
+    };
+
+    return accumulator;
+  }, {});
 
 const highlightStats = [
   {
@@ -241,76 +238,6 @@ const leaderboard = [
   { name: "Anjali K.", team: "HR - BLR", delta: "+35%" },
   { name: "Amit R.", team: "Finance - Delhi", delta: "+31%", current: true },
   { name: "Sneha P.", team: "Marketing - Pune", delta: "+28%" },
-];
-
-const CHALLENGE_DEFS = [
-  {
-    id: "water",
-    icon: "💧",
-    label: "Hydration Mission",
-    kpi: "Hydration KPI",
-    color: "#0284c7",
-    xp: 20,
-    type: "counter",
-    target: 8,
-    actionLabel: "+ 1 Glass",
-    desc: "Drink 8 glasses today. Tap + after each glass.",
-  },
-  {
-    id: "sleep",
-    icon: "🌙",
-    label: "Sleep Before 10 PM",
-    kpi: "Sleep KPI",
-    color: "#7c3aed",
-    xp: 25,
-    type: "toggle",
-    options: ["Committed to sleep by 10 PM"],
-    desc: "One tap to commit. No screens 1 hour before bedtime.",
-  },
-  {
-    id: "activity",
-    icon: "🏃",
-    label: "Move Your Body",
-    kpi: "Activity KPI",
-    color: "#f59e0b",
-    xp: 30,
-    type: "choice",
-    options: ["Walk 15 min", "Yoga 20 min", "Gym Session"],
-    desc: "Pick what you did today. Any one counts.",
-  },
-  {
-    id: "nutrition",
-    icon: "🥗",
-    label: "Eat Well Today",
-    kpi: "Nutrition KPI",
-    color: "#16a34a",
-    xp: 25,
-    type: "multi",
-    options: ["Ate fruits or veggies", "Home-cooked meal"],
-    desc: "Tap all that apply from today.",
-  },
-  {
-    id: "breathing",
-    icon: "🧘",
-    label: "4-7-8 Breathing",
-    kpi: "Stress KPI",
-    color: "#ea580c",
-    xp: 20,
-    type: "timer",
-    duration: 120,
-    desc: "Inhale 4s, hold 7s, exhale 8s. Tap start and stay with the timer.",
-  },
-  {
-    id: "mood",
-    icon: "💚",
-    label: "Daily Mood Check",
-    kpi: "Emotional KPI",
-    color: "#059669",
-    xp: 10,
-    type: "rating",
-    options: ["😞", "😕", "😐", "🙂", "😄"],
-    desc: "How are you feeling right now?",
-  },
 ];
 
 const challengeBadges = [
@@ -993,6 +920,9 @@ export default function Dashboard() {
   const theme = useTheme();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("wellness");
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState("");
+  const [dashboardItems, setDashboardItems] = useState([]);
   const chartTooltipStyles = {
     contentStyle: {
       backgroundColor: getSurfaceBackground(theme, 0.98),
@@ -1008,6 +938,72 @@ export default function Dashboard() {
       color: theme.palette.text.primary,
     },
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboard = async () => {
+      setDashboardLoading(true);
+      setDashboardError("");
+
+      try {
+        const response = await api.get("/config/api/v1/dashboard/kpis");
+        const payload = response?.data || {};
+        const items = Array.isArray(payload?.data?.items) ? payload.data.items : [];
+
+        if (!payload?.success) {
+          throw new Error(payload?.message || "Failed to fetch dashboard KPIs.");
+        }
+
+        if (isMounted) {
+          setDashboardItems(items);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setDashboardError(
+            error?.response?.data?.message ||
+              error?.message ||
+              "Failed to fetch dashboard KPIs.",
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setDashboardLoading(false);
+        }
+      }
+    };
+
+    loadDashboard();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const metrics = useMemo(
+    () =>
+      dashboardItems.map((item, index) => ({
+        label: formatMetricLabel(item.kpi_name),
+        score: Number(item.latest_score) || 0,
+        progress: clampPercent(item.latest_score),
+        change: formatChange(item.trend_percent),
+        color: item.color || ["#7c3aed", "#ea580c", "#16a34a", "#0284c7"][index % 4],
+        icon: getMetricIcon(index),
+      })),
+    [dashboardItems],
+  );
+
+  const challengeItems = useMemo(
+    () =>
+      dashboardItems.flatMap((item) =>
+        (Array.isArray(item.challenges) ? item.challenges : []).map((challenge) => ({
+          ...challenge,
+          kpi_name: item.kpi_name,
+          color: item.color || "#0284c7",
+        })),
+      ),
+    [dashboardItems],
+  );
 
   return (
     <Layout role="user" title="Wellness Dashboard">
@@ -1107,32 +1103,38 @@ export default function Dashboard() {
                   ? "Personal wellness journey, trends, dosha balance, and suggestions."
                   : "Daily challenges with quick actions, XP progress, badges, and leaderboard."}
               </Typography>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-              </Stack>
             </Stack>
           </Stack>
         </SectionCard>
 
         {activeTab === "wellness" && (
           <>
-        {/* <Grid container spacing={2}>
-          {highlightStats.map((item) => (
-            <Grid key={item.label} size={{ xs: 12, sm: 6, xl: 3 }}>
-              <HighlightStat item={item} />
-            </Grid>
-          ))}
-        </Grid> */}
+            {dashboardError && <Alert severity="error">{dashboardError}</Alert>}
 
-        <Grid container spacing={2}>
-          {metrics.map((item) => (
-            <Grid
-              key={item.label}
-              size={{ xs: 12, sm: 4, md: 2, lg: 7 / 4, xl: 4 / 3 }}
-            >
-              <MetricCard item={item} />
-            </Grid>
-          ))}
-        </Grid>
+            {!dashboardError && dashboardLoading && (
+              <SectionCard>
+                <Typography>Loading wellness metrics...</Typography>
+              </SectionCard>
+            )}
+
+            {!dashboardError && !dashboardLoading && metrics.length > 0 && (
+              <Grid container spacing={2}>
+                {metrics.map((item) => (
+                  <Grid
+                    key={item.label}
+                    size={{ xs: 12, sm: 4, md: 2, lg: 7 / 4, xl: 4 / 3 }}
+                  >
+                    <MetricCard item={item} />
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+
+            {!dashboardError && !dashboardLoading && metrics.length === 0 && (
+              <SectionCard>
+                <Typography>No KPI metrics are available for your dashboard yet.</Typography>
+              </SectionCard>
+            )}
 
         <Grid container spacing={2.5}>
           <Grid size={{ xs: 12, lg: 8.2 }}>
@@ -1310,98 +1312,6 @@ export default function Dashboard() {
                 </SectionCard>
               </Grid>
 
-              {/* <Grid size={12}>
-                <SectionCard>
-                  <Stack
-                    direction={{ xs: "column", md: "row" }}
-                    justifyContent="space-between"
-                    spacing={1}
-                    sx={{ mb: 2 }}
-                  >
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                        Daily Focus Programs
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Borrowed from the challenge screens to make your next
-                        actions clearer
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={1}>
-                      <Chip label="3 active" size="small" color="primary" />
-                      <Chip
-                        label="1 upcoming"
-                        size="small"
-                        variant="outlined"
-                      />
-                    </Stack>
-                  </Stack>
-
-                  <Grid container spacing={2}>
-                    {focusActions.map((item) => (
-                      <Grid key={item.title} size={{ xs: 12, md: 4 }}>
-                        <Paper
-                          variant="outlined"
-                          sx={{
-                            p: 2,
-                            borderRadius: 3,
-                            borderColor: alpha(item.accent, 0.22),
-                            background: `linear-gradient(180deg, ${alpha(item.accent, theme.palette.mode === "dark" ? 0.14 : 0.05)} 0%, ${getSurfaceBackground(theme, theme.palette.mode === "dark" ? 0.98 : 0.92)} 100%)`,
-                            height: "100%",
-                          }}
-                        >
-                          <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="flex-start"
-                          >
-                            <Box>
-                              <Typography sx={{ fontWeight: 800 }}>
-                                {item.title}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                sx={{ color: item.accent, fontWeight: 700 }}
-                              >
-                                {item.caption}
-                              </Typography>
-                            </Box>
-                            <Chip
-                              label={item.value}
-                              size="small"
-                              sx={{
-                                bgcolor: alpha(item.accent, 0.1),
-                                color: item.accent,
-                                fontWeight: 700,
-                              }}
-                            />
-                          </Stack>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ mt: 1.2, mb: 1.5 }}
-                          >
-                            {item.detail}
-                          </Typography>
-                          <LinearProgress
-                            variant="determinate"
-                            value={item.progress}
-                            sx={{
-                              height: 8,
-                              borderRadius: 999,
-                              bgcolor: alpha(item.accent, 0.12),
-                              "& .MuiLinearProgress-bar": {
-                                bgcolor: item.accent,
-                                borderRadius: 999,
-                              },
-                            }}
-                          />
-                        </Paper>
-                      </Grid>
-                    ))}
-                  </Grid>
-                </SectionCard>
-              </Grid> */}
             </Grid>
           </Grid>
 
@@ -1489,88 +1399,6 @@ export default function Dashboard() {
                 </Stack>
               </SectionCard>
 
-              {/* <SectionCard>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  sx={{ mb: 1.5 }}
-                >
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      Weekly Leaderboard
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Friendly benchmark from your peer wellness cohort
-                    </Typography>
-                  </Box>
-                  <InsightsRoundedIcon color="primary" />
-                </Stack>
-
-                <Stack spacing={1.2}>
-                  {leaderboard.map((item, index) => (
-                    <Paper
-                      key={item.name}
-                      variant="outlined"
-                      sx={{
-                        p: 1.4,
-                        borderRadius: 2.5,
-                        borderColor: item.current
-                          ? alpha("#0f766e", 0.3)
-                          : "divider",
-                        bgcolor: item.current
-                          ? alpha("#0f766e", 0.06)
-                          : "transparent",
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                      >
-                        <Stack
-                          direction="row"
-                          spacing={1.2}
-                          alignItems="center"
-                        >
-                          <Typography
-                            sx={{
-                              width: 24,
-                              fontWeight: 800,
-                              color: index < 3 ? "#c2410c" : "text.secondary",
-                            }}
-                          >
-                            {index + 1}
-                          </Typography>
-                          <Box>
-                            <Typography
-                              sx={{ fontWeight: item.current ? 800 : 700 }}
-                            >
-                              {item.current
-                                ? `4th - You (${item.name})`
-                                : item.name}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {item.team}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                        <Typography
-                          sx={{
-                            fontWeight: 800,
-                            color: item.current ? "#15803d" : "#0f766e",
-                          }}
-                        >
-                          {item.delta}
-                        </Typography>
-                      </Stack>
-                    </Paper>
-                  ))}
-                </Stack>
-              </SectionCard> */}
             </Stack>
           </Grid>
         </Grid>
@@ -1660,7 +1488,13 @@ export default function Dashboard() {
           </>
         )}
 
-        {activeTab === "challenges" && <ChallengeDashboardContent />}
+        {activeTab === "challenges" && (
+          <DashboardChallenges
+            challenges={challengeItems}
+            loading={dashboardLoading}
+            error={dashboardError}
+          />
+        )}
       </Stack>
     </Layout>
   );
