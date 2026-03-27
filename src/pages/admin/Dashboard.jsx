@@ -936,7 +936,7 @@ export default function Dashboard() {
             </Panel>
           </Grid> */}
 
-          <Grid size={{ xs: 12, xl: 6 }}>
+          <Grid size={{ xs: 12, xl: 12 }}>
             <Panel sx={{ p: 2.2 }}>
               <Stack spacing={2.2}>
                 <Stack

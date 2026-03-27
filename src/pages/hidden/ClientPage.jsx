@@ -9,27 +9,6 @@ const C = {
   gold:"#D4A843", teal:"#3AADA8", red:"#E05050", pink:"#f472b6",
 };
 
-// ─── PWA HELPERS & CONSTANTS ─────────────────────────────────────────────────
-// In production these come from:
-//   navigator.serviceWorker  (Service Worker API)
-//   window.PushManager       (Web Push API)
-//   window.indexedDB         (offline storage)
-//
-// Offline sync queue (simulated — production uses IndexedDB + Background Sync)
-const OFFLINE_QUEUE_KEY = "ayumonk_offline_queue";
-
-// Detect iOS manually (beforeinstallprompt not available)
-const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
-
-// Detect if running in standalone PWA mode (installed)
-const isStandalone = () =>
-  window.matchMedia("(display-mode: standalone)").matches ||
-  window.navigator.standalone === true;
-
-// Push permission state
-const getPushPermission = () =>
-  typeof Notification !== "undefined" ? Notification.permission : "default";
-
 // ─── LOGO SVG ─────────────────────────────────────────────────────────────────
 const AyuLogo = ({ size=32 }) => (
   <svg width={size*1.65} height={size*0.72} viewBox="0 0 120 52" fill="none">
@@ -42,203 +21,57 @@ const AyuLogo = ({ size=32 }) => (
 );
 
 // ─── WELLNESS PARAMS ──────────────────────────────────────────────────────────
-// ─── WELLNESS PARAMS WITH QUESTION-LEVEL SCORES & THRESHOLDS ─────────────────
-// Each KPI has:
-//   questions: individual question scores (simulated) + threshold for precision triggers
-//   suggestions.kpiLevel: shown when overall KPI average_score is in risk/moderate band
-//   suggestions.questionLevel: shown when a specific question score crosses threshold
 const PARAMS = [
-  { id:"sleep", label:"Sleep", icon:"🌙", color:"#7c6af7", weight:0.20, baseline:2.8, sfDomain:"Mental Health", inverse:false,
-    questions:[
-      { key:"SLEEP_Q1", label:"How well do you fall asleep?",    score:2.8, thresholdBelow:3.0, reverse:false },
-      { key:"SLEEP_Q2", label:"How many hours do you sleep?",    score:2.1, thresholdBelow:2.5, reverse:false },
-      { key:"SLEEP_Q3", label:"Do you wake up refreshed?",       score:2.4, thresholdBelow:2.5, reverse:false },
-    ],
-    suggestions:{
-      kpiLevel:{
-        aahar:"Warm turmeric milk at bedtime. Early dinner by 7PM.",
-        vihar:"Digital detox from 9PM. Fixed wake-up alarm at 6AM.",
-        aushadh:"Brahmi + Ashwagandha capsule at bedtime. Jatamansi oil on temples.",
-      },
-      questionLevel:[
-        { key:"SLEEP_Q2", condition:"Sleep duration < 2.5", triggerMode:"question_score",
-          aahar:"Eat last meal by 6:30PM. Avoid heavy protein at night.",
-          vihar:"Strict 10PM alarm. Blackout curtains. Sleep mask.",
-          aushadh:"Valerian root tea 30 min before bed." },
-        { key:"SLEEP_Q3", condition:"Not refreshed < 2.5", triggerMode:"question_score",
-          aahar:"Banana + warm milk protein combo before bed.",
-          vihar:"Yoga Nidra 20-min audio. Cool room temperature.",
-          aushadh:"Ashwagandha churna with ghee at bedtime." },
-      ]
-    }
-  },
-  { id:"stress", label:"Stress", icon:"🧘", color:"#f97316", weight:0.15, baseline:3.4, sfDomain:"Role Emotional", inverse:true,
-    questions:[
-      { key:"STRESS_Q1", label:"How often do you feel overwhelmed?",  score:3.8, thresholdAbove:3.5, reverse:true },
-      { key:"STRESS_Q2", label:"Does stress disrupt your sleep?",      score:2.3, thresholdBelow:2.5, reverse:false },
-      { key:"STRESS_Q3", label:"Can you unwind after work?",           score:2.9, thresholdBelow:3.0, reverse:false },
-    ],
-    suggestions:{
-      kpiLevel:{
-        aahar:"Reduce processed sugar. Ashwagandha latte in morning.",
-        vihar:"5-min Anulom Vilom morning. Nature walk on weekends.",
-        aushadh:"Shankhpushpi syrup. Adaptogenic herb blend.",
-      },
-      questionLevel:[
-        { key:"STRESS_Q1", condition:"Overwhelmed score > 3.5 (reverse)", triggerMode:"question_score",
-          aahar:"Sattvic diet: fruits, nuts, no processed food.",
-          vihar:"10-min journaling at night. Phone-free hour after dinner.",
-          aushadh:"Brahmi ghrita one teaspoon in warm water." },
-        { key:"STRESS_Q2", condition:"Stress disrupting sleep < 2.5", triggerMode:"both",
-          aahar:"Tart cherry juice in evening. Chamomile tea.",
-          vihar:"Progressive muscle relaxation before bed.",
-          aushadh:"Jatamansi + Brahmi combination capsule." },
-      ]
-    }
-  },
-  { id:"nutrition", label:"Nutrition", icon:"🥗", color:"#22c55e", weight:0.15, baseline:3.1, sfDomain:"General Health", inverse:false,
-    questions:[
-      { key:"NUTRITION_Q1", label:"How often do you eat home-cooked meals?", score:2.0, thresholdBelow:2.5, reverse:false },
-      { key:"NUTRITION_Q2", label:"How many servings of veg do you eat?",    score:2.6, thresholdBelow:3.0, reverse:false },
-      { key:"NUTRITION_Q3", label:"Do you avoid fried/processed snacks?",    score:2.8, thresholdBelow:3.0, reverse:false },
-    ],
-    suggestions:{
-      kpiLevel:{
-        aahar:"Seasonal vegetables + dals. Rainbow plate principle.",
-        vihar:"Cook at home 5 nights/week. Eat slowly, chew 20x.",
-        aushadh:"Triphala churna after dinner. Digestive enzyme support.",
-      },
-      questionLevel:[
-        { key:"NUTRITION_Q1", condition:"Home-cooked meals < 2.5", triggerMode:"question_score",
-          aahar:"Batch-cook dal + rice on weekends. Carry tiffin daily.",
-          vihar:"Weekly meal plan Sunday using Ayumonk guide.",
-          aushadh:"Digestive enzyme supplement with restaurant meals." },
-      ]
-    }
-  },
-  { id:"hydration", label:"Hydration", icon:"💧", color:"#38bdf8", weight:0.10, baseline:3.0, sfDomain:"Vitality", inverse:false,
-    questions:[
-      { key:"HYDRATION_Q1", label:"How many glasses of water per day?",    score:2.3, thresholdBelow:2.5, reverse:false },
-      { key:"HYDRATION_Q2", label:"Do you feel thirsty frequently?",       score:3.6, thresholdAbove:3.5, reverse:true },
-    ],
-    suggestions:{
-      kpiLevel:{
-        aahar:"Jeera water each morning. 8 glasses/day minimum.",
-        vihar:"Set phone alarm every 90 min as water reminder.",
-        aushadh:"Coconut water electrolytes in summer.",
-      },
-      questionLevel:[
-        { key:"HYDRATION_Q1", condition:"Water intake < 2.5 (< 4 glasses)", triggerMode:"question_score",
-          aahar:"Jeera-infused water on waking. Coconut water at noon.",
-          vihar:"Phone alarm every 90 minutes for water reminder.",
-          aushadh:"Electrolyte powder in one glass daily." },
-      ]
-    }
-  },
-  { id:"digestion", label:"Digestion", icon:"🫁", color:"#a3e635", weight:0.10, baseline:3.2, sfDomain:"General Health", inverse:false,
-    questions:[
-      { key:"DIGESTION_Q1", label:"Do you experience bloating or gas?",    score:3.7, thresholdAbove:3.5, reverse:true },
-      { key:"DIGESTION_Q2", label:"Do you have regular bowel movements?",  score:2.8, thresholdBelow:3.0, reverse:false },
-    ],
-    suggestions:{
-      kpiLevel:{
-        aahar:"Ginger-lemon tea post lunch. Warm water always.",
-        vihar:"10-min walk after dinner. Vajrasana pose after meals.",
-        aushadh:"Hingvastak churna before meals. Trikatu blend.",
-      },
-      questionLevel:[
-        { key:"DIGESTION_Q1", condition:"Bloating/gas > 3.5 (reverse)", triggerMode:"question_score",
-          aahar:"Avoid pulses at dinner. Fennel seed water after meals.",
-          vihar:"Vajrasana for 10 min after every meal.",
-          aushadh:"Hingvastak churna before meals. Triphala at bedtime." },
-      ]
-    }
-  },
-  { id:"activity",  label:"Activity",     icon:"🏃", color:"#fb923c", weight:0.10, baseline:2.9, sfDomain:"Physical Func.", inverse:false,
-    questions:[
-      { key:"ACTIVITY_Q1", label:"Minutes of daily movement?",         score:2.5, thresholdBelow:3.0, reverse:false },
-      { key:"ACTIVITY_Q2", label:"Do you do structured exercise?",      score:1.9, thresholdBelow:2.0, reverse:false },
-    ],
-    suggestions:{
-      kpiLevel:{
-        aahar:"Light banana or dates pre-workout. Stay hydrated.",
-        vihar:"20-min desk yoga at 11AM. Always take stairs.",
-        aushadh:"Mahanarayan oil massage weekly.",
-      },
-      questionLevel:[
-        { key:"ACTIVITY_Q2", condition:"No structured exercise < 2.0", triggerMode:"question_score",
-          aahar:"Light banana pre-workout. Stay hydrated throughout.",
-          vihar:"Start with 15-min walk. Take stairs always.",
-          aushadh:"Mahanarayan oil self-massage every Sunday." },
-      ]
-    }
-  },
-  { id:"pain",      label:"Pain/Posture", icon:"🦴", color:"#e879f9", weight:0.10, baseline:3.3, sfDomain:"Bodily Pain", inverse:true,
-    questions:[
-      { key:"PAIN_Q1", label:"Do you experience back or neck pain?",    score:3.9, thresholdAbove:3.5, reverse:true },
-      { key:"PAIN_Q2", label:"Is your desk setup ergonomic?",           score:2.6, thresholdBelow:2.5, reverse:false },
-    ],
-    suggestions:{
-      kpiLevel:{
-        aahar:"Anti-inflammatory diet. Turmeric golden milk.",
-        vihar:"Shoulder rolls every 45 min. Ergonomic chair audit.",
-        aushadh:"Mahamash tailam topical. Shallaki supplement.",
-      },
-      questionLevel:[
-        { key:"PAIN_Q1", condition:"Back/neck pain > 3.5 (reverse)", triggerMode:"question_score",
-          aahar:"Anti-inflammatory foods: ginger, turmeric, omega-3.",
-          vihar:"Neck stretch + shoulder roll every 45 min.",
-          aushadh:"Mahamash tailam oil massage twice weekly." },
-      ]
-    }
-  },
-  { id:"energy",    label:"Energy",       icon:"⚡", color:"#fbbf24", weight:0.10, baseline:3.1, sfDomain:"Role Physical", inverse:false,
-    questions:[
-      { key:"ENERGY_Q1", label:"Afternoon energy levels?",              score:1.9, thresholdBelow:2.0, reverse:false },
-      { key:"ENERGY_Q2", label:"Do you wake up with energy?",           score:2.5, thresholdBelow:3.0, reverse:false },
-    ],
-    suggestions:{
-      kpiLevel:{
-        aahar:"Reduce afternoon carb load. Soak almonds overnight.",
-        vihar:"10-min power nap at lunch. Sunlight exposure morning.",
-        aushadh:"Chyawanprash every morning. Shilajit with warm milk.",
-      },
-      questionLevel:[
-        { key:"ENERGY_Q1", condition:"Afternoon energy < 2.0 (always drained)", triggerMode:"question_score",
-          aahar:"Soaked almonds in morning. Avoid post-lunch carbs.",
-          vihar:"10-min power nap at 1PM. Morning sunlight 5 min.",
-          aushadh:"Chyawanprash 1 tsp on empty stomach. Shilajit in warm milk." },
-      ]
-    }
-  },
-  { id:"emotional", label:"Emotional",    icon:"💚", color:"#34d399", weight:0.00, baseline:3.0, sfDomain:"Role Emotional", inverse:false,
-    questions:[
-      { key:"EMOTIONAL_Q1", label:"Do you feel emotionally balanced?",  score:2.8, thresholdBelow:3.0, reverse:false },
-      { key:"EMOTIONAL_Q2", label:"Do you feel connected with others?", score:3.2, thresholdBelow:3.0, reverse:false },
-    ],
-    suggestions:{
-      kpiLevel:{
-        aahar:"Eat with family or a friend. Social meals boost mood.",
-        vihar:"Gratitude journal 3 entries nightly. Disconnect from news.",
-        aushadh:"None needed — lifestyle is the medicine.",
-      },
-      questionLevel:[]
-    }
-  },
-  { id:"social",    label:"Social",       icon:"👨‍👩‍👧", color:"#f472b6", weight:0.00, baseline:2.8, sfDomain:"Social Func.", inverse:false,
-    questions:[
-      { key:"SOCIAL_Q1", label:"Shared family meals per week?",         score:2.2, thresholdBelow:2.5, reverse:false },
-      { key:"SOCIAL_Q2", label:"Quality time with friends?",            score:2.4, thresholdBelow:2.5, reverse:false },
-    ],
-    suggestions:{
-      kpiLevel:{
-        aahar:"Shared meal ritual. Cook together as a family.",
-        vihar:"Family meal 3x/week. One outdoor group activity monthly.",
-        aushadh:"Community and belonging are the deepest healing.",
-      },
-      questionLevel:[]
-    }
-  },
+  { id:"sleep",    label:"Sleep",        icon:"🌙", color:"#7c6af7", weight:0.20, baseline:2.8, sfDomain:"Mental Health",
+    tip:"Fix 10PM bedtime. No screens 1hr before. Practice 4-7-8 breathing.",
+    aahar:"Warm turmeric milk at bedtime. Avoid caffeine after 3PM.",
+    vihar:"Digital detox from 9PM. Fixed wake-up alarm at 6AM.",
+    aushadh:"Brahmi + Ashwagandha capsule at bedtime. Jatamansi oil on temples.", inverse:false },
+  { id:"stress",   label:"Stress",       icon:"🧘", color:"#f97316", weight:0.15, baseline:3.4, sfDomain:"Role Emotional",
+    tip:"10-min Anulom Vilom morning. Mid-day 5-min mindfulness break.",
+    aahar:"Reduce processed sugar. Ashwagandha latte in morning.",
+    vihar:"5-min mindfulness at 1PM. Nature walk on weekends.",
+    aushadh:"Shankhpushpi syrup. Adaptogenic herb blend.", inverse:true },
+  { id:"nutrition",label:"Nutrition",    icon:"🥗", color:"#22c55e", weight:0.15, baseline:3.1, sfDomain:"General Health",
+    tip:"2 servings seasonal veg daily. Reduce refined sugar. Home-cooked dinner 5x/week.",
+    aahar:"Seasonal vegetables + dals. Rainbow plate principle.",
+    vihar:"Cook at home 5 nights/week. Eat slowly, chew 20x.",
+    aushadh:"Triphala churna. Digestive enzyme support.", inverse:false },
+  { id:"hydration",label:"Hydration",    icon:"💧", color:"#38bdf8", weight:0.10, baseline:3.0, sfDomain:"Vitality",
+    tip:"Start day with 500ml warm water. Set hourly reminders. Jeera-infused water.",
+    aahar:"Jeera water each morning. 8 glasses/day minimum.",
+    vihar:"Set phone alarm every 90 min as water reminder.",
+    aushadh:"Coconut water electrolytes in summer.", inverse:false },
+  { id:"digestion",label:"Digestion",    icon:"🫁", color:"#a3e635", weight:0.10, baseline:3.2, sfDomain:"General Health",
+    tip:"Walk 10 min post meals. Add ginger-cumin tea. Avoid cold water with food.",
+    aahar:"Ginger-lemon tea post lunch. Warm water always.",
+    vihar:"10-min walk after dinner. Vajrasana pose after meals.",
+    aushadh:"Hingvastak churna before meals. Trikatu blend.", inverse:false },
+  { id:"activity", label:"Activity",     icon:"🏃", color:"#fb923c", weight:0.10, baseline:2.9, sfDomain:"Physical Func.",
+    tip:"20-min desk yoga. Take stairs. 15-min evening walk.",
+    aahar:"Light banana or dates pre-workout. Stay hydrated.",
+    vihar:"20-min desk yoga at 11AM. Always take stairs.",
+    aushadh:"Mahanarayan oil massage weekly.", inverse:false },
+  { id:"pain",     label:"Pain/Posture", icon:"🦴", color:"#e879f9", weight:0.10, baseline:3.3, sfDomain:"Bodily Pain",
+    tip:"Ergonomic desk audit. Shoulder rolls every 45 min. Mahamash tailam weekly.",
+    aahar:"Anti-inflammatory diet. Turmeric golden milk.",
+    vihar:"Shoulder rolls every 45 min. Ergonomic chair check.",
+    aushadh:"Mahamash tailam topical. Shallaki supplement.", inverse:true },
+  { id:"energy",   label:"Energy",       icon:"⚡", color:"#fbbf24", weight:0.10, baseline:3.1, sfDomain:"Role Physical",
+    tip:"Chyawanprash daily. Reduce afternoon carbs. 10-min power nap at lunch.",
+    aahar:"Reduce afternoon carb load. Soak almonds overnight.",
+    vihar:"10-min power nap at lunch. Sunlight exposure morning.",
+    aushadh:"Chyawanprash every morning. Shilajit with warm milk.", inverse:false },
+  { id:"emotional",label:"Emotional",    icon:"💚", color:"#34d399", weight:0.00, baseline:3.0, sfDomain:"Role Emotional",
+    tip:"Gratitude journaling — 3 entries nightly. Connect with one friend/family daily.",
+    aahar:"Eat with family or a friend. Social meals boost mood.",
+    vihar:"Gratitude journal 3 entries nightly. Disconnect from news.",
+    aushadh:"None needed — lifestyle is the medicine.", inverse:false },
+  { id:"social",   label:"Social",       icon:"👨‍👩‍👧", color:"#f472b6", weight:0.00, baseline:2.8, sfDomain:"Social Func.",
+    tip:"Schedule shared family meal 3x/week. One community event monthly.",
+    aahar:"Shared meal ritual. Cook together as a family.",
+    vihar:"Family meal 3x/week. One outdoor group activity monthly.",
+    aushadh:"Community and belonging are the deepest healing.", inverse:false },
 ];
 
 // ─── GENERATED TREND DATA ─────────────────────────────────────────────────────
@@ -311,161 +144,6 @@ const BADGES=[
   {id:"a1",label:"Active Star",    icon:"🏃",earned:false,level:"Silver",color:"#fb923c"},
   {id:"b1",label:"Banyan Legend",  icon:"🌳",earned:false,level:"Legend",color:"#d4a843"},
 ];
-
-// ─── SVG CHARTS ───────────────────────────────────────────────────────────────
-// ─── PWA: INSTALL BANNER ──────────────────────────────────────────────────────
-// Shows when the app is NOT installed (not in standalone mode).
-// Android: captures beforeinstallprompt and shows custom Ayumonk banner.
-// iOS:     shows manual Add-to-Home-Screen guide sheet.
-function PWAInstallBanner({ onDismiss }) {
-  const [ios]      = useState(isIOS());
-  const [step, setStep] = useState(1); // ios guide: step 1/2/3
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [installed, setInstalled] = useState(false);
-
-  useEffect(()=>{
-    const handler = e => { e.preventDefault(); setDeferredPrompt(e); };
-    window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", ()=>setInstalled(true));
-    return ()=>{ window.removeEventListener("beforeinstallprompt", handler); };
-  },[]);
-
-  const handleAndroidInstall = async () => {
-    if(!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if(outcome === "accepted") setInstalled(true);
-    onDismiss();
-  };
-
-  if(installed) return (
-    <div style={{background:"rgba(107,179,63,0.15)",border:"1px solid rgba(107,179,63,0.4)",borderRadius:12,padding:"12px 18px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
-      <span style={{fontSize:20}}>✅</span>
-      <div>
-        <div style={{fontSize:11,fontWeight:700,color:C.g3}}>AyuMonk installed!</div>
-        <div style={{fontSize:9,color:C.muted}}>Open from your home screen for the best experience and notifications.</div>
-      </div>
-    </div>
-  );
-
-  if(ios) return (
-    <div style={{background:"rgba(74,140,42,0.08)",border:"1px solid rgba(107,179,63,0.3)",borderRadius:12,padding:"14px 18px",marginBottom:14}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:20}}>📲</span>
-          <div>
-            <div style={{fontSize:11,fontWeight:700,color:C.g3}}>Install AyuMonk on your iPhone</div>
-            <div style={{fontSize:9,color:C.muted}}>3 steps · Takes 15 seconds · Enables push notifications</div>
-          </div>
-        </div>
-        <button onClick={onDismiss} style={{background:"transparent",border:"none",color:C.muted,cursor:"pointer",fontSize:16,padding:"0 4px"}}>✕</button>
-      </div>
-      <div style={{display:"flex",gap:8}}>
-        {[
-          ["1","Tap the Share button","□↑","rgba(74,144,196,0.15)","#4A90C4"],
-          ["2","Scroll and tap 'Add to Home Screen'","⊞+","rgba(107,179,63,0.15)",C.g3],
-          ["3","Tap 'Add' in the top right","✓","rgba(212,168,67,0.15)",C.gold],
-        ].map(([n,label,ico,bg,col])=>(
-          <div key={n} style={{flex:1,background:bg,border:`1px solid ${col}44`,borderRadius:10,padding:"8px 10px",textAlign:"center",
-            opacity:step>=parseInt(n)?1:0.45,cursor:"pointer",transition:"opacity 0.2s"}}
-            onClick={()=>setStep(Math.max(step,parseInt(n)+1))}>
-            <div style={{fontSize:20,marginBottom:4}}>{ico}</div>
-            <div style={{fontSize:8,fontWeight:700,color:col,marginBottom:3}}>Step {n}</div>
-            <div style={{fontSize:7.5,color:"rgba(255,255,255,0.5)",lineHeight:1.4}}>{label}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // Android / Desktop — show custom install button
-  return (
-    <div style={{background:"rgba(74,140,42,0.08)",border:"1px solid rgba(107,179,63,0.3)",borderRadius:12,padding:"12px 18px",marginBottom:14,display:"flex",alignItems:"center",gap:14}}>
-      <span style={{fontSize:28,flexShrink:0}}>📲</span>
-      <div style={{flex:1}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.g3,marginBottom:2}}>Install AyuMonk on your device</div>
-        <div style={{fontSize:9,color:C.muted}}>Add to home screen for daily reminders, offline access, and an app-like experience. No App Store required.</div>
-      </div>
-      <div style={{display:"flex",gap:8,flexShrink:0}}>
-        <button onClick={handleAndroidInstall}
-          style={{padding:"7px 18px",borderRadius:9,background:`linear-gradient(135deg,${C.g1},${C.g2})`,border:"none",color:"#fff",fontWeight:700,fontSize:10,cursor:"pointer"}}>
-          Install Now
-        </button>
-        <button onClick={onDismiss}
-          style={{padding:"7px 10px",borderRadius:9,background:"transparent",border:"1px solid rgba(255,255,255,0.1)",color:C.muted,fontSize:10,cursor:"pointer"}}>
-          Later
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── PWA: OFFLINE BADGE ────────────────────────────────────────────────────────
-// Persistent status bar shown when device is offline.
-// Queued completions display in a mini list so employee knows they'll sync.
-function PWAOfflineBadge({ queueCount=0 }) {
-  return (
-    <div style={{
-      background:"rgba(232,160,32,0.12)",border:"1px solid rgba(232,160,32,0.35)",
-      borderRadius:9,padding:"6px 14px",marginBottom:12,
-      display:"flex",alignItems:"center",gap:10
-    }}>
-      <span style={{fontSize:14}}>📡</span>
-      <div style={{flex:1}}>
-        <span style={{fontSize:10,fontWeight:700,color:C.gold}}>You're offline</span>
-        <span style={{fontSize:9,color:C.muted,marginLeft:8}}>
-          {queueCount>0
-            ? `${queueCount} challenge completion${queueCount>1?"s":""} queued — will sync when you reconnect`
-            : "Showing cached data · Changes will sync when reconnected"}
-        </span>
-      </div>
-      <span style={{fontSize:9,color:"rgba(232,160,32,0.6)",fontWeight:600}}>OFFLINE</span>
-    </div>
-  );
-}
-
-// ─── PWA: PUSH PERMISSION PROMPT ───────────────────────────────────────────────
-// Shows after install when notification permission is "default" (not yet asked).
-function PWAPushPrompt({ onAllow, onSkip }) {
-  const [loading, setLoading] = useState(false);
-  const handleAllow = async () => {
-    setLoading(true);
-    try {
-      // Production: Notification.requestPermission() + serviceWorker.pushManager.subscribe()
-      await new Promise(r=>setTimeout(r,1200));
-      onAllow();
-    } catch(e) { onSkip(); }
-    setLoading(false);
-  };
-  return (
-    <div style={{
-      position:"fixed",bottom:0,left:0,right:0,zIndex:1000,
-      background:C.card,borderTop:`2px solid ${C.g2}`,
-      padding:"18px 22px",display:"flex",alignItems:"center",gap:16,
-      boxShadow:"0 -4px 24px rgba(0,0,0,0.5)"
-    }}>
-      <span style={{fontSize:32,flexShrink:0}}>🔔</span>
-      <div style={{flex:1}}>
-        <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:4}}>Enable wellness reminders?</div>
-        <div style={{fontSize:9.5,color:C.muted,lineHeight:1.5}}>
-          Get notified about daily challenges, streaks at risk, and badge milestones — straight to your notification shade.
-          <br/>
-          <span style={{color:C.g3}}>These appear in your phone shutter even when the app is closed.</span>
-        </div>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
-        <button onClick={handleAllow} disabled={loading}
-          style={{padding:"9px 22px",borderRadius:10,background:`linear-gradient(135deg,${C.g1},${C.g2})`,border:"none",color:"#fff",fontWeight:700,fontSize:11,cursor:"pointer",opacity:loading?0.7:1}}>
-          {loading?"Enabling…":"Enable Reminders"}
-        </button>
-        <button onClick={onSkip}
-          style={{padding:"7px 22px",borderRadius:10,background:"transparent",border:"1px solid rgba(255,255,255,0.1)",color:C.muted,fontSize:10,cursor:"pointer"}}>
-          Not Now
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // ─── SVG CHARTS ───────────────────────────────────────────────────────────────
 function DonutChart({slices,size=130,cVal,cSub}){
@@ -699,203 +377,45 @@ function WellnessDashboard({viewData,labels,timeView,setTimeView}){
         </Card>
       </div>
 
-      {/* KPI DRILL-DOWN — TWO-TIER SUGGESTION ENGINE */}
-      {sp&&(()=>{
-        // ── Score helpers ─────────────────────────────────────────────────────
-        const kpiAvg = scores[sp.id];
-        const riskBand = kpiAvg >= 4.0 ? "good" : kpiAvg >= 3.0 ? "moderate" : "risk";
-
-        // Question-level triggers: check each question score against its threshold
-        const questionTriggers = (sp.questions||[]).filter(q => {
-          if(q.thresholdBelow != null && q.score < q.thresholdBelow) return true;
-          if(q.thresholdAbove != null && q.score > q.thresholdAbove) return true;
-          return false;
-        });
-
-        // Precision suggestions from triggered questions
-        const questionSuggestions = (sp.suggestions?.questionLevel||[]).filter(s =>
-          questionTriggers.find(q => q.key === s.key)
-        );
-
-        const showKpiSugg = riskBand !== "good";
-        const riskCol = riskBand === "risk" ? "#f87171" : riskBand === "moderate" ? C.gold : C.g3;
-
-        return(
-          <Card style={{marginBottom:16,borderColor:sp.color+"44",background:sp.color+"07"}}>
-            {/* HEADER ROW */}
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-              <div>
-                <div style={{fontSize:14,fontWeight:800}}>{sp.icon} {sp.label} — {VIEWS[timeView]} Detail</div>
-                <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
-                  <span style={{fontSize:9,background:riskCol+"22",color:riskCol,borderRadius:5,padding:"1px 8px",fontWeight:700,textTransform:"uppercase"}}>
-                    KPI {riskBand} · avg {kpiAvg.toFixed(2)}
-                  </span>
-                  {questionTriggers.length>0&&(
-                    <span style={{fontSize:9,background:"rgba(251,191,36,0.18)",color:C.gold,borderRadius:5,padding:"1px 8px",fontWeight:700}}>
-                      ⚡ {questionTriggers.length} question{questionTriggers.length>1?"s":""} flagged
-                    </span>
-                  )}
+      {/* KPI DRILL-DOWN */}
+      {sp&&(
+        <Card style={{marginBottom:16,borderColor:sp.color+"44",background:sp.color+"07"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div style={{fontSize:14,fontWeight:800}}>{sp.icon} {sp.label} — {VIEWS[timeView]} Detail</div>
+            <div style={{display:"flex",gap:20,alignItems:"center"}}>
+              {[["Baseline",sp.baseline.toFixed(1)],["Current",scores[sp.id].toFixed(1)],["Best",Math.max(...viewData[sp.id]).toFixed(1)],["Lowest",Math.min(...viewData[sp.id]).toFixed(1)]].map(([l,v])=>(
+                <div key={l} style={{textAlign:"center"}}>
+                  <div style={{fontSize:9,color:C.muted,textTransform:"uppercase"}}>{l}</div>
+                  <div style={{fontSize:19,fontWeight:800,color:sp.color}}>{v}</div>
                 </div>
-              </div>
-              <div style={{display:"flex",gap:20,alignItems:"center"}}>
-                {[["Baseline",sp.baseline.toFixed(1)],["Current",kpiAvg.toFixed(1)],["Best",Math.max(...viewData[sp.id]).toFixed(1)],["Lowest",Math.min(...viewData[sp.id]).toFixed(1)]].map(([l,v])=>(
-                  <div key={l} style={{textAlign:"center"}}>
-                    <div style={{fontSize:9,color:C.muted,textTransform:"uppercase"}}>{l}</div>
-                    <div style={{fontSize:19,fontWeight:800,color:sp.color}}>{v}</div>
-                  </div>
-                ))}
-                <button onClick={()=>setSelectedKPI(null)} style={{background:"transparent",border:"none",color:C.muted,cursor:"pointer",fontSize:18,paddingLeft:8}}>✕</button>
-              </div>
+              ))}
+              <button onClick={()=>setSelectedKPI(null)} style={{background:"transparent",border:"none",color:C.muted,cursor:"pointer",fontSize:18,paddingLeft:8}}>✕</button>
             </div>
-
-            <MultiLine h={65} labels={labels} series={[{id:sp.id,vals:viewData[sp.id],c:sp.color}]} highlighted={[sp.id]}/>
-
-            {/* QUESTION SCORES TABLE */}
-            {(sp.questions||[]).length>0&&(
-              <div style={{marginTop:14,marginBottom:2}}>
-                <div style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:0.8,marginBottom:6}}>
-                  Individual Question Scores
-                </div>
-                <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                  {(sp.questions||[]).map(q=>{
-                    const triggered = (q.thresholdBelow!=null&&q.score<q.thresholdBelow)||(q.thresholdAbove!=null&&q.score>q.thresholdAbove);
-                    const pct = ((q.score-1)/4)*100;
-                    return(
-                      <div key={q.key} style={{display:"grid",gridTemplateColumns:"24px 1fr 90px 60px",alignItems:"center",gap:8,padding:"4px 0"}}>
-                        <span style={{fontSize:12,textAlign:"center"}}>{triggered?"⚡":"✓"}</span>
-                        <div>
-                          <div style={{fontSize:9.5,color:triggered?"rgba(251,191,36,0.9)":"rgba(255,255,255,0.55)"}}>{q.label}</div>
-                          <div style={{height:3,borderRadius:3,background:"rgba(255,255,255,0.06)",marginTop:3}}>
-                            <div style={{height:"100%",borderRadius:3,width:`${pct}%`,
-                              background:triggered?`linear-gradient(90deg,#f87171,${C.gold})`:`linear-gradient(90deg,${sp.color}88,${sp.color})`,
-                              transition:"width 0.4s"}}/>
-                          </div>
-                        </div>
-                        <div style={{fontSize:9,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>
-                          {q.thresholdBelow!=null?`threshold < ${q.thresholdBelow}`:`threshold > ${q.thresholdAbove}`}
-                        </div>
-                        <div style={{textAlign:"right"}}>
-                          <span style={{fontSize:13,fontWeight:800,color:triggered?"#f87171":sp.color}}>{q.score.toFixed(1)}</span>
-                          {triggered&&<span style={{fontSize:8,color:C.gold,marginLeft:4,fontWeight:700}}>flagged</span>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* TIER 1 — KPI-LEVEL SUGGESTIONS */}
-            {showKpiSugg&&sp.suggestions?.kpiLevel&&(
-              <div style={{marginTop:14}}>
-                <div style={{fontSize:9,fontWeight:700,color:riskCol,textTransform:"uppercase",letterSpacing:0.8,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{background:riskCol+"22",borderRadius:5,padding:"1px 8px"}}>Tier 1 — KPI-Level Suggestions</span>
-                  <span style={{fontWeight:400,color:C.muted,textTransform:"none"}}>triggered because KPI average is {riskBand}</span>
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-                  {[["🥗 Aahar",sp.suggestions.kpiLevel.aahar,C.g3],
-                    ["🏃 Vihar",sp.suggestions.kpiLevel.vihar,C.blue],
-                    ["🌿 Aushadh",sp.suggestions.kpiLevel.aushadh,C.gold]].map(([lbl,val,col])=>(
-                    <div key={lbl} style={{background:col+"0f",borderRadius:10,padding:"8px 12px",border:`1px solid ${col}30`}}>
-                      <div style={{fontSize:10,fontWeight:700,color:col,marginBottom:4}}>{lbl}</div>
-                      <div style={{fontSize:9,color:"rgba(255,255,255,0.6)",lineHeight:1.5}}>{val}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* TIER 2 — QUESTION-LEVEL PRECISION SUGGESTIONS */}
-            {questionSuggestions.length>0&&(
-              <div style={{marginTop:12}}>
-                <div style={{fontSize:9,fontWeight:700,color:C.gold,textTransform:"uppercase",letterSpacing:0.8,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{background:"rgba(212,168,67,0.15)",borderRadius:5,padding:"1px 8px"}}>Tier 2 — Precision Suggestions</span>
-                  <span style={{fontWeight:400,color:C.muted,textTransform:"none"}}>triggered by specific question scores below threshold</span>
-                </div>
-                {questionSuggestions.map(qs=>{
-                  const q = (sp.questions||[]).find(q=>q.key===qs.key);
-                  return(
-                    <div key={qs.key} style={{marginBottom:10,padding:"10px 12px",background:"rgba(212,168,67,0.05)",borderRadius:10,border:"1px solid rgba(212,168,67,0.18)"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                        <span style={{fontSize:11}}>⚡</span>
-                        <div>
-                          <div style={{fontSize:9.5,fontWeight:700,color:C.gold}}>{q?.label}</div>
-                          <div style={{fontSize:8,color:C.muted}}>score: {q?.score?.toFixed(1)} · {qs.condition} · mode: {qs.triggerMode}</div>
-                        </div>
-                      </div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-                        {[["🥗 Aahar",qs.aahar,C.g3],["🏃 Vihar",qs.vihar,C.blue],["🌿 Aushadh",qs.aushadh,C.gold]].map(([lbl,val,col])=>(
-                          <div key={lbl} style={{background:col+"0a",borderRadius:8,padding:"6px 10px",border:`1px solid ${col}25`}}>
-                            <div style={{fontSize:9,fontWeight:700,color:col,marginBottom:3}}>{lbl}</div>
-                            <div style={{fontSize:8.5,color:"rgba(255,255,255,0.55)",lineHeight:1.5}}>{val}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {!showKpiSugg&&questionSuggestions.length===0&&(
-              <div style={{marginTop:14,textAlign:"center",padding:"12px 0",color:C.g3,fontSize:10}}>
-                ✓ This KPI is in good shape. Keep it up!
-              </div>
-            )}
-          </Card>
-        );
-      })()}
-
-      {/* LIFESTYLE SUGGESTIONS — TWO-TIER OVERVIEW */}
-      <Card style={{background:"rgba(107,179,63,0.04)",borderColor:"rgba(107,179,63,0.14)"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.g3}}>🌿 Ayumonk Lifestyle Suggestions — Focus Areas This Week</div>
-          <div style={{display:"flex",gap:6}}>
-            <span style={{fontSize:8,background:"rgba(107,179,63,0.15)",color:C.g3,borderRadius:5,padding:"2px 8px",fontWeight:700}}>Tier 1 = KPI risk</span>
-            <span style={{fontSize:8,background:"rgba(212,168,67,0.15)",color:C.gold,borderRadius:5,padding:"2px 8px",fontWeight:700}}>Tier 2 = Question score</span>
           </div>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:10}}>
-          {weakParams.map(p=>{
-            // Compute question-level triggers for this KPI
-            const qTrigs = (p.questions||[]).filter(q =>
-              (q.thresholdBelow!=null&&q.score<q.thresholdBelow)||(q.thresholdAbove!=null&&q.score>q.thresholdAbove)
-            );
-            const kpiAvg = scores[p.id];
-            const riskBand = kpiAvg>=4.0?"good":kpiAvg>=3.0?"moderate":"risk";
-            const riskCol = riskBand==="risk"?"#f87171":C.gold;
-            return(
-              <div key={p.id} style={{background:"rgba(255,255,255,0.025)",borderRadius:10,padding:"10px 14px",borderLeft:`3px solid ${p.color}`}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div style={{fontSize:11,fontWeight:700,color:p.color}}>{p.icon} {p.label}</div>
-                  <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                    {riskBand!=="good"&&(
-                      <span style={{fontSize:7.5,background:riskCol+"22",color:riskCol,borderRadius:4,padding:"1px 6px",fontWeight:700}}>T1 · KPI {riskBand}</span>
-                    )}
-                    {qTrigs.length>0&&(
-                      <span style={{fontSize:7.5,background:"rgba(212,168,67,0.18)",color:C.gold,borderRadius:4,padding:"1px 6px",fontWeight:700}}>T2 · {qTrigs.length}Q flagged</span>
-                    )}
-                  </div>
-                </div>
-                {/* Show KPI-level suggestion preview */}
-                {riskBand!=="good"&&p.suggestions?.kpiLevel&&(
-                  <div style={{fontSize:8.5,color:"rgba(255,255,255,0.5)",lineHeight:1.55,marginBottom:qTrigs.length>0?6:0}}>
-                    {p.suggestions.kpiLevel.aahar}
-                  </div>
-                )}
-                {/* Show flagged question pills */}
-                {qTrigs.length>0&&(
-                  <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:4}}>
-                    {qTrigs.map(q=>(
-                      <span key={q.key} style={{fontSize:7.5,background:"rgba(251,191,36,0.1)",color:C.gold,borderRadius:4,padding:"1px 6px",border:"1px solid rgba(251,191,36,0.2)"}}>
-                        ⚡ {q.label.length>28?q.label.slice(0,28)+"…":q.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
+          <MultiLine h={65} labels={labels} series={[{id:sp.id,vals:viewData[sp.id],c:sp.color}]} highlighted={[sp.id]}/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginTop:14}}>
+            {[["🥗 Aahar",sp.aahar,C.g3],["🏃 Vihar",sp.vihar,C.blue],["🌿 Aushadh",sp.aushadh,C.gold]].map(([lbl,val,col])=>(
+              <div key={lbl} style={{background:col+"11",borderRadius:10,padding:"8px 12px",border:`1px solid ${col}33`}}>
+                <div style={{fontSize:10,fontWeight:700,color:col,marginBottom:4}}>{lbl}</div>
+                <div style={{fontSize:9,color:"rgba(255,255,255,0.6)",lineHeight:1.5}}>{val}</div>
               </div>
-            );
-          })}
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* LIFESTYLE SUGGESTIONS (weak KPIs) */}
+      <Card style={{background:"rgba(107,179,63,0.04)",borderColor:"rgba(107,179,63,0.14)"}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.g3,marginBottom:10}}>🌿 Ayumonk Lifestyle Suggestions — Focus Areas This Week</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:10}}>
+          {weakParams.map(p=>(
+            <div key={p.id} style={{background:"rgba(255,255,255,0.025)",borderRadius:10,padding:"10px 14px",borderLeft:`3px solid ${p.color}`}}>
+              <div style={{fontSize:11,fontWeight:700,marginBottom:4,color:p.color}}>{p.icon} {p.label}
+                <span style={{fontSize:9,color:"#f87171",marginLeft:6,fontWeight:400}}>needs attention</span>
+              </div>
+              <div style={{fontSize:9.5,color:"rgba(255,255,255,0.55)",lineHeight:1.6}}>{p.tip}</div>
+            </div>
+          ))}
         </div>
       </Card>
     </div>
@@ -903,7 +423,7 @@ function WellnessDashboard({viewData,labels,timeView,setTimeView}){
 }
 
 // ─── CHALLENGES DASHBOARD ─────────────────────────────────────────────────────
-function ChallengeDashboard({ isOnline=true, onOfflineQueue=()=>{} }){
+function ChallengeDashboard(){
   const [cs,setCs]=useState({
     water:{count:0},sleep:{done:false},activity:{chosen:null},
     nutrition:{chosen:[]},breathing:{timer:120,done:false},mood:{rating:null},
@@ -945,21 +465,6 @@ function ChallengeDashboard({ isOnline=true, onOfflineQueue=()=>{} }){
     return def.xp;
   };
 
-  // ── Offline-aware completion handler ──────────────────────────────────────
-  // Production: POST /api/challenges/complete
-  //   If online  → direct API call
-  //   If offline → write to IndexedDB offline queue; Service Worker Background
-  //                Sync flushes it when connectivity returns
-  const [offlineCount, setOfflineCount] = useState(0);
-  const handleCompletion = (challengeId) => {
-    if(!isOnline){
-      setOfflineCount(p=>p+1);
-      onOfflineQueue(1);
-      // Production: idb.add('offline_queue', { type:'challenge_complete', challengeId, date: new Date() })
-    }
-    // UI state updates happen regardless (optimistic update)
-  };
-
   // ── SCHEDULE-GATED CHALLENGE LISTS ───────────────────────────────────────
   // Only challenges whose mapped KPI is ACTIVE (today between start and end date)
   // are shown as interactive cards. Upcoming and ended are shown as info-only rows.
@@ -988,18 +493,6 @@ function ChallengeDashboard({ isOnline=true, onOfflineQueue=()=>{} }){
           </Card>
         ))}
       </div>
-
-      {/* OFFLINE SYNC STATUS */}
-      {!isOnline&&(
-        <div style={{background:"rgba(232,160,32,0.08)",border:"1px solid rgba(232,160,32,0.25)",borderRadius:9,padding:"7px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:13}}>📡</span>
-          <div style={{flex:1,fontSize:9,color:C.gold}}>
-            You're offline. Challenge completions are saved locally and will sync automatically when you reconnect.
-            {offlineCount>0&&<span style={{marginLeft:6,fontWeight:700}}>{offlineCount} queued</span>}
-          </div>
-          <span style={{fontSize:8,color:"rgba(232,160,32,0.5)",fontWeight:700}}>BACKGROUND SYNC ON</span>
-        </div>
-      )}
 
       {/* PROGRESS BAR */}
       <div style={{marginBottom:18}}>
@@ -1250,312 +743,7 @@ function ChallengeDashboard({ isOnline=true, onOfflineQueue=()=>{} }){
           </div>
         </div>
       )}
-
-      {/* ── REMINDER SETTINGS PANEL ───────────────────────────────────────────
-          Maps to: reminder_settings table (PostgreSQL)
-          API:  GET/PATCH /api/reminders/settings
-               POST /api/reminders/push/subscribe
-               POST /api/reminders/snooze
-          RLS:  user_id = current_app_user_id() — own row only
-      ──────────────────────────────────────────────────────────────────────── */}
-      <ReminderSettings/>
     </div>
-  );
-}
-
-// ─── REMINDER SETTINGS COMPONENT ─────────────────────────────────────────────
-function ReminderSettings(){
-  // State mirrors reminder_settings table columns
-  const [settings, setSettings] = useState({
-    is_enabled:        false,
-    channel:           "email",
-    reminder_time:     "20:00",
-    timezone:          Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata",
-    remind_on_incomplete:  true,
-    remind_streak_at_risk: true,
-    remind_window_closing: true,
-    remind_window_opening: true,
-    remind_milestone_near: true,
-    snooze_until:      null,
-  });
-  const [saved, setSaved]   = useState(false);
-  const [pushGranted, setPushGranted] = useState(false);
-  const [pushPending, setPushPending] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [activeHistory, setActiveHistory] = useState(false);
-
-  // Simulated reminder log (production: GET /api/reminders/history)
-  const REMINDER_HISTORY = [
-    { type:"daily_incomplete", icon:"📋", label:"Daily Challenge Reminder",    channel:"email", time:"Yesterday 8:00 PM", status:"sent",       statusCol:C.g3 },
-    { type:"streak_risk",      icon:"🔥", label:"Streak At Risk Alert",        channel:"push",  time:"2 days ago 9:00 PM",status:"sent",       statusCol:C.g3 },
-    { type:"window_closing",   icon:"📅", label:"Hydration Program Closing",   channel:"email", time:"3 days ago 8:00 AM",status:"sent",       statusCol:C.g3 },
-    { type:"daily_incomplete", icon:"📋", label:"Daily Challenge Reminder",    channel:"email", time:"4 days ago 8:00 PM", status:"suppressed", statusCol:C.muted },
-    { type:"milestone_near",   icon:"🏅", label:"Badge Milestone — 7-Day",    channel:"push",  time:"5 days ago 8:00 AM", status:"sent",       statusCol:C.g3 },
-    { type:"window_opening",   icon:"🌱", label:"Sleep Program Starting Soon", channel:"email", time:"6 days ago 8:00 AM", status:"failed",     statusCol:C.red },
-  ];
-
-  const upd = (key, val) => { setSettings(p=>({...p,[key]:val})); setSaved(false); };
-
-  const handleSave = () => {
-    // Production: PATCH /api/reminders/settings  body: settings
-    setSaved(true);
-    setTimeout(()=>setSaved(false), 2500);
-  };
-
-  const handlePushRequest = async () => {
-    setPushPending(true);
-    try {
-      // Production: navigator.serviceWorker + pushManager.subscribe + POST /api/reminders/push/subscribe
-      await new Promise(r=>setTimeout(r,1200)); // simulate permission prompt
-      setPushGranted(true);
-      upd("channel","push");
-    } catch(e) { }
-    setPushPending(false);
-  };
-
-  const handleSnooze = (hours) => {
-    const until = new Date(Date.now() + hours*3600*1000);
-    upd("snooze_until", until.toISOString());
-    setSaved(false);
-  };
-
-  const isSnoozing = settings.snooze_until && new Date(settings.snooze_until) > new Date();
-  const snoozeEnds = isSnoozing ? new Date(settings.snooze_until).toLocaleString("en-IN",{hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"}) : null;
-
-  const REMINDER_TYPES = [
-    { key:"remind_on_incomplete",  icon:"📋", label:"Daily challenge reminder",      sub:"Fires at your set time if any challenge is uncomplete" },
-    { key:"remind_streak_at_risk", icon:"🔥", label:"Streak at risk alert",          sub:"Fires at 9PM if your streak ≥ 3 days and today isn't done" },
-    { key:"remind_window_closing", icon:"📅", label:"Program ending soon",           sub:"Once, 3 days before a KPI window closes" },
-    { key:"remind_window_opening", icon:"🌱", label:"New program starting tomorrow", sub:"Once, day before a new KPI window opens" },
-    { key:"remind_milestone_near", icon:"🏅", label:"Badge milestone alert",         sub:"When you're 1 day away from a 7/14/21/30-day badge" },
-  ];
-
-  const CHANNELS = [
-    { id:"email",    icon:"📧", label:"Email",         note:"Works immediately" },
-    { id:"push",     icon:"🔔", label:"Browser Push",  note:pushGranted?"Enabled":"Needs permission" },
-    { id:"whatsapp", icon:"💬", label:"WhatsApp",      note:"Phase 3 — coming soon" },
-  ];
-
-  return (
-    <Card style={{marginTop:14, borderColor: settings.is_enabled ? "rgba(107,179,63,0.3)" : "rgba(255,255,255,0.07)", background:"rgba(0,0,0,0.2)"}}>
-
-      {/* ── HEADER ROW ──────────────────────────────────────────────────── */}
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom: expanded ? 18 : 0}}>
-        <span style={{fontSize:20}}>🔔</span>
-        <div style={{flex:1}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#fff"}}>Reminder Settings</div>
-          <div style={{fontSize:9,color:C.muted,marginTop:2}}>
-            {isSnoozing
-              ? `⏸ Snoozed until ${snoozeEnds}`
-              : settings.is_enabled
-              ? `Active · ${settings.channel} · ${settings.reminder_time} ${settings.timezone}`
-              : "Reminders are off"}
-          </div>
-        </div>
-        {/* Master toggle */}
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:9,color:settings.is_enabled?C.g3:C.muted,fontWeight:600}}>
-            {settings.is_enabled?"ON":"OFF"}
-          </span>
-          <button
-            onClick={()=>upd("is_enabled",!settings.is_enabled)}
-            style={{
-              width:42, height:24, borderRadius:12, border:"none", cursor:"pointer",
-              background: settings.is_enabled ? C.g2 : "rgba(255,255,255,0.12)",
-              position:"relative", transition:"background 0.25s"
-            }}>
-            <span style={{
-              position:"absolute", top:3, borderRadius:9,
-              width:18, height:18, background:"#fff",
-              left: settings.is_enabled ? 21 : 3,
-              transition:"left 0.2s", display:"block"
-            }}/>
-          </button>
-        </div>
-        <button
-          onClick={()=>setExpanded(p=>!p)}
-          style={{background:"transparent",border:"1px solid rgba(255,255,255,0.1)",color:C.muted,borderRadius:8,padding:"4px 12px",cursor:"pointer",fontSize:10,marginLeft:4}}>
-          {expanded?"▲ Collapse":"▼ Configure"}
-        </button>
-      </div>
-
-      {expanded && (
-        <div style={{opacity: settings.is_enabled ? 1 : 0.38, pointerEvents: settings.is_enabled ? "auto" : "none", transition:"opacity 0.2s"}}>
-
-          {/* ── CHANNEL + TIME + TIMEZONE ─────────────────────────────── */}
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:9,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:0.8,marginBottom:8}}>Delivery Channel</div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
-              {CHANNELS.map(ch=>(
-                <button key={ch.id}
-                  disabled={ch.id==="whatsapp"}
-                  onClick={()=>{ if(ch.id==="push"&&!pushGranted){ handlePushRequest(); return; } upd("channel",ch.id); }}
-                  style={{
-                    padding:"8px 14px",borderRadius:10,cursor:ch.id==="whatsapp"?"not-allowed":"pointer",
-                    border:`1px solid ${settings.channel===ch.id?C.g3:"rgba(255,255,255,0.1)"}`,
-                    background:settings.channel===ch.id?"rgba(107,179,63,0.12)":"rgba(255,255,255,0.03)",
-                    display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:90,
-                    opacity:ch.id==="whatsapp"?0.4:1,transition:"all 0.15s"
-                  }}>
-                  <span style={{fontSize:18}}>{ch.icon}</span>
-                  <span style={{fontSize:10,fontWeight:700,color:settings.channel===ch.id?C.g3:"#fff"}}>{ch.label}</span>
-                  <span style={{fontSize:8,color:C.muted}}>{ch.note}</span>
-                  {ch.id==="push"&&pushPending&&<span style={{fontSize:8,color:C.gold}}>Requesting…</span>}
-                  {ch.id==="push"&&pushGranted&&!pushPending&&<span style={{fontSize:8,color:C.g3}}>✓ Enabled</span>}
-                </button>
-              ))}
-            </div>
-
-            {/* PWA PUSH INFO BOX */}
-            {settings.channel==="push"&&(
-              <div style={{background:"rgba(107,179,63,0.06)",border:"1px solid rgba(107,179,63,0.2)",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
-                <div style={{fontSize:9,fontWeight:700,color:C.g3,marginBottom:6}}>📲 How Browser Push Works</div>
-                <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                  {[
-                    ["Android Chrome / Edge","✅ Works from browser tab — no home screen install needed"],
-                    ["iOS Safari 16.4+","⚠️ Requires Add to Home Screen first — then works identically to native"],
-                    ["Desktop Chrome / Firefox","✅ Works as desktop notification in system tray"],
-                    ["iOS Safari < 16.4","❌ Not supported — use Email channel instead"],
-                  ].map(([platform, status])=>(
-                    <div key={platform} style={{display:"flex",gap:10,alignItems:"center",fontSize:8.5}}>
-                      <span style={{minWidth:160,color:"rgba(255,255,255,0.55)"}}>{platform}</span>
-                      <span style={{color: status.startsWith("✅")?C.g3 : status.startsWith("⚠️")?C.gold:"#f87171"}}>{status}</span>
-                    </div>
-                  ))}
-                </div>
-                {!pushGranted&&(
-                  <button onClick={handlePushRequest} disabled={pushPending}
-                    style={{marginTop:10,padding:"6px 16px",borderRadius:8,background:`linear-gradient(135deg,${C.g1},${C.g2})`,border:"none",color:"#fff",fontWeight:700,fontSize:9,cursor:"pointer",opacity:pushPending?0.7:1}}>
-                    {pushPending?"Requesting permission…":"Enable Browser Push Now"}
-                  </button>
-                )}
-                {pushGranted&&<div style={{marginTop:8,fontSize:8.5,color:C.g3,fontWeight:600}}>✅ Browser push enabled — notifications will appear in your shutter</div>}
-              </div>
-            )}
-
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-              <div>
-                <div style={{fontSize:9,color:C.muted,marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:0.8}}>Reminder Time</div>
-                <input
-                  type="time"
-                  value={settings.reminder_time}
-                  onChange={e=>upd("reminder_time",e.target.value)}
-                  style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",color:"#fff",borderRadius:8,padding:"7px 10px",fontSize:13,fontWeight:700,outline:"none",cursor:"pointer"}}
-                />
-                <div style={{fontSize:8,color:C.muted,marginTop:3}}>Daily challenge reminder fires at this time</div>
-              </div>
-              <div>
-                <div style={{fontSize:9,color:C.muted,marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:0.8}}>Timezone</div>
-                <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 10px",fontSize:11,color:"rgba(255,255,255,0.7)"}}>
-                  {settings.timezone}
-                </div>
-                <div style={{fontSize:8,color:C.muted,marginTop:3}}>Auto-detected from your browser</div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── REMINDER TYPE TOGGLES ─────────────────────────────────── */}
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:9,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:0.8,marginBottom:8}}>Which Reminders to Receive</div>
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              {REMINDER_TYPES.map(rt=>(
-                <div key={rt.key} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 12px",background:"rgba(255,255,255,0.03)",borderRadius:8,border:`1px solid ${settings[rt.key]?"rgba(107,179,63,0.2)":"rgba(255,255,255,0.06)"}`}}>
-                  <span style={{fontSize:16,flexShrink:0}}>{rt.icon}</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:10,fontWeight:700,color:settings[rt.key]?"#fff":"rgba(255,255,255,0.4)"}}>{rt.label}</div>
-                    <div style={{fontSize:8,color:C.muted,marginTop:1}}>{rt.sub}</div>
-                  </div>
-                  <button
-                    onClick={()=>upd(rt.key,!settings[rt.key])}
-                    style={{
-                      width:36,height:20,borderRadius:10,border:"none",cursor:"pointer",flexShrink:0,
-                      background:settings[rt.key]?C.g2:"rgba(255,255,255,0.1)",
-                      position:"relative",transition:"background 0.2s"
-                    }}>
-                    <span style={{
-                      position:"absolute",top:2,width:16,height:16,borderRadius:8,background:"#fff",
-                      left:settings[rt.key]?18:2,transition:"left 0.18s",display:"block"
-                    }}/>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── SNOOZE CONTROLS ───────────────────────────────────────── */}
-          <div style={{marginBottom:16,padding:"10px 14px",background:"rgba(255,255,255,0.025)",borderRadius:10,border:"1px solid rgba(255,255,255,0.07)"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,color:"#fff"}}>⏸ Snooze All Reminders</div>
-                <div style={{fontSize:8,color:C.muted,marginTop:2}}>
-                  {isSnoozing ? `Snoozed until ${snoozeEnds}` : "Temporarily pause all notifications"}
-                </div>
-              </div>
-              {isSnoozing&&(
-                <button onClick={()=>upd("snooze_until",null)}
-                  style={{background:"rgba(240,80,80,0.15)",border:"1px solid rgba(240,80,80,0.3)",color:"#f87171",borderRadius:8,padding:"4px 10px",cursor:"pointer",fontSize:9}}>
-                  Cancel Snooze
-                </button>
-              )}
-            </div>
-            {!isSnoozing&&(
-              <div style={{display:"flex",gap:6}}>
-                {[["24h","24 hours",24],["48h","2 days",48],["7d","1 week",168]].map(([lbl,tip,hrs])=>(
-                  <button key={lbl} onClick={()=>handleSnooze(hrs)}
-                    style={{padding:"5px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"rgba(255,255,255,0.55)",cursor:"pointer",fontSize:10,transition:"all 0.15s"}}>
-                    {lbl} <span style={{fontSize:8,color:C.muted,marginLeft:2}}>{tip}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ── SAVE BUTTON ───────────────────────────────────────────── */}
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
-            <button onClick={handleSave}
-              style={{
-                padding:"9px 28px",borderRadius:10,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,
-                background:saved?C.g2:`linear-gradient(135deg,${C.g1},${C.g2})`,
-                color:"#fff",transition:"all 0.2s"
-              }}>
-              {saved ? "✓ Saved!" : "Save Preferences"}
-            </button>
-            <div style={{fontSize:9,color:C.muted}}>
-              Preferences saved to your account · Applied across all devices
-            </div>
-          </div>
-
-          {/* ── REMINDER HISTORY ─────────────────────────────────────── */}
-          <div>
-            <button
-              onClick={()=>setActiveHistory(p=>!p)}
-              style={{background:"transparent",border:"none",color:C.muted,cursor:"pointer",fontSize:9,fontWeight:600,textDecoration:"underline",padding:0,marginBottom:8}}>
-              {activeHistory ? "▲ Hide reminder history" : "▼ Show last 7 reminders"}
-            </button>
-            {activeHistory&&(
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {REMINDER_HISTORY.map((r,i)=>(
-                  <div key={i} style={{display:"grid",gridTemplateColumns:"28px 1fr 70px 80px 60px",alignItems:"center",gap:8,padding:"6px 10px",background:"rgba(255,255,255,0.02)",borderRadius:8}}>
-                    <span style={{fontSize:14,textAlign:"center"}}>{r.icon}</span>
-                    <div>
-                      <div style={{fontSize:9.5,color:"rgba(255,255,255,0.65)",fontWeight:600}}>{r.label}</div>
-                      <div style={{fontSize:8,color:C.muted}}>{r.time}</div>
-                    </div>
-                    <span style={{fontSize:8,color:C.muted,textAlign:"center"}}>{r.channel}</span>
-                    <div style={{fontSize:8,color:C.muted,textAlign:"center"}}/>
-                    <span style={{
-                      fontSize:8,fontWeight:700,textAlign:"right",color:r.statusCol,
-                      background:r.statusCol+"18",borderRadius:4,padding:"1px 6px",whiteSpace:"nowrap"
-                    }}>{r.status}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-        </div>
-      )}
-    </Card>
   );
 }
 
@@ -1714,57 +902,13 @@ function HRDashboard(){
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App(){
-  const [tab,setTab]               = useState("wellness");
-  const [timeView,setTimeView]     = useState(1);
-
-  // ── PWA state ──────────────────────────────────────────────────────────────
-  const [isOnline,setIsOnline]     = useState(navigator.onLine);
-  const [offlineQueue,setOfflineQueue] = useState(0);       // pending syncs
-  const [showInstall,setShowInstall]   = useState(!isStandalone()); // hide if already installed
-  const [pushPermission,setPushPerm]   = useState(getPushPermission());
-  const [showPushPrompt,setShowPushPrompt] = useState(false);
-  const [pwaInstallDone,setPwaInstallDone] = useState(isStandalone());
-
-  // Track online/offline status
-  useEffect(()=>{
-    const goOnline  = ()=>{ setIsOnline(true);  setOfflineQueue(0); };
-    const goOffline = ()=>  setIsOnline(false);
-    window.addEventListener("online",  goOnline);
-    window.addEventListener("offline", goOffline);
-    return ()=>{
-      window.removeEventListener("online",  goOnline);
-      window.removeEventListener("offline", goOffline);
-    };
-  },[]);
-
-  // After PWA install: wait 3 seconds, then offer push permission (if not granted)
-  useEffect(()=>{
-    if(pwaInstallDone && pushPermission === "default"){
-      const t = setTimeout(()=>setShowPushPrompt(true), 3000);
-      return ()=>clearTimeout(t);
-    }
-  },[pwaInstallDone, pushPermission]);
-
-  const handlePushAllow = () => {
-    setPushPerm("granted");
-    setShowPushPrompt(false);
-    // Production: call POST /api/reminders/push/subscribe with the subscription object
-  };
-
+  const [tab,setTab]=useState("wellness");
+  const [timeView,setTimeView]=useState(1);
   const vd=ALL_VIEWS[timeView];
   const lb=ALL_LABELS[timeView];
 
   return(
-    <div style={{minHeight:"100vh",background:C.bg,fontFamily:"'Outfit','Nunito','Segoe UI',sans-serif",color:"#fff",paddingBottom:showPushPrompt?120:0}}>
-
-      {/* ── PWA PUSH PERMISSION BOTTOM SHEET ─────────────────────────────── */}
-      {showPushPrompt&&(
-        <PWAPushPrompt
-          onAllow={handlePushAllow}
-          onSkip={()=>setShowPushPrompt(false)}
-        />
-      )}
-
+    <div style={{minHeight:"100vh",background:C.bg,fontFamily:"'Outfit','Nunito','Segoe UI',sans-serif",color:"#fff"}}>
       {/* HEADER */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 22px",borderBottom:"1px solid rgba(255,255,255,0.06)",background:"rgba(255,255,255,0.01)"}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
@@ -1774,68 +918,31 @@ export default function App(){
             <div style={{fontSize:8,color:"rgba(255,255,255,0.28)",letterSpacing:1}}>WELLNESS INTELLIGENCE PLATFORM</div>
           </div>
         </div>
-
         <div style={{display:"flex",gap:4,background:"rgba(0,0,0,0.4)",borderRadius:12,padding:4}}>
           {[["wellness","🌿 My Wellness"],["challenges","🎯 Challenges"],["hr","👔 HR Analytics"]].map(([id,label])=>(
             <button key={id} onClick={()=>setTab(id)} style={{padding:"7px 16px",borderRadius:9,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:tab===id?"linear-gradient(135deg,#2C5F2D,#6db33f)":"transparent",color:tab===id?"#fff":"rgba(255,255,255,0.38)",transition:"all 0.25s"}}>{label}</button>
           ))}
         </div>
-
-        {/* Right: date + PWA status badges */}
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          {/* Push status badge */}
-          {pushPermission==="granted"
-            ? <span style={{fontSize:8,background:"rgba(107,179,63,0.15)",color:C.g3,borderRadius:5,padding:"2px 7px",fontWeight:600}}>🔔 Push ON</span>
-            : <button onClick={()=>setShowPushPrompt(true)}
-                style={{fontSize:8,background:"rgba(232,160,32,0.12)",color:C.gold,borderRadius:5,padding:"2px 7px",border:"1px solid rgba(232,160,32,0.3)",cursor:"pointer",fontWeight:600}}>
-                🔔 Enable reminders
-              </button>
-          }
-          {/* PWA install badge */}
-          {isStandalone()
-            ? <span style={{fontSize:8,background:"rgba(107,179,63,0.12)",color:C.g3,borderRadius:5,padding:"2px 7px",fontWeight:600}}>📲 Installed</span>
-            : null
-          }
-          {/* Offline badge */}
-          {!isOnline && (
-            <span style={{fontSize:8,background:"rgba(232,160,32,0.18)",color:C.gold,borderRadius:5,padding:"2px 7px",fontWeight:700}}>📡 OFFLINE</span>
-          )}
-          <div style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>
-            {new Date().toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short",year:"2-digit"})}
-          </div>
+        <div style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>
+          {new Date().toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short",year:"2-digit"})}
         </div>
       </div>
 
       {/* CONTENT */}
       <div style={{padding:"18px 22px"}}>
-
-        {/* ── PWA INSTALL BANNER (only if not yet installed) ──────────────── */}
-        {showInstall&&!isStandalone()&&(
-          <PWAInstallBanner
-            onDismiss={()=>{ setShowInstall(false); setPwaInstallDone(true); }}
-          />
-        )}
-
-        {/* ── OFFLINE STATUS BAR ───────────────────────────────────────────── */}
-        {!isOnline&&<PWAOfflineBadge queueCount={offlineQueue}/>}
-
         <div style={{fontSize:10,color:"rgba(255,255,255,0.28)",marginBottom:14,borderBottom:"1px solid rgba(255,255,255,0.05)",paddingBottom:10}}>
           {tab==="wellness"&&"🌿 Your Personal Wellness Journey — Nutrition · Lifestyle · Wellness · Dosha-aligned Ayurveda"}
           {tab==="challenges"&&"🎯 Daily Challenges — 1 to 3 taps to complete · Earn XP · Build Streaks · Unlock Badges"}
           {tab==="hr"&&"👔 HR Intelligence Centre — Population Health Analytics · CXO Metrics · Location & Department Insights"}
         </div>
-
         {tab==="wellness"&&<WellnessDashboard viewData={vd} labels={lb} timeView={timeView} setTimeView={setTimeView}/>}
-        {tab==="challenges"&&<ChallengeDashboard isOnline={isOnline} onOfflineQueue={(n)=>setOfflineQueue(p=>p+n)}/>}
+        {tab==="challenges"&&<ChallengeDashboard/>}
         {tab==="hr"&&<HRDashboard/>}
       </div>
 
-      <div style={{padding:"10px 22px",borderTop:"1px solid rgba(255,255,255,0.05)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div style={{fontSize:8,color:"rgba(255,255,255,0.16)"}}>WHO MHW · SF-12 · Gallup Q12 · UN SDGs · SHRM · Ayurveda Tridosha · W3C PWA</div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:7,color:"rgba(107,179,63,0.4)",background:"rgba(107,179,63,0.06)",borderRadius:4,padding:"1px 6px"}}>PWA v6.0</span>
-          <div style={{fontSize:8,color:"rgba(255,255,255,0.14)"}}>ayumonk.com/corporate © 2025</div>
-        </div>
+      <div style={{padding:"10px 22px",borderTop:"1px solid rgba(255,255,255,0.05)",display:"flex",justifyContent:"space-between"}}>
+        <div style={{fontSize:8,color:"rgba(255,255,255,0.16)"}}>WHO MHW · SF-12 · Gallup Q12 · UN SDGs · SHRM · Ayurveda Tridosha</div>
+        <div style={{fontSize:8,color:"rgba(255,255,255,0.14)"}}>ayumonk.com/corporate © 2025</div>
       </div>
     </div>
   );

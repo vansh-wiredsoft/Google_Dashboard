@@ -48,6 +48,15 @@ const CHALLENGE_ICON_OPTIONS = [
   { value: "🌿", label: "Wellness" },
 ];
 
+const CHALLENGE_TYPE_OPTIONS = [
+  "Counter",
+  "Toggle",
+  "Choice",
+  "Multi",
+  "Timer",
+  "Rating",
+];
+
 const defaultMapping = () => ({
   localId: `${Date.now()}-${Math.random()}`,
   kpiKey: "",
@@ -383,6 +392,7 @@ export default function ChallengeForm({ mode }) {
             />
             <TextField
               label="Challenge Type"
+              select
               value={form.challengeType}
               onChange={(event) => {
                 setFormError("");
@@ -393,7 +403,14 @@ export default function ChallengeForm({ mode }) {
                 }));
               }}
               fullWidth
-            />
+            >
+              <MenuItem value="">Select challenge type</MenuItem>
+              {CHALLENGE_TYPE_OPTIONS.map((challengeType) => (
+                <MenuItem key={challengeType} value={challengeType}>
+                  {challengeType}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Description"
               value={form.description}
