@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import BedtimeRoundedIcon from "@mui/icons-material/BedtimeRounded";
 import BoltRoundedIcon from "@mui/icons-material/BoltRounded";
 import DirectionsRunRoundedIcon from "@mui/icons-material/DirectionsRunRounded";
@@ -22,6 +23,8 @@ import {
   LinearProgress,
   Paper,
   Stack,
+  Tab,
+  Tabs,
   Typography,
   useTheme,
 } from "@mui/material";
@@ -240,6 +243,85 @@ const leaderboard = [
   { name: "Sneha P.", team: "Marketing - Pune", delta: "+28%" },
 ];
 
+const CHALLENGE_DEFS = [
+  {
+    id: "water",
+    icon: "💧",
+    label: "Hydration Mission",
+    kpi: "Hydration KPI",
+    color: "#0284c7",
+    xp: 20,
+    type: "counter",
+    target: 8,
+    actionLabel: "+ 1 Glass",
+    desc: "Drink 8 glasses today. Tap + after each glass.",
+  },
+  {
+    id: "sleep",
+    icon: "🌙",
+    label: "Sleep Before 10 PM",
+    kpi: "Sleep KPI",
+    color: "#7c3aed",
+    xp: 25,
+    type: "toggle",
+    options: ["Committed to sleep by 10 PM"],
+    desc: "One tap to commit. No screens 1 hour before bedtime.",
+  },
+  {
+    id: "activity",
+    icon: "🏃",
+    label: "Move Your Body",
+    kpi: "Activity KPI",
+    color: "#f59e0b",
+    xp: 30,
+    type: "choice",
+    options: ["Walk 15 min", "Yoga 20 min", "Gym Session"],
+    desc: "Pick what you did today. Any one counts.",
+  },
+  {
+    id: "nutrition",
+    icon: "🥗",
+    label: "Eat Well Today",
+    kpi: "Nutrition KPI",
+    color: "#16a34a",
+    xp: 25,
+    type: "multi",
+    options: ["Ate fruits or veggies", "Home-cooked meal"],
+    desc: "Tap all that apply from today.",
+  },
+  {
+    id: "breathing",
+    icon: "🧘",
+    label: "4-7-8 Breathing",
+    kpi: "Stress KPI",
+    color: "#ea580c",
+    xp: 20,
+    type: "timer",
+    duration: 120,
+    desc: "Inhale 4s, hold 7s, exhale 8s. Tap start and stay with the timer.",
+  },
+  {
+    id: "mood",
+    icon: "💚",
+    label: "Daily Mood Check",
+    kpi: "Emotional KPI",
+    color: "#059669",
+    xp: 10,
+    type: "rating",
+    options: ["😞", "😕", "😐", "🙂", "😄"],
+    desc: "How are you feeling right now?",
+  },
+];
+
+const challengeBadges = [
+  { id: "h1", label: "Hydration Hero", icon: "💧", earned: true, level: "Gold", color: "#0284c7" },
+  { id: "s1", label: "Sleep Master", icon: "🌙", earned: true, level: "Silver", color: "#7c3aed" },
+  { id: "st", label: "Stress Buster", icon: "🧘", earned: false, level: "Bronze", color: "#ea580c" },
+  { id: "g1", label: "Green Eater", icon: "🥗", earned: true, level: "Bronze", color: "#16a34a" },
+  { id: "a1", label: "Active Star", icon: "🏃", earned: false, level: "Silver", color: "#f59e0b" },
+  { id: "b1", label: "Banyan Legend", icon: "🌳", earned: false, level: "Legend", color: "#ca8a04" },
+];
+
 function SectionCard({ children, sx }) {
   const theme = useTheme();
 
@@ -374,9 +456,543 @@ function HighlightStat({ item }) {
   );
 }
 
+function ChallengeActionButton({
+  active = false,
+  color,
+  children,
+  disabled = false,
+  onClick,
+}) {
+  return (
+    <Button
+      variant={active ? "contained" : "outlined"}
+      onClick={onClick}
+      disabled={disabled}
+      sx={{
+        textTransform: "none",
+        fontWeight: 700,
+        borderRadius: 2.5,
+        color: active ? "#fff" : color,
+        borderColor: alpha(color, 0.35),
+        bgcolor: active ? color : alpha(color, 0.06),
+        "&:hover": {
+          borderColor: color,
+          bgcolor: active ? color : alpha(color, 0.12),
+        },
+      }}
+    >
+      {children}
+    </Button>
+  );
+}
+
+function ChallengeDashboardContent() {
+  const theme = useTheme();
+  const timerRef = useRef(null);
+  const [timerOn, setTimerOn] = useState(false);
+  const [challengeState, setChallengeState] = useState({
+    water: { count: 0 },
+    sleep: { done: false },
+    activity: { chosen: null },
+    nutrition: { chosen: [] },
+    breathing: { timer: 120, done: false },
+    mood: { rating: null },
+  });
+
+  useEffect(() => {
+    if (!timerOn || challengeState.breathing.timer <= 0) {
+      return undefined;
+    }
+
+    timerRef.current = window.setInterval(() => {
+      setChallengeState((current) => {
+        const nextTimer = current.breathing.timer - 1;
+        if (nextTimer <= 0) {
+          setTimerOn(false);
+          return {
+            ...current,
+            breathing: {
+              ...current.breathing,
+              timer: 0,
+              done: true,
+            },
+          };
+        }
+
+        return {
+          ...current,
+          breathing: {
+            ...current.breathing,
+            timer: nextTimer,
+          },
+        };
+      });
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timerRef.current);
+    };
+  }, [challengeState.breathing.timer, timerOn]);
+
+  useEffect(() => () => window.clearInterval(timerRef.current), []);
+
+  const updateChallenge = (id, payload) => {
+    setChallengeState((current) => ({
+      ...current,
+      [id]: {
+        ...current[id],
+        ...payload,
+      },
+    }));
+  };
+
+  const formatTimer = (seconds) =>
+    `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+
+  const isDone = (id) => {
+    const value = challengeState[id];
+    if (id === "water") return value.count >= 8;
+    if (id === "sleep") return value.done;
+    if (id === "activity") return value.chosen !== null;
+    if (id === "nutrition") return value.chosen.length > 0;
+    if (id === "breathing") return value.done;
+    if (id === "mood") return value.rating !== null;
+    return false;
+  };
+
+  const getXp = (challenge) => {
+    if (!isDone(challenge.id)) return 0;
+    if (challenge.id === "nutrition") {
+      return Math.round(
+        challenge.xp *
+          ((challengeState.nutrition.chosen?.length || 0) / challenge.options.length),
+      );
+    }
+    return challenge.xp;
+  };
+
+  const completedCount = CHALLENGE_DEFS.filter((challenge) => isDone(challenge.id)).length;
+  const earnedXp = CHALLENGE_DEFS.reduce((sum, challenge) => sum + getXp(challenge), 0);
+
+  return (
+    <Stack spacing={2.5}>
+      <Grid container spacing={2}>
+        {[
+          {
+            label: "Active streak",
+            value: "7 Days",
+            note: "Day 8 unlocks a badge",
+            color: "#ea580c",
+          },
+          {
+            label: "XP today",
+            value: `${340 + earnedXp} pts`,
+            note: "Complete all 6 for a bonus",
+            color: "#ca8a04",
+          },
+          {
+            label: "Current level",
+            value: "Banyan Sapling",
+            note: "3 more days to Banyan Tree",
+            color: "#4d7c0f",
+          },
+          {
+            label: "Progress",
+            value: `${completedCount} / 6`,
+            note: "Challenges completed today",
+            color: "#1d4ed8",
+          },
+        ].map((item) => (
+          <Grid key={item.label} size={{ xs: 12, sm: 6, xl: 3 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                border: "1px solid",
+                borderColor: alpha(item.color, 0.22),
+                background: getRaisedGradient(theme, item.color),
+                height: "100%",
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                {item.label}
+              </Typography>
+              <Typography sx={{ mt: 0.5, fontSize: 28, fontWeight: 800, color: item.color }}>
+                {item.value}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                {item.note}
+              </Typography>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
+
+      <SectionCard>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          justifyContent="space-between"
+          spacing={1}
+          sx={{ mb: 1.5 }}
+        >
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              Today&apos;s Challenges
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Inspired by the client reference: quick daily actions, XP, streaks, and badges.
+            </Typography>
+          </Box>
+          <Chip
+            label={`${earnedXp} XP earned today`}
+            sx={{
+              fontWeight: 700,
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: "primary.main",
+            }}
+          />
+        </Stack>
+
+        <Box sx={{ mb: 2 }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            spacing={1}
+            sx={{ mb: 0.75 }}
+          >
+            <Typography variant="caption" color="text.secondary">
+              Today&apos;s completion
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {completedCount}/6 challenges
+            </Typography>
+          </Stack>
+          <LinearProgress
+            variant="determinate"
+            value={(completedCount / CHALLENGE_DEFS.length) * 100}
+            sx={{
+              height: 8,
+              borderRadius: 999,
+              bgcolor: alpha(theme.palette.primary.main, 0.08),
+              "& .MuiLinearProgress-bar": {
+                borderRadius: 999,
+              },
+            }}
+          />
+        </Box>
+
+        <Grid container spacing={2}>
+          {CHALLENGE_DEFS.map((challenge) => {
+            const state = challengeState[challenge.id];
+            const done = isDone(challenge.id);
+            const xp = getXp(challenge);
+
+            return (
+              <Grid key={challenge.id} size={{ xs: 12, md: 6, xl: 4 }}>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    borderRadius: 3,
+                    borderColor: alpha(challenge.color, done ? 0.4 : 0.18),
+                    background: done
+                      ? `linear-gradient(180deg, ${alpha(challenge.color, 0.08)} 0%, ${getSurfaceBackground(theme, theme.palette.mode === "dark" ? 0.98 : 0.94)} 100%)`
+                      : getSurfaceBackground(theme),
+                    height: "100%",
+                  }}
+                >
+                  <Stack spacing={1.5} sx={{ height: "100%" }}>
+                    <Stack direction="row" justifyContent="space-between" spacing={1}>
+                      <Stack direction="row" spacing={1.2} alignItems="center">
+                        <Typography sx={{ fontSize: 24, lineHeight: 1 }}>{challenge.icon}</Typography>
+                        <Box>
+                          <Typography sx={{ fontWeight: 800, color: done ? challenge.color : "text.primary" }}>
+                            {challenge.label}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: challenge.color, fontWeight: 700 }}>
+                            {challenge.kpi} · {challenge.xp} XP
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      {done && (
+                        <Chip
+                          size="small"
+                          label={`+${xp} XP`}
+                          sx={{
+                            bgcolor: alpha(challenge.color, 0.12),
+                            color: challenge.color,
+                            fontWeight: 700,
+                          }}
+                        />
+                      )}
+                    </Stack>
+
+                    <Typography variant="body2" color="text.secondary">
+                      {challenge.desc}
+                    </Typography>
+
+                    {challenge.type === "counter" && (
+                      <Stack spacing={1.25}>
+                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                          <ChallengeActionButton
+                            active={state.count >= challenge.target}
+                            color={challenge.color}
+                            disabled={state.count >= challenge.target}
+                            onClick={() =>
+                              updateChallenge(challenge.id, {
+                                count: Math.min(challenge.target, state.count + 1),
+                              })
+                            }
+                          >
+                            {challenge.actionLabel}
+                          </ChallengeActionButton>
+                          {state.count > 0 && (
+                            <Button
+                              variant="outlined"
+                              onClick={() =>
+                                updateChallenge(challenge.id, {
+                                  count: Math.max(0, state.count - 1),
+                                })
+                              }
+                              sx={{ minWidth: 0, px: 1.25, borderRadius: 2.5 }}
+                            >
+                              -
+                            </Button>
+                          )}
+                          <Typography sx={{ fontWeight: 800, color: challenge.color }}>
+                            {state.count} / {challenge.target}
+                          </Typography>
+                        </Stack>
+                        <LinearProgress
+                          variant="determinate"
+                          value={(state.count / challenge.target) * 100}
+                          sx={{
+                            height: 7,
+                            borderRadius: 999,
+                            bgcolor: alpha(challenge.color, 0.12),
+                            "& .MuiLinearProgress-bar": {
+                              bgcolor: challenge.color,
+                              borderRadius: 999,
+                            },
+                          }}
+                        />
+                      </Stack>
+                    )}
+
+                    {challenge.type === "toggle" && (
+                      <ChallengeActionButton
+                        active={state.done}
+                        color={challenge.color}
+                        onClick={() => updateChallenge(challenge.id, { done: !state.done })}
+                      >
+                        {state.done ? `✓ ${challenge.options[0]}` : challenge.options[0]}
+                      </ChallengeActionButton>
+                    )}
+
+                    {challenge.type === "choice" && (
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {challenge.options.map((option, index) => (
+                          <ChallengeActionButton
+                            key={option}
+                            active={state.chosen === index}
+                            color={challenge.color}
+                            onClick={() =>
+                              updateChallenge(challenge.id, {
+                                chosen: state.chosen === index ? null : index,
+                              })
+                            }
+                          >
+                            {option}
+                          </ChallengeActionButton>
+                        ))}
+                      </Stack>
+                    )}
+
+                    {challenge.type === "multi" && (
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {challenge.options.map((option, index) => {
+                          const selected = state.chosen.includes(index);
+                          return (
+                            <ChallengeActionButton
+                              key={option}
+                              active={selected}
+                              color={challenge.color}
+                              onClick={() =>
+                                updateChallenge(challenge.id, {
+                                  chosen: selected
+                                    ? state.chosen.filter((value) => value !== index)
+                                    : [...state.chosen, index],
+                                })
+                              }
+                            >
+                              {option}
+                            </ChallengeActionButton>
+                          );
+                        })}
+                      </Stack>
+                    )}
+
+                    {challenge.type === "timer" && (
+                      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
+                        {!state.done ? (
+                          <>
+                            <ChallengeActionButton
+                              active={timerOn}
+                              color={challenge.color}
+                              disabled={timerOn}
+                              onClick={() => setTimerOn(true)}
+                            >
+                              {timerOn ? "Breathing..." : "Start Timer"}
+                            </ChallengeActionButton>
+                            <Typography
+                              sx={{
+                                fontFamily: "monospace",
+                                fontWeight: 800,
+                                fontSize: 24,
+                                color: challenge.color,
+                              }}
+                            >
+                              {formatTimer(state.timer)}
+                            </Typography>
+                          </>
+                        ) : (
+                          <Typography sx={{ fontWeight: 700, color: challenge.color }}>
+                            Breathing complete. Well done.
+                          </Typography>
+                        )}
+                      </Stack>
+                    )}
+
+                    {challenge.type === "rating" && (
+                      <Stack direction="row" spacing={1}>
+                        {challenge.options.map((emoji, index) => (
+                          <Button
+                            key={emoji}
+                            variant={state.rating === index ? "contained" : "outlined"}
+                            onClick={() => updateChallenge(challenge.id, { rating: index })}
+                            sx={{
+                              minWidth: 0,
+                              px: 1.2,
+                              fontSize: 24,
+                              lineHeight: 1,
+                              borderRadius: 2.5,
+                              borderColor: alpha(challenge.color, 0.3),
+                              bgcolor:
+                                state.rating === index
+                                  ? alpha(challenge.color, 0.14)
+                                  : "transparent",
+                            }}
+                          >
+                            {emoji}
+                          </Button>
+                        ))}
+                      </Stack>
+                    )}
+                  </Stack>
+                </Paper>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </SectionCard>
+
+      <Grid container spacing={2.5}>
+        <Grid size={{ xs: 12, lg: 6 }}>
+          <SectionCard sx={{ height: "100%" }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+              My Badges
+            </Typography>
+            <Grid container spacing={1.5}>
+              {challengeBadges.map((badge) => (
+                <Grid key={badge.id} size={{ xs: 6, sm: 4 }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2.5,
+                      textAlign: "center",
+                      borderColor: badge.earned ? alpha(badge.color, 0.35) : "divider",
+                      bgcolor: badge.earned ? alpha(badge.color, 0.08) : "transparent",
+                      opacity: badge.earned ? 1 : 0.45,
+                      height: "100%",
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 26 }}>{badge.icon}</Typography>
+                    <Typography sx={{ mt: 0.75, fontWeight: 700, color: badge.earned ? badge.color : "text.secondary" }}>
+                      {badge.label}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {badge.level}
+                      {!badge.earned ? " Locked" : ""}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          </SectionCard>
+        </Grid>
+
+        <Grid size={{ xs: 12, lg: 6 }}>
+          <SectionCard sx={{ height: "100%" }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+              Weekly Leaderboard
+            </Typography>
+            <Stack spacing={1.2}>
+              {leaderboard.map((item, index) => (
+                <Paper
+                  key={item.name}
+                  variant="outlined"
+                  sx={{
+                    p: 1.4,
+                    borderRadius: 2.5,
+                    borderColor: item.current ? alpha("#0f766e", 0.3) : "divider",
+                    bgcolor: item.current ? alpha("#0f766e", 0.06) : "transparent",
+                  }}
+                >
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack direction="row" spacing={1.2} alignItems="center">
+                      <Typography
+                        sx={{
+                          width: 24,
+                          fontWeight: 800,
+                          color: index < 3 ? "#c2410c" : "text.secondary",
+                        }}
+                      >
+                        {index + 1}
+                      </Typography>
+                      <Box>
+                        <Typography sx={{ fontWeight: item.current ? 800 : 700 }}>
+                          {item.current ? `You (${item.name})` : item.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {item.team}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        color: item.current ? "#15803d" : "#0f766e",
+                      }}
+                    >
+                      {item.delta}
+                    </Typography>
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
+          </SectionCard>
+        </Grid>
+      </Grid>
+    </Stack>
+  );
+}
+
 export default function Dashboard() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("wellness");
   const chartTooltipStyles = {
     contentStyle: {
       backgroundColor: getSurfaceBackground(theme, 0.98),
@@ -432,44 +1048,80 @@ export default function Dashboard() {
                 Welcome back, Ayumonk User
               </Typography>
               <Typography color="text.secondary" sx={{ mt: 1, maxWidth: 760 }}>
-                Your dashboard now blends the wellness overview with progress,
-                streak, and performance-style cards inspired by the other
-                product tabs.
+                Switch between your personal wellness overview and the daily
+                challenge experience requested in the client reference, while
+                keeping the existing dashboard theme intact.
               </Typography>
             </Box>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-              <Chip
-                label="My Wellness"
-                color="primary"
-                sx={{ fontWeight: 700 }}
-              />
-              <Chip
-                label="Challenges"
-                variant="outlined"
-                sx={{ fontWeight: 700 }}
-              />
-              <Chip
-                label="HR Analytics"
-                variant="outlined"
-                sx={{ fontWeight: 700 }}
-              />
-              <Button
-                variant="contained"
-                onClick={() => navigate("/user/my-responses")}
+            <Stack spacing={1} sx={{ minWidth: { md: 320 } }}>
+              <Tabs
+                value={activeTab}
+                onChange={(_, value) => setActiveTab(value)}
+                variant="fullWidth"
+                sx={{
+                  minHeight: 46,
+                  p: 0.5,
+                  borderRadius: 999,
+                  bgcolor: alpha(theme.palette.common.white, theme.palette.mode === "dark" ? 0.05 : 0.55),
+                  "& .MuiTabs-flexContainer": {
+                    gap: 0.5,
+                  },
+                  "& .MuiTabs-indicator": {
+                    display: "none",
+                  },
+                }}
               >
-                View Responses
-              </Button>
+                <Tab
+                  value="wellness"
+                  label="My Wellness"
+                  sx={{
+                    minHeight: 40,
+                    borderRadius: 999,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    color: activeTab === "wellness" ? "primary.main" : "text.secondary",
+                    bgcolor:
+                      activeTab === "wellness"
+                        ? alpha(theme.palette.primary.main, 0.12)
+                        : "transparent",
+                  }}
+                />
+                <Tab
+                  value="challenges"
+                  label="Challenges"
+                  sx={{
+                    minHeight: 40,
+                    borderRadius: 999,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    color: activeTab === "challenges" ? "primary.main" : "text.secondary",
+                    bgcolor:
+                      activeTab === "challenges"
+                        ? alpha(theme.palette.primary.main, 0.12)
+                        : "transparent",
+                  }}
+                />
+              </Tabs>
+              <Typography variant="body2" color="text.secondary">
+                {activeTab === "wellness"
+                  ? "Personal wellness journey, trends, dosha balance, and suggestions."
+                  : "Daily challenges with quick actions, XP progress, badges, and leaderboard."}
+              </Typography>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+              </Stack>
             </Stack>
           </Stack>
         </SectionCard>
 
-        <Grid container spacing={2}>
+        {activeTab === "wellness" && (
+          <>
+        {/* <Grid container spacing={2}>
           {highlightStats.map((item) => (
             <Grid key={item.label} size={{ xs: 12, sm: 6, xl: 3 }}>
               <HighlightStat item={item} />
             </Grid>
           ))}
-        </Grid>
+        </Grid> */}
 
         <Grid container spacing={2}>
           {metrics.map((item) => (
@@ -658,7 +1310,7 @@ export default function Dashboard() {
                 </SectionCard>
               </Grid>
 
-              <Grid size={12}>
+              {/* <Grid size={12}>
                 <SectionCard>
                   <Stack
                     direction={{ xs: "column", md: "row" }}
@@ -749,7 +1401,7 @@ export default function Dashboard() {
                     ))}
                   </Grid>
                 </SectionCard>
-              </Grid>
+              </Grid> */}
             </Grid>
           </Grid>
 
@@ -837,7 +1489,7 @@ export default function Dashboard() {
                 </Stack>
               </SectionCard>
 
-              <SectionCard>
+              {/* <SectionCard>
                 <Stack
                   direction="row"
                   justifyContent="space-between"
@@ -918,7 +1570,7 @@ export default function Dashboard() {
                     </Paper>
                   ))}
                 </Stack>
-              </SectionCard>
+              </SectionCard> */}
             </Stack>
           </Grid>
         </Grid>
@@ -1005,6 +1657,10 @@ export default function Dashboard() {
             ))}
           </Grid>
         </SectionCard>
+          </>
+        )}
+
+        {activeTab === "challenges" && <ChallengeDashboardContent />}
       </Stack>
     </Layout>
   );

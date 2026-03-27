@@ -96,31 +96,6 @@ const HR_ROWS=Array.from({length:240},(_,i)=>({
 }));
 
 // ─── CHALLENGE DEFINITIONS ────────────────────────────────────────────────────
-// ─── COMPANY KPI SCHEDULE ─────────────────────────────────────────────────────
-// Production: fetched from GET /api/company/kpi-schedule (PostgreSQL: company_kpi_schedule)
-// Rule: a challenge is shown ONLY when today falls within [kpi_start_date … kpi_end_date]
-//       for the employee's company. If the KPI window hasn't started yet → "upcoming".
-//       If it has ended → "ended" (challenge hidden, streak preserved, history accessible).
-const _today = new Date();
-const _d = (y,m,day) => new Date(y,m-1,day);
-
-const COMPANY_KPI_SCHEDULE = [
-  { kpi:"hydration", start:_d(2025,1,1),  end:_d(2025,12,31), theme:"Corporate Vitality",   programLabel:"Jan – Dec 2025" },
-  { kpi:"sleep",     start:_d(2025,2,1),  end:_d(2025,12,31), theme:"Stress & Recovery",    programLabel:"Feb – Dec 2025" },
-  { kpi:"activity",  start:_d(2025,3,1),  end:_d(2025,9,30),  theme:"Movement Drive Q2–Q3", programLabel:"Mar – Sep 2025" },
-  { kpi:"nutrition", start:_d(2025,3,1),  end:_d(2025,6,30),  theme:"Metabolism Reset",     programLabel:"Mar – Jun 2025" },
-  { kpi:"stress",    start:_d(2025,5,1),  end:_d(2025,10,31), theme:"Stress & Recovery",    programLabel:"May – Oct 2025" },
-  { kpi:"emotional", start:_d(2025,7,1),  end:_d(2025,12,31), theme:"Mind & Mood",           programLabel:"Jul – Dec 2025" },
-];
-
-const _kpiStatus = e => _today < e.start ? "upcoming" : _today > e.end ? "ended" : "active";
-const KPI_SCHEDULE_MAP = Object.fromEntries(
-  COMPANY_KPI_SCHEDULE.map(e => [e.kpi, { ...e, status: _kpiStatus(e) }])
-);
-const isKpiActive = kpiId => KPI_SCHEDULE_MAP[kpiId]?.status === "active";
-const _fmtDate = dt => dt.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"2-digit"});
-
-// ─── CHALLENGE DEFINITIONS ────────────────────────────────────────────────────
 const CHALLENGE_DEFS=[
   {id:"water",  icon:"💧",label:"Hydration Mission",  kpi:"hydration", color:"#38bdf8",xp:20,
    type:"counter",target:8,unit:"glasses",desc:"Drink 8 glasses today. Tap + after each glass."},
@@ -465,16 +440,8 @@ function ChallengeDashboard(){
     return def.xp;
   };
 
-  // ── SCHEDULE-GATED CHALLENGE LISTS ───────────────────────────────────────
-  // Only challenges whose mapped KPI is ACTIVE (today between start and end date)
-  // are shown as interactive cards. Upcoming and ended are shown as info-only rows.
-  const activeChallenges  = CHALLENGE_DEFS.filter(c => isKpiActive(c.kpi));
-  const upcomingChallenges= CHALLENGE_DEFS.filter(c => KPI_SCHEDULE_MAP[c.kpi]?.status==="upcoming");
-  const endedChallenges   = CHALLENGE_DEFS.filter(c => KPI_SCHEDULE_MAP[c.kpi]?.status==="ended");
-
-  // Progress counts are based only on active challenges
-  const done=activeChallenges.filter(c=>isDone(c.id)).length;
-  const xpToday=activeChallenges.reduce((s,c)=>s+getXP(c.id),0);
+  const done=CHALLENGE_DEFS.filter(c=>isDone(c.id)).length;
+  const xpToday=CHALLENGE_DEFS.reduce((s,c)=>s+getXP(c.id),0);
 
   return(
     <div>
@@ -484,7 +451,7 @@ function ChallengeDashboard(){
           ["🔥 Streak","7 Days","Day 8 unlocks a badge!",C.orange],
           ["⭐ XP Today",`${340+xpToday} pts`,"Complete all 6 for bonus",C.gold],
           ["🌱 Level","Banyan Sapling","3 more days → Banyan Tree",C.g3],
-          ["✅ Progress",`${done} / ${activeChallenges.length}`,"Active KPI challenges today",C.blue],
+          ["✅ Progress",`${done} / 6`,"Challenges completed today",C.blue],
         ].map(([lbl,val,sub,col])=>(
           <Card key={lbl} color={col+"33"} style={{padding:"12px 14px"}}>
             <div style={{fontSize:9,color:C.muted,marginBottom:3}}>{lbl}</div>
@@ -497,34 +464,20 @@ function ChallengeDashboard(){
       {/* PROGRESS BAR */}
       <div style={{marginBottom:18}}>
         <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:C.muted,marginBottom:5}}>
-          <span>Today's completion</span><span>{done}/{activeChallenges.length} active challenges · {xpToday} XP earned today</span>
+          <span>Today's completion</span><span>{done}/6 challenges · {xpToday} XP earned today</span>
         </div>
         <div style={{height:6,borderRadius:6,background:"rgba(255,255,255,0.06)"}}>
-          <div style={{height:"100%",borderRadius:6,width:`${activeChallenges.length>0?(done/activeChallenges.length)*100:0}%`,background:`linear-gradient(90deg,${C.g2},${C.g3})`,transition:"width 0.5s ease"}}/>
+          <div style={{height:"100%",borderRadius:6,width:`${(done/6)*100}%`,background:`linear-gradient(90deg,${C.g2},${C.g3})`,transition:"width 0.5s ease"}}/>
         </div>
       </div>
 
-      {/* ACTIVE CHALLENGES GRID */}
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-        <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.45)"}}>
-          Today's Challenges
-          <span style={{fontSize:9,fontWeight:400,color:"rgba(255,255,255,0.25)",marginLeft:8}}>— 1 to 3 taps each. Shown only for your company's active KPI programs.</span>
-        </div>
-        <div style={{marginLeft:"auto",background:"rgba(107,179,63,0.12)",border:"1px solid rgba(107,179,63,0.3)",borderRadius:8,padding:"3px 10px",fontSize:9,color:C.g3,fontWeight:600,whiteSpace:"nowrap"}}>
-          {activeChallenges.length} active · {upcomingChallenges.length} upcoming · {endedChallenges.length} ended
-        </div>
+      {/* CHALLENGES GRID */}
+      <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.45)",marginBottom:12}}>
+        Today's Challenges <span style={{fontSize:9,fontWeight:400,color:"rgba(255,255,255,0.25)"}}>— 1 to 3 taps each. Simple as that.</span>
       </div>
-
-      {activeChallenges.length===0&&(
-        <Card style={{padding:"24px",textAlign:"center",marginBottom:22,borderColor:"rgba(255,255,255,0.08)"}}>
-          <div style={{fontSize:28,marginBottom:8}}>📅</div>
-          <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:4}}>No active challenges right now</div>
-          <div style={{fontSize:10,color:C.muted}}>Your company hasn't started any KPI programs yet. Check the upcoming programs below.</div>
-        </Card>
-      )}
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(290px,1fr))",gap:12,marginBottom:22}}>
-        {activeChallenges.map(ch=>{
+        {CHALLENGE_DEFS.map(ch=>{
           const done_ch=isDone(ch.id);
           const xp=getXP(ch.id);
           const s=cs[ch.id];
@@ -654,95 +607,6 @@ function ChallengeDashboard(){
           ))}
         </Card>
       </div>
-
-      {/* KPI PROGRAM SCHEDULE TIMELINE */}
-      <Card style={{marginTop:14,borderColor:"rgba(107,179,63,0.18)",background:"rgba(107,179,63,0.03)"}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.g3,marginBottom:12}}>
-          📅 KPI Program Schedule — Your Company
-          <span style={{fontSize:9,fontWeight:400,color:C.muted,marginLeft:8}}>Challenges appear and disappear based on these windows</span>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:6}}>
-          {COMPANY_KPI_SCHEDULE.map(e=>{
-            const st=e.status||_kpiStatus(e);
-            const ch=CHALLENGE_DEFS.find(c=>c.kpi===e.kpi);
-            const totalDays=Math.ceil((e.end-e.start)/(1000*60*60*24));
-            const elapsed=Math.max(0,Math.ceil((_today-e.start)/(1000*60*60*24)));
-            const pct=Math.min(100,Math.max(0,Math.round((elapsed/totalDays)*100)));
-            const col = st==="active"?C.g3 : st==="upcoming"?C.blue : "rgba(255,255,255,0.18)";
-            const badge = st==="active"
-              ? <span style={{background:"rgba(107,179,63,0.2)",color:C.g3,borderRadius:5,padding:"1px 7px",fontSize:8,fontWeight:700}}>● ACTIVE</span>
-              : st==="upcoming"
-              ? <span style={{background:"rgba(74,144,196,0.2)",color:C.blue,borderRadius:5,padding:"1px 7px",fontSize:8,fontWeight:700}}>⏳ UPCOMING</span>
-              : <span style={{background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,0.3)",borderRadius:5,padding:"1px 7px",fontSize:8,fontWeight:700}}>✓ ENDED</span>;
-            return(
-              <div key={e.kpi} style={{display:"grid",gridTemplateColumns:"28px 130px 1fr 120px 60px",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
-                <span style={{fontSize:16}}>{ch?.icon||"🔹"}</span>
-                <div>
-                  <div style={{fontSize:10,fontWeight:700,color:col}}>{ch?.label||e.kpi}</div>
-                  <div style={{fontSize:8,color:C.muted}}>{e.theme}</div>
-                </div>
-                <div>
-                  <div style={{height:5,borderRadius:5,background:"rgba(255,255,255,0.06)",overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${pct}%`,borderRadius:5,
-                      background: st==="active"?`linear-gradient(90deg,${C.g2},${C.g3})` : st==="upcoming"?"transparent" : "rgba(255,255,255,0.15)",
-                      transition:"width 0.4s"}}/>
-                  </div>
-                </div>
-                <div style={{fontSize:8,color:"rgba(255,255,255,0.3)",textAlign:"center"}}>
-                  {_fmtDate(e.start)} → {_fmtDate(e.end)}
-                </div>
-                <div style={{textAlign:"right"}}>{badge}</div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* UPCOMING CHALLENGES — info only, non-interactive */}
-      {upcomingChallenges.length>0&&(
-        <div style={{marginTop:14}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.blue,marginBottom:8}}>
-            ⏳ Coming Soon <span style={{fontSize:9,fontWeight:400,color:C.muted}}>— not yet active for your company</span>
-          </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {upcomingChallenges.map(ch=>{
-              const sch=KPI_SCHEDULE_MAP[ch.kpi];
-              return(
-                <div key={ch.id} style={{background:"rgba(74,144,196,0.06)",border:"1px dashed rgba(74,144,196,0.25)",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,minWidth:200,opacity:0.75}}>
-                  <span style={{fontSize:20}}>{ch.icon}</span>
-                  <div>
-                    <div style={{fontSize:10,fontWeight:700,color:C.blue}}>{ch.label}</div>
-                    <div style={{fontSize:8,color:C.muted}}>Starts {_fmtDate(sch.start)} · {sch.programLabel}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ENDED CHALLENGES — archived view */}
-      {endedChallenges.length>0&&(
-        <div style={{marginTop:14}}>
-          <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.28)",marginBottom:8}}>
-            ✓ Completed Programs <span style={{fontSize:9,fontWeight:400,color:C.muted}}>— streaks and XP preserved</span>
-          </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {endedChallenges.map(ch=>{
-              const sch=KPI_SCHEDULE_MAP[ch.kpi];
-              return(
-                <div key={ch.id} style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,minWidth:200,opacity:0.45}}>
-                  <span style={{fontSize:20,filter:"grayscale(1)"}}>{ch.icon}</span>
-                  <div>
-                    <div style={{fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.35)"}}>{ch.label}</div>
-                    <div style={{fontSize:8,color:C.muted}}>Ended {_fmtDate(sch.end)} · {sch.programLabel}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
