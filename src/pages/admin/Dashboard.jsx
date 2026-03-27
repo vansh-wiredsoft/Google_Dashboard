@@ -751,7 +751,7 @@ export default function Dashboard() {
         }}
       >
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, xl: 6 }}>
+          {/* <Grid size={{ xs: 12, xl: 6 }}>
             <Panel sx={{ p: 2.2 }}>
               <Stack spacing={2.2}>
                 <Stack
@@ -934,7 +934,7 @@ export default function Dashboard() {
                 </Grid>
               </Stack>
             </Panel>
-          </Grid>
+          </Grid> */}
 
           <Grid size={{ xs: 12, xl: 6 }}>
             <Panel sx={{ p: 2.2 }}>
@@ -968,7 +968,7 @@ export default function Dashboard() {
                     </Typography>
                   </Stack>
 
-                  <Stack
+                  {/* <Stack
                     direction="row"
                     spacing={1}
                     sx={{
@@ -980,7 +980,7 @@ export default function Dashboard() {
                     {topNav.map((label, index) => (
                       <NavPill key={label} label={label} active={index === 2} />
                     ))}
-                  </Stack>
+                  </Stack> */}
 
                   <Typography sx={{ color: tokens.softText, fontSize: 11 }}>
                     Sun, 8 Mar, 26

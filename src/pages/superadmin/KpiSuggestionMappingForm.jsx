@@ -83,8 +83,14 @@ const toNullableNumber = (value) =>
 const buildPayload = (values) => ({
   kpi_key: values.kpi_key.trim(),
   trigger_mode: values.trigger_mode.trim(),
-  risk_level: values.risk_level.trim() || null,
-  question_key: values.question_key.trim() || null,
+  risk_level:
+    values.trigger_mode === "question_score"
+      ? null
+      : values.risk_level.trim() || null,
+  question_key:
+    values.trigger_mode === "kpi_risk"
+      ? null
+      : values.question_key.trim() || null,
   score_threshold_below: toNullableNumber(values.score_threshold_below),
   score_threshold_above: toNullableNumber(values.score_threshold_above),
   kpi_score_below: toNullableNumber(values.kpi_score_below),
@@ -93,22 +99,55 @@ const buildPayload = (values) => ({
   is_active: Boolean(values.is_active),
 });
 
-const validate = (values) => {
+const validate = (values, suggestionItems) => {
   if (!values.kpi_key.trim()) return "KPI key is required.";
   if (!values.trigger_mode.trim()) return "Trigger mode is required.";
-  if (!values.suggestion_id.trim()) return "Suggestion ID is required.";
+  if (!values.suggestion_id.trim()) return "Suggestion is required.";
 
-  const needsRiskLevel =
-    values.trigger_mode === "kpi_risk" || values.trigger_mode === "both";
-  const needsQuestionKey =
-    values.trigger_mode === "question_score" || values.trigger_mode === "both";
-
-  if (needsRiskLevel && !values.risk_level.trim()) {
-    return "Risk level is required for KPI risk mappings.";
+  const suggestionExists = suggestionItems.some(
+    (item) => String(item.id) === values.suggestion_id.trim(),
+  );
+  if (!suggestionExists) {
+    return "Please select a valid suggestion.";
   }
 
-  if (needsQuestionKey && !values.question_key.trim()) {
-    return "Question key is required for question score mappings.";
+  const hasBelowThreshold =
+    values.score_threshold_below !== "" &&
+    values.score_threshold_below !== null &&
+    values.score_threshold_below !== undefined;
+  const hasAboveThreshold =
+    values.score_threshold_above !== "" &&
+    values.score_threshold_above !== null &&
+    values.score_threshold_above !== undefined;
+
+  if (!hasBelowThreshold && !hasAboveThreshold) {
+    return "At least one threshold is required.";
+  }
+
+  if (values.trigger_mode === "kpi_risk") {
+    if (!values.risk_level.trim()) {
+      return "Risk level is required when trigger mode is KPI Risk.";
+    }
+
+    if (values.question_key.trim()) {
+      return "Question must be empty when trigger mode is KPI Risk.";
+    }
+  }
+
+  if (values.trigger_mode === "question_score") {
+    if (!values.question_key.trim()) {
+      return "Question is required when trigger mode is Question Score.";
+    }
+  }
+
+  if (values.trigger_mode === "both") {
+    if (!values.risk_level.trim()) {
+      return "Risk level is required when trigger mode is Both.";
+    }
+
+    if (!values.question_key.trim()) {
+      return "Question is required when trigger mode is Both.";
+    }
   }
 
   const priority = Number(values.priority);
@@ -218,7 +257,7 @@ export default function KpiSuggestionMappingForm({ mode }) {
   }, [formValues.kpi_key, questionItems]);
 
   const handleSave = async () => {
-    const nextError = validate(formValues);
+    const nextError = validate(formValues, suggestionItems);
     if (nextError) {
       setFormError(nextError);
       return;
