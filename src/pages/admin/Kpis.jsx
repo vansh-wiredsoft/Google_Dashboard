@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -9,7 +9,6 @@ import {
   IconButton,
   MenuItem,
   Paper,
-  Select,
   Stack,
   TextField,
   Tooltip,
@@ -32,6 +31,12 @@ import {
 } from "../../store/kpiSlice";
 import { getSurfaceBackground } from "../../theme";
 
+const filterFieldSx = {
+  "& .MuiInputBase-root": {
+    minHeight: 56,
+  },
+};
+
 export default function Kpis() {
   const theme = useTheme();
   const dispatch = useDispatch();
@@ -48,16 +53,27 @@ export default function Kpis() {
     deleteMessage,
   } = useSelector((state) => state.kpi);
   const { items: themeItems } = useSelector((state) => state.theme);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "all",
+  });
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: "",
+    status: "all",
+  });
 
   const isActive =
-    statusFilter === "all" ? undefined : statusFilter === "active";
+    appliedFilters.status === "all"
+      ? undefined
+      : appliedFilters.status === "active";
 
   useEffect(() => {
     dispatch(fetchThemes());
-    dispatch(fetchKpis({ search: search.trim(), isActive }));
-  }, [dispatch, isActive, search]);
+  }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchKpis({ search: appliedFilters.search.trim(), isActive }));
+  }, [appliedFilters.search, dispatch, isActive]);
 
   useEffect(() => {
     return () => {
@@ -77,16 +93,34 @@ export default function Kpis() {
 
   const handleRefresh = () => {
     dispatch(fetchThemes());
-    dispatch(fetchKpis({ search: search.trim(), isActive }));
+    dispatch(fetchKpis({ search: appliedFilters.search.trim(), isActive }));
   };
 
-  const handleDelete = async (kpiKey) => {
+  const handleDelete = useCallback(async (kpiKey) => {
     try {
       await dispatch(deleteKpi(kpiKey)).unwrap();
-      dispatch(fetchKpis({ search: search.trim(), isActive }));
+      dispatch(fetchKpis({ search: appliedFilters.search.trim(), isActive }));
     } catch {
       // Error is already handled in redux state.
     }
+  }, [appliedFilters.search, dispatch, isActive]);
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      search: filters.search,
+      status: filters.status,
+    });
+  };
+
+  const handleResetFilters = () => {
+    const defaultFilters = {
+      search: "",
+      status: "all",
+    };
+
+    setFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
+    dispatch(fetchKpis({ search: "", isActive: undefined }));
   };
 
   const columns = useMemo(
@@ -167,7 +201,7 @@ export default function Kpis() {
         ),
       },
     ],
-    [deleteLoading, navigate, themeNameByKey],
+    [deleteLoading, handleDelete, navigate, themeNameByKey],
   );
 
   return (
@@ -222,23 +256,64 @@ export default function Kpis() {
             </Stack>
           </Stack>
 
-          <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ mb: 2 }}>
+          <Box
+            sx={{
+              display: "grid",
+              gap: 1.5,
+              mb: 2,
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+                lg: "repeat(4, minmax(0, 1fr)) auto auto",
+              },
+              alignItems: { lg: "end" },
+            }}
+          >
             <TextField
               label="Search KPI"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              value={filters.search}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  search: event.target.value,
+                }))
+              }
               fullWidth
+              sx={filterFieldSx}
             />
-            <Select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              sx={{ minWidth: { xs: "100%", md: 170 } }}
+            <TextField
+              label="Status"
+              select
+              value={filters.status}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
+              fullWidth
+              sx={filterFieldSx}
             >
               <MenuItem value="all">All Status</MenuItem>
               <MenuItem value="active">Active</MenuItem>
               <MenuItem value="inactive">Inactive</MenuItem>
-            </Select>
-          </Stack>
+            </TextField>
+            <Button
+              variant="outlined"
+              onClick={handleApplyFilters}
+              disabled={listLoading}
+              sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap" }}
+            >
+              Apply Filters
+            </Button>
+            <Button
+              variant="text"
+              onClick={handleResetFilters}
+              sx={{ minHeight: 56, px: 2, whiteSpace: "nowrap" }}
+            >
+              Reset
+            </Button>
+          </Box>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Total KPIs: {total}

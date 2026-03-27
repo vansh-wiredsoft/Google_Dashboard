@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -9,7 +9,6 @@ import {
   IconButton,
   MenuItem,
   Paper,
-  Select,
   Stack,
   TextField,
   Tooltip,
@@ -32,6 +31,12 @@ import {
 import { fetchKpis } from "../../store/kpiSlice";
 import { getSurfaceBackground } from "../../theme";
 
+const filterFieldSx = {
+  "& .MuiInputBase-root": {
+    minHeight: 56,
+  },
+};
+
 export default function Challenges() {
   const theme = useTheme();
   const dispatch = useDispatch();
@@ -48,25 +53,39 @@ export default function Challenges() {
     deleteError,
     deleteMessage,
   } = useSelector((state) => state.challenge);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("active");
   const [filters, setFilters] = useState({
+    search: "",
+    status: "active",
+    kpiKey: "",
+    startDate: "",
+    endDate: "",
+  });
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: "",
+    status: "active",
     kpiKey: "",
     startDate: "",
     endDate: "",
   });
 
   const isActive =
-    statusFilter === "all" ? undefined : statusFilter === "active";
+    appliedFilters.status === "all"
+      ? undefined
+      : appliedFilters.status === "active";
 
   const challengeQuery = useMemo(
     () => ({
       isActive,
-      kpiKey: filters.kpiKey,
-      startDate: filters.startDate,
-      endDate: filters.endDate,
+      kpiKey: appliedFilters.kpiKey,
+      startDate: appliedFilters.startDate,
+      endDate: appliedFilters.endDate,
     }),
-    [filters.endDate, filters.kpiKey, filters.startDate, isActive],
+    [
+      appliedFilters.endDate,
+      appliedFilters.kpiKey,
+      appliedFilters.startDate,
+      isActive,
+    ],
   );
 
   useEffect(() => {
@@ -85,7 +104,7 @@ export default function Challenges() {
   }, [dispatch]);
 
   const filteredItems = useMemo(() => {
-    const term = search.trim().toLowerCase();
+    const term = appliedFilters.search.trim().toLowerCase();
     if (!term) {
       return items;
     }
@@ -95,13 +114,13 @@ export default function Challenges() {
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(term)),
     );
-  }, [items, search]);
+  }, [appliedFilters.search, items]);
 
   const handleRefresh = () => {
     dispatch(fetchChallenges(challengeQuery));
   };
 
-  const handleDelete = async (challengeKey, challengeName) => {
+  const handleDelete = useCallback(async (challengeKey, challengeName) => {
     if (!window.confirm(`Delete challenge "${challengeName}"?`)) return;
 
     try {
@@ -110,13 +129,36 @@ export default function Challenges() {
     } catch {
       // Error is already handled in redux state.
     }
-  };
+  }, [challengeQuery, dispatch]);
 
   const handleResetFilters = () => {
-    setFilters({
+    const defaultFilters = {
+      search: "",
+      status: "active",
       kpiKey: "",
       startDate: "",
       endDate: "",
+    };
+
+    setFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
+    dispatch(
+      fetchChallenges({
+        isActive: true,
+        kpiKey: "",
+        startDate: "",
+        endDate: "",
+      }),
+    );
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      search: filters.search,
+      status: filters.status,
+      kpiKey: filters.kpiKey,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
     });
   };
 
@@ -251,7 +293,7 @@ export default function Challenges() {
         ),
       },
     ],
-    [deleteLoading, navigate],
+    [deleteLoading, handleDelete, navigate],
   );
 
   return (
@@ -322,7 +364,7 @@ export default function Challenges() {
                 sm: "repeat(2, minmax(0, 1fr))",
                 md: "repeat(2, minmax(0, 1fr))",
                 lg: "repeat(4, minmax(0, 1fr))",
-                xl: "1.15fr 1fr 1fr 1.4fr 0.9fr auto",
+                xl: "1.15fr 1fr 1fr 1.4fr 0.9fr auto auto",
               },
               alignItems: { lg: "end" },
             }}
@@ -338,6 +380,7 @@ export default function Challenges() {
                 }))
               }
               fullWidth
+              sx={filterFieldSx}
             >
               <MenuItem value="">All KPI</MenuItem>
               {kpiItems.map((kpi) => (
@@ -358,6 +401,7 @@ export default function Challenges() {
               }
               InputLabelProps={{ shrink: true }}
               fullWidth
+              sx={filterFieldSx}
             />
             <TextField
               label="End Date"
@@ -371,29 +415,51 @@ export default function Challenges() {
               }
               InputLabelProps={{ shrink: true }}
               fullWidth
+              sx={filterFieldSx}
             />
             <TextField
               label="Search Challenge"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              value={filters.search}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  search: event.target.value,
+                }))
+              }
               fullWidth
+              sx={filterFieldSx}
             />
-            <Select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+            <TextField
+              label="Status"
+              select
+              value={filters.status}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
               fullWidth
-              displayEmpty
+              sx={filterFieldSx}
             >
               <MenuItem value="all">All Status</MenuItem>
               <MenuItem value="active">Active</MenuItem>
               <MenuItem value="inactive">Inactive</MenuItem>
-            </Select>
+            </TextField>
             <Button
               variant="outlined"
-              onClick={handleResetFilters}
+              onClick={handleApplyFilters}
+              disabled={listLoading}
               sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap" }}
             >
-              Reset Filters
+              Apply Filters
+            </Button>
+            <Button
+              variant="text"
+              onClick={handleResetFilters}
+              sx={{ minHeight: 56, px: 2, whiteSpace: "nowrap" }}
+            >
+              Reset
             </Button>
           </Box>
 

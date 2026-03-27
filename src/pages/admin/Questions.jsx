@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -32,6 +32,12 @@ import { fetchThemes } from "../../store/themeSlice";
 import { fetchKpis } from "../../store/kpiSlice";
 import { getSurfaceBackground } from "../../theme";
 
+const filterFieldSx = {
+  "& .MuiInputBase-root": {
+    minHeight: 56,
+  },
+};
+
 export default function Questions() {
   const theme = useTheme();
   const dispatch = useDispatch();
@@ -55,9 +61,17 @@ export default function Questions() {
     search: "",
     status: "all",
   });
+  const [appliedFilters, setAppliedFilters] = useState({
+    themeKey: "",
+    kpiKey: "",
+    search: "",
+    status: "all",
+  });
 
   const isActive =
-    filters.status === "all" ? undefined : filters.status === "active";
+    appliedFilters.status === "all"
+      ? undefined
+      : appliedFilters.status === "active";
 
   useEffect(() => {
     dispatch(fetchThemes({ isActive: true }));
@@ -69,13 +83,19 @@ export default function Questions() {
       fetchQuestions({
         skip: 0,
         limit: 50,
-        themeKey: filters.themeKey,
-        kpiKey: filters.kpiKey,
-        search: filters.search,
+        themeKey: appliedFilters.themeKey,
+        kpiKey: appliedFilters.kpiKey,
+        search: appliedFilters.search,
         isActive,
       }),
     );
-  }, [dispatch, filters.kpiKey, filters.search, filters.themeKey, isActive]);
+  }, [
+    appliedFilters.kpiKey,
+    appliedFilters.search,
+    appliedFilters.themeKey,
+    dispatch,
+    isActive,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -110,7 +130,7 @@ export default function Questions() {
     [kpiItems],
   );
 
-  const handleDelete = async (questionId, questionCode) => {
+  const handleDelete = useCallback(async (questionId, questionCode) => {
     if (!window.confirm(`Delete question "${questionCode}"?`)) return;
 
     try {
@@ -118,6 +138,37 @@ export default function Questions() {
     } catch {
       // Redux state already stores the error.
     }
+  }, [dispatch]);
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      themeKey: filters.themeKey,
+      kpiKey: filters.kpiKey,
+      search: filters.search,
+      status: filters.status,
+    });
+  };
+
+  const handleResetFilters = () => {
+    const defaultFilters = {
+      themeKey: "",
+      kpiKey: "",
+      search: "",
+      status: "all",
+    };
+
+    setFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
+    dispatch(
+      fetchQuestions({
+        skip: 0,
+        limit: 50,
+        themeKey: "",
+        kpiKey: "",
+        search: "",
+        isActive: undefined,
+      }),
+    );
   };
 
   const columns = useMemo(
@@ -217,7 +268,7 @@ export default function Questions() {
         ),
       },
     ],
-    [deleteLoading, kpiNameByKey, navigate, themeNameByKey],
+    [deleteLoading, handleDelete, kpiNameByKey, navigate, themeNameByKey],
   );
 
   return (
@@ -275,9 +326,9 @@ export default function Questions() {
                     fetchQuestions({
                       skip: 0,
                       limit: 50,
-                      themeKey: filters.themeKey,
-                      kpiKey: filters.kpiKey,
-                      search: filters.search,
+                      themeKey: appliedFilters.themeKey,
+                      kpiKey: appliedFilters.kpiKey,
+                      search: appliedFilters.search,
                       isActive,
                     }),
                   )
@@ -297,8 +348,9 @@ export default function Questions() {
               gridTemplateColumns: {
                 xs: "1fr",
                 sm: "repeat(2, minmax(0, 1fr))",
-                lg: "repeat(4, minmax(0, 1fr))",
+                lg: "repeat(4, minmax(0, 1fr)) auto auto",
               },
+              alignItems: { lg: "end" },
             }}
           >
             <TextField
@@ -321,6 +373,7 @@ export default function Questions() {
                 }))
               }
               fullWidth
+              sx={filterFieldSx}
             >
               <MenuItem value="">All Themes</MenuItem>
               {themeItems.map((item) => (
@@ -340,6 +393,7 @@ export default function Questions() {
                 }))
               }
               fullWidth
+              sx={filterFieldSx}
             >
               <MenuItem value="">All KPIs</MenuItem>
               {filteredKpis.map((item) => (
@@ -358,6 +412,7 @@ export default function Questions() {
                 }))
               }
               fullWidth
+              sx={filterFieldSx}
             />
             <TextField
               label="Status"
@@ -370,11 +425,27 @@ export default function Questions() {
                 }))
               }
               fullWidth
+              sx={filterFieldSx}
             >
               <MenuItem value="all">All Status</MenuItem>
               <MenuItem value="active">Active</MenuItem>
               <MenuItem value="inactive">Inactive</MenuItem>
             </TextField>
+            <Button
+              variant="outlined"
+              onClick={handleApplyFilters}
+              disabled={listLoading}
+              sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap" }}
+            >
+              Apply Filters
+            </Button>
+            <Button
+              variant="text"
+              onClick={handleResetFilters}
+              sx={{ minHeight: 56, px: 2, whiteSpace: "nowrap" }}
+            >
+              Reset
+            </Button>
           </Box>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

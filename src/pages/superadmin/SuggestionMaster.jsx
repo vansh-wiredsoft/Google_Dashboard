@@ -20,15 +20,11 @@ import {
 import { alpha } from "@mui/material/styles";
 import { DataGrid } from "@mui/x-data-grid";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
-import PsychologyAltRoundedIcon from "@mui/icons-material/PsychologyAltRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
-import SpaRoundedIcon from "@mui/icons-material/SpaRounded";
-import TipsAndUpdatesRoundedIcon from "@mui/icons-material/TipsAndUpdatesRounded";
 import Layout from "../../layouts/commonLayout/Layout";
 import {
   clearAdminSuggestionDeleteState,
@@ -186,22 +182,6 @@ export default function SuggestionMaster() {
       );
     });
   }, [difficultyFilter, doshaFilter, items, search, statusFilter, typeFilter]);
-
-  const metrics = useMemo(() => {
-    const activeCount = items.filter((item) => item.is_active).length;
-    const inactiveCount = items.length - activeCount;
-    const avgDuration =
-      items.length > 0
-        ? Math.round(
-            items.reduce(
-              (sum, item) => sum + Number(item.duration_mins || 0),
-              0,
-            ) / items.length,
-          )
-        : 0;
-
-    return { activeCount, inactiveCount, avgDuration };
-  }, [items]);
 
   const handleDelete = async (suggestionId, title) => {
     if (!window.confirm(`Delete suggestion "${title}"?`)) return;
@@ -453,37 +433,7 @@ export default function SuggestionMaster() {
         {feedback && <Alert severity={feedback.severity}>{feedback.message}</Alert>}
         {listError && <Alert severity="error">{listError}</Alert>}
         {deleteError && <Alert severity="error">{deleteError}</Alert>}
-        {deleteMessage && <Alert severity="success">{deleteMessage}</Alert>}
-
-        <Grid container spacing={2.5}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <MetricCard
-              label="Total Suggestions"
-              value={total || items.length}
-              note="Catalog"
-              color={theme.palette.primary.main}
-              icon={<TipsAndUpdatesRoundedIcon />}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <MetricCard
-              label="Active Entries"
-              value={metrics.activeCount}
-              note="Live"
-              color={theme.palette.success.main}
-              icon={<AutoAwesomeRoundedIcon />}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <MetricCard
-              label="Avg Duration"
-              value={`${metrics.avgDuration} mins`}
-              note={`${metrics.inactiveCount} inactive`}
-              color={theme.palette.warning.main}
-              icon={<PsychologyAltRoundedIcon />}
-            />
-          </Grid>
-
+        {deleteMessage && <Alert severity="success">{deleteMessage}</Alert>}          
           <Grid size={{ xs: 12 }}>
             <SectionCard>
               <Stack
@@ -653,37 +603,6 @@ export default function SuggestionMaster() {
               </Box>
             </SectionCard>
           </Grid>
-
-          <Grid size={{ xs: 12, xl: 4 }}>
-            <SectionCard>
-              <Stack direction="row" spacing={1.2} alignItems="center" sx={{ mb: 1.5 }}>
-                <Avatar
-                  sx={{
-                    bgcolor: alpha(theme.palette.success.main, 0.12),
-                    color: "success.main",
-                  }}
-                >
-                  <SpaRoundedIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                    API Coverage
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Bound against the new admin suggestion endpoints.
-                  </Typography>
-                </Box>
-              </Stack>
-              <Stack spacing={1}>
-                <Chip label="GET /config/api/v1/admin/suggestions" variant="outlined" />
-                <Chip label="GET /api/v1/admin/suggestions/{id}" variant="outlined" />
-                <Chip label="POST /api/v1/admin/suggestions" variant="outlined" />
-                <Chip label="PUT /api/v1/admin/suggestions/{id}" variant="outlined" />
-                <Chip label="DELETE /api/v1/admin/suggestions/{id}" variant="outlined" />
-              </Stack>
-            </SectionCard>
-          </Grid>
-        </Grid>
       </Stack>
     </Layout>
   );
