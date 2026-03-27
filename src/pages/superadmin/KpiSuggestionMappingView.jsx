@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -14,10 +14,14 @@ import {
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import Layout from "../../layouts/commonLayout/Layout";
+import { fetchAdminSuggestions } from "../../store/adminSuggestionSlice";
+import { fetchKpis } from "../../store/kpiSlice";
 import {
   clearKpiSuggestionMappingDetailState,
   fetchKpiSuggestionMappingById,
 } from "../../store/kpiSuggestionMappingSlice";
+import { fetchQuestions } from "../../store/questionSlice";
+import { fetchThemes } from "../../store/themeSlice";
 import { getSurfaceBackground } from "../../theme";
 
 export default function KpiSuggestionMappingView() {
@@ -25,11 +29,20 @@ export default function KpiSuggestionMappingView() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { id } = useParams();
+  const { items: kpiItems } = useSelector((state) => state.kpi);
+  const { items: questionItems } = useSelector((state) => state.question);
+  const { items: suggestionItems } = useSelector((state) => state.adminSuggestion);
+  const { items: themeItems } = useSelector((state) => state.theme);
   const { selectedMapping, detailLoading, detailError } = useSelector(
     (state) => state.kpiSuggestionMapping,
   );
 
   useEffect(() => {
+    dispatch(fetchThemes({ limit: 500, isActive: true }));
+    dispatch(fetchKpis({ limit: 100, isActive: true }));
+    dispatch(fetchQuestions({ limit: 100, isActive: true }));
+    dispatch(fetchAdminSuggestions({ limit: 100, is_active: true }));
+
     if (id) {
       dispatch(fetchKpiSuggestionMappingById(id));
     }
@@ -38,6 +51,52 @@ export default function KpiSuggestionMappingView() {
       dispatch(clearKpiSuggestionMappingDetailState());
     };
   }, [dispatch, id]);
+
+  const themeNameByKey = useMemo(
+    () =>
+      themeItems.reduce((accumulator, item) => {
+        accumulator[item.theme_key] = item.theme_display_name;
+        return accumulator;
+      }, {}),
+    [themeItems],
+  );
+
+  const kpiLabel = useMemo(() => {
+    const matchedKpi = kpiItems.find(
+      (item) => item.kpi_key === selectedMapping?.kpi_key,
+    );
+
+    if (!matchedKpi) {
+      return selectedMapping?.kpi_key || "-";
+    }
+
+    const themeName = themeNameByKey[matchedKpi.theme_key];
+    return themeName
+      ? `${themeName} - ${matchedKpi.display_name}`
+      : matchedKpi.display_name;
+  }, [kpiItems, selectedMapping?.kpi_key, themeNameByKey]);
+
+  const questionLabel = useMemo(() => {
+    const matchedQuestion = questionItems.find(
+      (item) => item.id === selectedMapping?.question_key,
+    );
+
+    if (!matchedQuestion) {
+      return selectedMapping?.question_key || "-";
+    }
+
+    return matchedQuestion.question_text
+      ? `${matchedQuestion.question_code} - ${matchedQuestion.question_text}`
+      : matchedQuestion.question_code;
+  }, [questionItems, selectedMapping?.question_key]);
+
+  const suggestionLabel = useMemo(() => {
+    const matchedSuggestion = suggestionItems.find(
+      (item) => item.id === selectedMapping?.suggestion_id,
+    );
+
+    return matchedSuggestion?.title || selectedMapping?.suggestion_id || "-";
+  }, [selectedMapping?.suggestion_id, suggestionItems]);
 
   if (detailLoading) {
     return (
@@ -116,10 +175,10 @@ export default function KpiSuggestionMappingView() {
             }}
           >
             {[
-              ["KPI Key", selectedMapping.kpi_key],
+              ["KPI", kpiLabel],
               ["Trigger Mode", selectedMapping.trigger_mode],
               ["Risk Level", selectedMapping.risk_level || "-"],
-              ["Question Key", selectedMapping.question_key || "-"],
+              ["Question", questionLabel],
               [
                 "Score Threshold Below",
                 selectedMapping.score_threshold_below ?? "-",
@@ -129,7 +188,7 @@ export default function KpiSuggestionMappingView() {
                 selectedMapping.score_threshold_above ?? "-",
               ],
               ["KPI Score Below", selectedMapping.kpi_score_below ?? "-"],
-              ["Suggestion ID", selectedMapping.suggestion_id],
+              ["Suggestion", suggestionLabel],
               ["Priority", selectedMapping.priority],
               [
                 "Created At",
