@@ -30,6 +30,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   Cell,
@@ -44,7 +45,7 @@ import {
 } from "recharts";
 import Layout from "../../layouts/commonLayout/Layout";
 import DashboardChallenges from "./DashboardChallenges";
-import api from "../../services/api";
+import { fetchDashboardKpis } from "../../store/dashboardSlice";
 import { getRaisedGradient, getSurfaceBackground } from "../../theme";
 
 const METRIC_ICON_SET = [
@@ -918,11 +919,14 @@ function ChallengeDashboardContent() {
 
 export default function Dashboard() {
   const theme = useTheme();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("wellness");
-  const [dashboardLoading, setDashboardLoading] = useState(true);
-  const [dashboardError, setDashboardError] = useState("");
-  const [dashboardItems, setDashboardItems] = useState([]);
+  const {
+    items: dashboardItems,
+    loading: dashboardLoading,
+    error: dashboardError,
+  } = useSelector((state) => state.dashboard);
   const chartTooltipStyles = {
     contentStyle: {
       backgroundColor: getSurfaceBackground(theme, 0.98),
@@ -940,45 +944,8 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    let isMounted = true;
-
-    const loadDashboard = async () => {
-      setDashboardLoading(true);
-      setDashboardError("");
-
-      try {
-        const response = await api.get("/config/api/v1/dashboard/kpis");
-        const payload = response?.data || {};
-        const items = Array.isArray(payload?.data?.items) ? payload.data.items : [];
-
-        if (!payload?.success) {
-          throw new Error(payload?.message || "Failed to fetch dashboard KPIs.");
-        }
-
-        if (isMounted) {
-          setDashboardItems(items);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setDashboardError(
-            error?.response?.data?.message ||
-              error?.message ||
-              "Failed to fetch dashboard KPIs.",
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setDashboardLoading(false);
-        }
-      }
-    };
-
-    loadDashboard();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    dispatch(fetchDashboardKpis());
+  }, [dispatch]);
 
   const metrics = useMemo(
     () =>

@@ -362,12 +362,45 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                           {challenge.icon || "🎯"}
                         </Typography>
                         <Box>
-                          <Typography sx={{ fontWeight: 800, color: done ? color : "text.primary" }}>
+                          <Typography
+                            sx={{
+                              fontWeight: 900,
+                              fontSize: 18,
+                              lineHeight: 1.2,
+                              color: done ? color : "text.primary",
+                              textShadow: done
+                                ? `0 0 18px ${alpha(color, 0.18)}`
+                                : "none",
+                            }}
+                          >
                             {challenge.name}
                           </Typography>
-                          <Typography variant="caption" sx={{ color, fontWeight: 700 }}>
-                            {challenge.challenge_type} · {Number(challenge.xp_reward) || 0} XP
-                          </Typography>
+                          <Stack direction="row" spacing={0.75} sx={{ mt: 0.75 }} useFlexGap flexWrap="wrap">
+                            <Chip
+                              size="small"
+                              label={challenge.challenge_type}
+                              sx={{
+                                height: 24,
+                                fontWeight: 800,
+                                color,
+                                bgcolor: alpha(color, 0.12),
+                                border: "1px solid",
+                                borderColor: alpha(color, 0.25),
+                              }}
+                            />
+                            <Chip
+                              size="small"
+                              label={`${Number(challenge.xp_reward) || 0} XP`}
+                              sx={{
+                                height: 24,
+                                fontWeight: 800,
+                                color: done ? "#15803d" : color,
+                                bgcolor: done ? alpha("#16a34a", 0.12) : alpha(color, 0.08),
+                                border: "1px solid",
+                                borderColor: done ? alpha("#16a34a", 0.24) : alpha(color, 0.18),
+                              }}
+                            />
+                          </Stack>
                         </Box>
                       </Stack>
                       {done && (
@@ -383,9 +416,26 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                       )}
                     </Stack>
 
-                    <Typography variant="body2" color="text.secondary">
-                      {challenge.description || "Complete this challenge to earn XP."}
-                    </Typography>
+                    <Box
+                      sx={{
+                        px: 1.4,
+                        py: 1.15,
+                        borderRadius: 2.5,
+                        bgcolor: alpha(color, 0.06),
+                        border: "1px solid",
+                        borderColor: alpha(color, 0.12),
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: alpha(theme.palette.text.primary, 0.78),
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {challenge.description || "Complete this challenge to earn XP."}
+                      </Typography>
+                    </Box>
 
                     {challengeType === "counter" && (
                       <Stack spacing={1.25}>
