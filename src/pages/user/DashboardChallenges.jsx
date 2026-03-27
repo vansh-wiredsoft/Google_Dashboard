@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
   Box,
@@ -12,6 +13,11 @@ import {
   useTheme,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import {
+  clearDashboardChallengeActionError,
+  fetchDashboardKpis,
+  postDashboardChallengeAction,
+} from "../../store/dashboardSlice";
 import { getRaisedGradient, getSurfaceBackground } from "../../theme";
 
 const challengeBadges = [
@@ -30,6 +36,15 @@ const leaderboard = [
   { name: "Amit R.", team: "Finance - Delhi", delta: "+31%", current: true },
   { name: "Sneha P.", team: "Marketing - Pune", delta: "+28%" },
 ];
+
+const CHALLENGE_TYPE_ACCENTS = {
+  counter: { primary: "#f97316", secondary: "#fb7185" },
+  toggle: { primary: "#ec4899", secondary: "#f97316" },
+  choice: { primary: "#2563eb", secondary: "#7c3aed" },
+  multi: { primary: "#eab308", secondary: "#f59e0b" },
+  timer: { primary: "#8b5cf6", secondary: "#06b6d4" },
+  rating: { primary: "#14b8a6", secondary: "#f59e0b" },
+};
 
 const createChallengeStateFromItems = (challenges) =>
   challenges.reduce((accumulator, challenge) => {
@@ -109,9 +124,13 @@ function ChallengeActionButton({
 
 export default function DashboardChallenges({ challenges, loading, error }) {
   const theme = useTheme();
+  const dispatch = useDispatch();
   const timerRef = useRef(null);
   const [activeTimerKey, setActiveTimerKey] = useState("");
   const [challengeState, setChallengeState] = useState({});
+  const { actionLoadingById, actionErrorById, actionResultById } = useSelector(
+    (state) => state.dashboard,
+  );
 
   useEffect(() => {
     setChallengeState((current) => ({
@@ -130,7 +149,16 @@ export default function DashboardChallenges({ challenges, loading, error }) {
         const nextTimer = (current[activeTimerKey]?.timer || 0) - 1;
 
         if (nextTimer <= 0) {
+          const completedChallenge = challenges.find(
+            (item) => item.challenge_key === activeTimerKey,
+          );
           setActiveTimerKey("");
+          if (completedChallenge) {
+            void handleChallengeAction(completedChallenge, {
+              timer_seconds: Math.max(1, Number(completedChallenge.target_value) || 1),
+              value_logged: Math.max(1, Number(completedChallenge.target_value) || 1),
+            });
+          }
           return {
             ...current,
             [activeTimerKey]: {
@@ -152,7 +180,7 @@ export default function DashboardChallenges({ challenges, loading, error }) {
     }, 1000);
 
     return () => window.clearInterval(timerRef.current);
-  }, [activeTimerKey, challengeState]);
+  }, [activeTimerKey, challengeState, challenges]);
 
   useEffect(() => () => window.clearInterval(timerRef.current), []);
 
@@ -168,6 +196,27 @@ export default function DashboardChallenges({ challenges, loading, error }) {
 
   const formatTimer = (seconds) =>
     `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+
+  const handleChallengeAction = async (challenge, values) => {
+    dispatch(clearDashboardChallengeActionError(challenge.challenge_key));
+
+    const payload = {
+      challenge_id: challenge.challenge_key,
+      value_logged: 0,
+      toggle_value: false,
+      choice_value: 0,
+      multi_values: [],
+      timer_seconds: 0,
+      rating_value: 0,
+      ...values,
+    };
+
+    const result = await dispatch(postDashboardChallengeAction(payload));
+    if (postDashboardChallengeAction.fulfilled.match(result)) {
+      dispatch(fetchDashboardKpis());
+    }
+    return result;
+  };
 
   const isDone = (challenge) => {
     const state = challengeState[challenge.challenge_key];
@@ -340,6 +389,13 @@ export default function DashboardChallenges({ challenges, loading, error }) {
             const done = isDone(challenge);
             const xp = getXp(challenge);
             const color = challenge.displayColor || challenge.color || theme.palette.primary.main;
+            const accent = CHALLENGE_TYPE_ACCENTS[challengeType] || {
+              primary: color,
+              secondary: theme.palette.primary.main,
+            };
+            const actionLoading = Boolean(actionLoadingById[challenge.challenge_key]);
+            const actionError = actionErrorById[challenge.challenge_key];
+            const actionResult = actionResultById[challenge.challenge_key];
 
             return (
               <Grid key={challenge.challenge_key} size={{ xs: 12, md: 6, xl: 4 }}>
@@ -358,18 +414,30 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                   <Stack spacing={1.5} sx={{ height: "100%" }}>
                     <Stack direction="row" justifyContent="space-between" spacing={1}>
                       <Stack direction="row" spacing={1.2} alignItems="center">
-                        <Typography sx={{ fontSize: 24, lineHeight: 1 }}>
-                          {challenge.icon || "🎯"}
-                        </Typography>
+                        <Box
+                          sx={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 2.75,
+                            display: "grid",
+                            placeItems: "center",
+                            bgcolor: alpha(accent.primary, 0.12),
+                            boxShadow: `inset 0 0 0 1px ${alpha(accent.primary, 0.16)}`,
+                          }}
+                        >
+                          <Typography sx={{ fontSize: 24, lineHeight: 1 }}>
+                            {challenge.icon || "🎯"}
+                          </Typography>
+                        </Box>
                         <Box>
                           <Typography
                             sx={{
                               fontWeight: 900,
                               fontSize: 18,
                               lineHeight: 1.2,
-                              color: done ? color : "text.primary",
+                              color: done ? accent.primary : alpha(accent.primary, 0.92),
                               textShadow: done
-                                ? `0 0 18px ${alpha(color, 0.18)}`
+                                ? `0 0 18px ${alpha(accent.primary, 0.18)}`
                                 : "none",
                             }}
                           >
@@ -382,10 +450,10 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                               sx={{
                                 height: 24,
                                 fontWeight: 800,
-                                color,
-                                bgcolor: alpha(color, 0.12),
+                                color: accent.primary,
+                                bgcolor: alpha(accent.primary, 0.12),
                                 border: "1px solid",
-                                borderColor: alpha(color, 0.25),
+                                borderColor: alpha(accent.primary, 0.25),
                               }}
                             />
                             <Chip
@@ -395,9 +463,9 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                                 height: 24,
                                 fontWeight: 800,
                                 color: done ? "#15803d" : color,
-                                bgcolor: done ? alpha("#16a34a", 0.12) : alpha(color, 0.08),
+                                bgcolor: done ? alpha("#16a34a", 0.12) : alpha(accent.secondary, 0.1),
                                 border: "1px solid",
-                                borderColor: done ? alpha("#16a34a", 0.24) : alpha(color, 0.18),
+                                borderColor: done ? alpha("#16a34a", 0.24) : alpha(accent.secondary, 0.2),
                               }}
                             />
                           </Stack>
@@ -416,14 +484,29 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                       )}
                     </Stack>
 
+                    {actionResult?.message && (
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "#15803d", fontWeight: 700 }}
+                      >
+                        {actionResult.message}
+                      </Typography>
+                    )}
+
+                    {actionError && (
+                      <Alert severity="error" sx={{ py: 0 }}>
+                        {actionError}
+                      </Alert>
+                    )}
+
                     <Box
                       sx={{
                         px: 1.4,
                         py: 1.15,
                         borderRadius: 2.5,
-                        bgcolor: alpha(color, 0.06),
+                        background: `linear-gradient(135deg, ${alpha(accent.primary, 0.06)} 0%, ${alpha(accent.secondary, 0.08)} 100%)`,
                         border: "1px solid",
-                        borderColor: alpha(color, 0.12),
+                        borderColor: alpha(accent.primary, 0.12),
                       }}
                     >
                       <Typography
@@ -443,23 +526,32 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                           <ChallengeActionButton
                             active={state.count >= targetValue}
                             color={color}
-                            disabled={state.count >= targetValue}
-                            onClick={() =>
+                            disabled={state.count >= targetValue || actionLoading}
+                            onClick={async () => {
+                              const nextCount = Math.min(targetValue, state.count + 1);
                               updateChallenge(challenge.challenge_key, {
-                                count: Math.min(targetValue, state.count + 1),
-                              })
-                            }
+                                count: nextCount,
+                              });
+                              await handleChallengeAction(challenge, {
+                                value_logged: nextCount,
+                              });
+                            }}
                           >
-                            + 1
+                            {actionLoading ? "Saving..." : "+ 1"}
                           </ChallengeActionButton>
                           {state.count > 0 && (
                             <Button
                               variant="outlined"
-                              onClick={() =>
+                              disabled={actionLoading}
+                              onClick={async () => {
+                                const nextCount = Math.max(0, state.count - 1);
                                 updateChallenge(challenge.challenge_key, {
-                                  count: Math.max(0, state.count - 1),
-                                })
-                              }
+                                  count: nextCount,
+                                });
+                                await handleChallengeAction(challenge, {
+                                  value_logged: nextCount,
+                                });
+                              }}
                               sx={{ minWidth: 0, px: 1.25, borderRadius: 2.5 }}
                             >
                               -
@@ -478,6 +570,7 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                             bgcolor: alpha(color, 0.12),
                             "& .MuiLinearProgress-bar": {
                               bgcolor: color,
+                              backgroundImage: `linear-gradient(90deg, ${accent.primary} 0%, ${accent.secondary} 100%)`,
                               borderRadius: 999,
                             },
                           }}
@@ -489,11 +582,20 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                       <ChallengeActionButton
                         active={state.done}
                         color={color}
-                        onClick={() =>
-                          updateChallenge(challenge.challenge_key, { done: !state.done })
-                        }
+                        disabled={actionLoading}
+                        onClick={async () => {
+                          const nextDone = !state.done;
+                          updateChallenge(challenge.challenge_key, { done: nextDone });
+                          await handleChallengeAction(challenge, {
+                            toggle_value: nextDone,
+                          });
+                        }}
                       >
-                        {state.done ? `✓ ${options[0]}` : options[0]}
+                        {actionLoading
+                          ? "Saving..."
+                          : state.done
+                            ? `✓ ${options[0]}`
+                            : options[0]}
                       </ChallengeActionButton>
                     )}
 
@@ -504,11 +606,19 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                             key={option}
                             active={state.chosen === index}
                             color={color}
-                            onClick={() =>
+                            disabled={actionLoading}
+                            onClick={async () => {
+                              const nextChoice =
+                                state.chosen === index ? null : index;
                               updateChallenge(challenge.challenge_key, {
-                                chosen: state.chosen === index ? null : index,
-                              })
-                            }
+                                chosen: nextChoice,
+                              });
+                              if (nextChoice !== null) {
+                                await handleChallengeAction(challenge, {
+                                  choice_value: nextChoice,
+                                });
+                              }
+                            }}
                           >
                             {option}
                           </ChallengeActionButton>
@@ -525,13 +635,18 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                               key={option}
                               active={selected}
                               color={color}
-                              onClick={() =>
+                              disabled={actionLoading}
+                              onClick={async () => {
+                                const nextValues = selected
+                                  ? state.chosen.filter((value) => value !== index)
+                                  : [...state.chosen, index];
                                 updateChallenge(challenge.challenge_key, {
-                                  chosen: selected
-                                    ? state.chosen.filter((value) => value !== index)
-                                    : [...state.chosen, index],
-                                })
-                              }
+                                  chosen: nextValues,
+                                });
+                                await handleChallengeAction(challenge, {
+                                  multi_values: nextValues,
+                                });
+                              }}
                             >
                               {option}
                             </ChallengeActionButton>
@@ -547,7 +662,7 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                             <ChallengeActionButton
                               active={activeTimerKey === challenge.challenge_key}
                               color={color}
-                              disabled={Boolean(activeTimerKey)}
+                              disabled={Boolean(activeTimerKey) || actionLoading}
                               onClick={() => setActiveTimerKey(challenge.challenge_key)}
                             >
                               {activeTimerKey === challenge.challenge_key ? "Running..." : "Start Timer"}
@@ -577,9 +692,14 @@ export default function DashboardChallenges({ challenges, loading, error }) {
                           <Button
                             key={emoji}
                             variant={state.rating === index ? "contained" : "outlined"}
-                            onClick={() =>
-                              updateChallenge(challenge.challenge_key, { rating: index })
-                            }
+                            disabled={actionLoading}
+                            onClick={async () => {
+                              updateChallenge(challenge.challenge_key, { rating: index });
+                              await handleChallengeAction(challenge, {
+                                rating_value: index,
+                                value_logged: index,
+                              });
+                            }}
                             sx={{
                               minWidth: 0,
                               px: 1.2,

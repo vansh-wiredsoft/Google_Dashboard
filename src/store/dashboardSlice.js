@@ -2,11 +2,15 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
 
 const DASHBOARD_KPI_PATH = "/config/api/v1/dashboard/kpis";
+const DASHBOARD_CHALLENGE_ACTION_PATH = "/config/api/v1/dashboard/challenges/action";
 
 const initialState = {
   items: [],
   loading: false,
   error: "",
+  actionLoadingById: {},
+  actionErrorById: {},
+  actionResultById: {},
 };
 
 export const fetchDashboardKpis = createAsyncThunk(
@@ -29,12 +33,50 @@ export const fetchDashboardKpis = createAsyncThunk(
   },
 );
 
+export const postDashboardChallengeAction = createAsyncThunk(
+  "dashboard/postDashboardChallengeAction",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await api.post(DASHBOARD_CHALLENGE_ACTION_PATH, payload);
+      const responsePayload = response?.data || {};
+
+      if (!responsePayload?.success) {
+        return rejectWithValue({
+          challengeId: payload.challenge_id,
+          message: responsePayload?.message || "Failed to submit challenge action.",
+        });
+      }
+
+      return {
+        challengeId: payload.challenge_id,
+        payload: responsePayload?.data || {},
+      };
+    } catch (error) {
+      return rejectWithValue({
+        challengeId: payload.challenge_id,
+        message: getApiErrorMessage(
+          error,
+          "Failed to submit challenge action due to server/network error.",
+        ),
+      });
+    }
+  },
+);
+
 const dashboardSlice = createSlice({
   name: "dashboard",
   initialState,
   reducers: {
     clearDashboardError(state) {
       state.error = "";
+    },
+    clearDashboardChallengeActionError(state, action) {
+      if (action.payload) {
+        delete state.actionErrorById[action.payload];
+        return;
+      }
+
+      state.actionErrorById = {};
     },
   },
   extraReducers: (builder) => {
@@ -50,10 +92,31 @@ const dashboardSlice = createSlice({
       .addCase(fetchDashboardKpis.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to fetch dashboard KPIs.";
+      })
+      .addCase(postDashboardChallengeAction.pending, (state, action) => {
+        const challengeId = action.meta.arg?.challenge_id;
+        if (!challengeId) return;
+
+        state.actionLoadingById[challengeId] = true;
+        delete state.actionErrorById[challengeId];
+      })
+      .addCase(postDashboardChallengeAction.fulfilled, (state, action) => {
+        const { challengeId, payload } = action.payload;
+        state.actionLoadingById[challengeId] = false;
+        state.actionResultById[challengeId] = payload;
+      })
+      .addCase(postDashboardChallengeAction.rejected, (state, action) => {
+        const challengeId = action.payload?.challengeId || action.meta.arg?.challenge_id;
+        if (!challengeId) return;
+
+        state.actionLoadingById[challengeId] = false;
+        state.actionErrorById[challengeId] =
+          action.payload?.message || "Failed to submit challenge action.";
       });
   },
 });
 
-export const { clearDashboardError } = dashboardSlice.actions;
+export const { clearDashboardError, clearDashboardChallengeActionError } =
+  dashboardSlice.actions;
 
 export default dashboardSlice.reducer;

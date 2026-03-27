@@ -297,6 +297,7 @@ function SectionCard({ children, sx }) {
 
 function MetricCard({ item }) {
   const theme = useTheme();
+  const trendPositive = item.change.startsWith("+");
 
   return (
     <Paper
@@ -306,7 +307,7 @@ function MetricCard({ item }) {
         borderRadius: 3,
         border: "1px solid",
         borderColor: alpha(item.color, 0.22),
-        background: getRaisedGradient(theme, item.color),
+        background: `linear-gradient(180deg, ${alpha(item.color, theme.palette.mode === "dark" ? 0.16 : 0.08)} 0%, ${getRaisedGradient(theme, item.color)} 100%)`,
         height: "100%",
       }}
     >
@@ -328,14 +329,17 @@ function MetricCard({ item }) {
           label={item.change}
           size="small"
           sx={{
-            bgcolor: alpha(item.color, 0.1),
-            color: item.color,
+            bgcolor: trendPositive ? alpha("#16a34a", 0.14) : alpha("#dc2626", 0.12),
+            color: trendPositive ? "#15803d" : "#dc2626",
             fontWeight: 700,
           }}
         />
       </Stack>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+      <Typography
+        variant="body2"
+        sx={{ mt: 1.5, color: item.color, fontWeight: 700 }}
+      >
         {item.label}
       </Typography>
       <Typography
@@ -355,6 +359,7 @@ function MetricCard({ item }) {
           "& .MuiLinearProgress-bar": {
             borderRadius: 999,
             bgcolor: item.color,
+            backgroundImage: `linear-gradient(90deg, ${item.color} 0%, ${alpha(item.color, 0.72)} 100%)`,
           },
         }}
       />
