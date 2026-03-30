@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
 
 const QUESTION_PATH = "/config/api/v1/kpi-questions";
+const QUESTION_UPLOAD_PATH = "/config/api/v1/kpiquestions/upload";
 
 const initialState = {
   items: [],
@@ -22,6 +23,10 @@ const initialState = {
   createMessage: "",
   updateMessage: "",
   deleteMessage: "",
+  uploadLoading: false,
+  uploadStatus: null,
+  uploadError: "",
+  uploadResponseData: null,
 };
 
 const normalizeOption = (item, index = 0) => ({
@@ -187,6 +192,29 @@ export const deleteQuestion = createAsyncThunk(
   },
 );
 
+export const uploadQuestionFile = createAsyncThunk(
+  "question/uploadQuestionFile",
+  async (file, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await api.post(QUESTION_UPLOAD_PATH, formData);
+      const payload = response?.data || {};
+
+      if (!payload?.success) {
+        return rejectWithValue(payload?.message || "Upload failed.");
+      }
+
+      return payload?.data || null;
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(error, "Upload failed due to server/network error."),
+      );
+    }
+  },
+);
+
 const replaceQuestion = (items, question) =>
   items.map((item) => (item.id === question.id ? question : item));
 
@@ -216,6 +244,18 @@ const questionSlice = createSlice({
       state.deleteError = "";
       state.deleteMessage = "";
       state.deleteLoading = false;
+    },
+    resetQuestionUpload(state) {
+      state.uploadLoading = false;
+      state.uploadStatus = null;
+      state.uploadError = "";
+      state.uploadResponseData = null;
+    },
+    clearQuestionUploadError(state) {
+      state.uploadError = "";
+      if (state.uploadStatus === "error") {
+        state.uploadStatus = null;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -292,6 +332,22 @@ const questionSlice = createSlice({
       .addCase(deleteQuestion.rejected, (state, action) => {
         state.deleteLoading = false;
         state.deleteError = action.payload || "Failed to delete question.";
+      })
+      .addCase(uploadQuestionFile.pending, (state) => {
+        state.uploadLoading = true;
+        state.uploadStatus = null;
+        state.uploadError = "";
+        state.uploadResponseData = null;
+      })
+      .addCase(uploadQuestionFile.fulfilled, (state, action) => {
+        state.uploadLoading = false;
+        state.uploadStatus = "success";
+        state.uploadResponseData = action.payload;
+      })
+      .addCase(uploadQuestionFile.rejected, (state, action) => {
+        state.uploadLoading = false;
+        state.uploadStatus = "error";
+        state.uploadError = action.payload || "Upload failed.";
       });
   },
 });
@@ -302,6 +358,8 @@ export const {
   clearQuestionCreateState,
   clearQuestionUpdateState,
   clearQuestionDeleteState,
+  resetQuestionUpload,
+  clearQuestionUploadError,
 } = questionSlice.actions;
 
 export default questionSlice.reducer;

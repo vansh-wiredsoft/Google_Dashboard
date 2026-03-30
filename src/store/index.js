@@ -5,7 +5,6 @@ import companyReducer from "./companySlice";
 import userReducer from "./userSlice";
 import questionReducer from "./questionSlice";
 import userUploadReducer from "./userUploadSlice";
-import questionUploadReducer from "./questionUploadSlice";
 import questionHierarchyReducer from "./questionHierarchySlice";
 import themeReducer from "./themeSlice";
 import kpiReducer from "./kpiSlice";
@@ -22,7 +21,6 @@ const store = configureStore({
     user: userReducer,
     question: questionReducer,
     userUpload: userUploadReducer,
-    questionUpload: questionUploadReducer,
     questionHierarchy: questionHierarchyReducer,
     theme: themeReducer,
     kpi: kpiReducer,
