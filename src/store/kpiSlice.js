@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const KPI_PATH = "/config/api/v1/kpi";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   items: [],
@@ -41,7 +40,7 @@ export const fetchKpis = createAsyncThunk(
   "kpi/fetchKpis",
   async ({ skip = 0, limit = 50, search = "", isActive } = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get(KPI_PATH, {
+      const response = await api.get(API_URLS.kpis, {
         params: {
           skip,
           limit,
@@ -79,7 +78,7 @@ export const createKpi = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await api.post(KPI_PATH, {
+      const response = await api.post(API_URLS.kpis, {
         display_name: displayName,
         description: description || "",
         theme_key: themeKey,
@@ -108,7 +107,7 @@ export const fetchKpiById = createAsyncThunk(
   "kpi/fetchKpiById",
   async (kpiKey, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${KPI_PATH}/${kpiKey}`);
+      const response = await api.get(API_URLS.kpiById(kpiKey));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -131,7 +130,7 @@ export const updateKpi = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await api.put(`${KPI_PATH}/${kpiKey}`, {
+      const response = await api.put(API_URLS.kpiById(kpiKey), {
         display_name: displayName,
         description: description || "",
         theme_key: themeKey,
@@ -161,7 +160,7 @@ export const deleteKpi = createAsyncThunk(
   "kpi/deleteKpi",
   async (kpiKey, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`${KPI_PATH}/${kpiKey}`);
+      const response = await api.delete(API_URLS.kpiById(kpiKey));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {

@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const CHALLENGE_PATH = "/config/api/v1/challenges";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   items: [],
@@ -67,7 +66,7 @@ export const fetchChallenges = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await api.get(CHALLENGE_PATH, {
+      const response = await api.get(API_URLS.challenges, {
         params: {
           skip,
           limit,
@@ -121,7 +120,7 @@ export const createChallenge = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await api.post(CHALLENGE_PATH, {
+      const response = await api.post(API_URLS.challenges, {
         name,
         challenge_type: challengeType,
         description,
@@ -171,7 +170,7 @@ export const fetchChallengeById = createAsyncThunk(
   "challenge/fetchChallengeById",
   async (challengeKey, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${CHALLENGE_PATH}/${challengeKey}`);
+      const response = await api.get(API_URLS.challengeById(challengeKey));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data?.challenge) {
@@ -210,7 +209,7 @@ export const updateChallenge = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await api.put(`${CHALLENGE_PATH}/${challengeKey}`, {
+      const response = await api.put(API_URLS.challengeById(challengeKey), {
         name,
         challenge_type: challengeType,
         description,
@@ -248,7 +247,7 @@ export const deleteChallenge = createAsyncThunk(
   "challenge/deleteChallenge",
   async (challengeKey, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`${CHALLENGE_PATH}/${challengeKey}`);
+      const response = await api.delete(API_URLS.challengeById(challengeKey));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -277,7 +276,7 @@ export const addChallengeKpiMapping = createAsyncThunk(
   async ({ challengeKey, kpiKey, startDate, endDate }, { rejectWithValue }) => {
     try {
       const response = await api.post(
-        `${CHALLENGE_PATH}/${challengeKey}/kpi-mappings`,
+        API_URLS.challengeKpiMappings(challengeKey),
         {
           kpi_key: kpiKey,
           start_date: startDate,

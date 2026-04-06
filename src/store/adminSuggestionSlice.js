@@ -1,8 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const ADMIN_SUGGESTION_LIST_PATH = "/config/api/v1/admin/suggestions";
-const ADMIN_SUGGESTION_DETAIL_PATH = "/config/api/v1/admin/suggestions";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   items: [],
@@ -67,7 +65,7 @@ export const fetchAdminSuggestions = createAsyncThunk(
   "adminSuggestion/fetchAdminSuggestions",
   async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get(ADMIN_SUGGESTION_LIST_PATH, {
+      const response = await api.get(API_URLS.adminSuggestions, {
         params: buildListParams(params),
       });
       const payload = response?.data || {};
@@ -104,7 +102,7 @@ export const fetchAdminSuggestionById = createAsyncThunk(
   async (suggestionId, { rejectWithValue }) => {
     try {
       const response = await api.get(
-        `${ADMIN_SUGGESTION_DETAIL_PATH}/${suggestionId}`,
+        API_URLS.adminSuggestionById(suggestionId),
       );
       const payload = response?.data || {};
 
@@ -130,7 +128,7 @@ export const createAdminSuggestion = createAsyncThunk(
   "adminSuggestion/createAdminSuggestion",
   async (suggestion, { rejectWithValue }) => {
     try {
-      const response = await api.post(ADMIN_SUGGESTION_DETAIL_PATH, suggestion);
+      const response = await api.post(API_URLS.adminSuggestions, suggestion);
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -159,7 +157,7 @@ export const updateAdminSuggestion = createAsyncThunk(
   async ({ suggestionId, suggestion }, { rejectWithValue }) => {
     try {
       const response = await api.put(
-        `${ADMIN_SUGGESTION_DETAIL_PATH}/${suggestionId}`,
+        API_URLS.adminSuggestionById(suggestionId),
         suggestion,
       );
       const payload = response?.data || {};
@@ -190,7 +188,7 @@ export const deleteAdminSuggestion = createAsyncThunk(
   async (suggestionId, { rejectWithValue }) => {
     try {
       const response = await api.delete(
-        `${ADMIN_SUGGESTION_DETAIL_PATH}/${suggestionId}`,
+        API_URLS.adminSuggestionById(suggestionId),
       );
       const payload = response?.data || {};
 

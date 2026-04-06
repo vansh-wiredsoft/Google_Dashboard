@@ -1,8 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const COMPANY_PATH = "/config/api/v1/companies";
-const COMPANY_UPLOAD_PATH = "/config/api/v1/companies/upload";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   companies: [],
@@ -73,7 +71,7 @@ export const fetchCompanies = createAsyncThunk(
   "company/fetchCompanies",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get(COMPANY_PATH);
+      const response = await api.get(API_URLS.companies);
       const payload = response?.data || {};
 
       if (!payload?.success) {
@@ -99,7 +97,7 @@ export const fetchCompanyById = createAsyncThunk(
   "company/fetchCompanyById",
   async (companyId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${COMPANY_PATH}/${companyId}`);
+      const response = await api.get(API_URLS.companyById(companyId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -125,7 +123,7 @@ export const createCompany = createAsyncThunk(
   "company/createCompany",
   async ({ company, admin }, { rejectWithValue }) => {
     try {
-      const response = await api.post(COMPANY_PATH, {
+      const response = await api.post(API_URLS.companies, {
         company,
         admin,
       });
@@ -155,7 +153,7 @@ export const updateCompany = createAsyncThunk(
   "company/updateCompany",
   async ({ companyId, company }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`${COMPANY_PATH}/${companyId}`, company);
+      const response = await api.put(API_URLS.companyById(companyId), company);
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -181,7 +179,7 @@ export const deleteCompany = createAsyncThunk(
   "company/deleteCompany",
   async (companyId, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`${COMPANY_PATH}/${companyId}`);
+      const response = await api.delete(API_URLS.companyById(companyId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -207,7 +205,7 @@ export const assignCompanyAdmin = createAsyncThunk(
   "company/assignCompanyAdmin",
   async ({ companyId, admin }, { rejectWithValue }) => {
     try {
-      const response = await api.post(`${COMPANY_PATH}/${companyId}/admin`, admin);
+      const response = await api.post(API_URLS.companyAdmin(companyId), admin);
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -238,7 +236,7 @@ export const uploadCompanyFile = createAsyncThunk(
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await api.post(COMPANY_UPLOAD_PATH, formData);
+      const response = await api.post(API_URLS.companyUpload, formData);
       const payload = response?.data || {};
       if (!payload?.success) {
         return rejectWithValue(payload?.message || "Upload failed.");

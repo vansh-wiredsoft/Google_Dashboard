@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const THEME_PATH = "/config/api/v1/themes";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   items: [],
@@ -40,7 +39,7 @@ export const fetchThemes = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await api.get(THEME_PATH, {
+      const response = await api.get(API_URLS.themes, {
         params: {
           skip,
           limit,
@@ -75,7 +74,7 @@ export const createTheme = createAsyncThunk(
   "theme/createTheme",
   async ({ themeDisplayName }, { rejectWithValue }) => {
     try {
-      const response = await api.post(THEME_PATH, {
+      const response = await api.post(API_URLS.themes, {
         theme_display_name: themeDisplayName,
       });
 
@@ -100,7 +99,7 @@ export const fetchThemeById = createAsyncThunk(
   "theme/fetchThemeById",
   async (themeKey, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${THEME_PATH}/${themeKey}`);
+      const response = await api.get(API_URLS.themeById(themeKey));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -120,7 +119,7 @@ export const updateTheme = createAsyncThunk(
   "theme/updateTheme",
   async ({ themeKey, themeDisplayName, isActive }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`${THEME_PATH}/${themeKey}`, {
+      const response = await api.put(API_URLS.themeById(themeKey), {
         theme_display_name: themeDisplayName,
         is_active: isActive,
       });
@@ -146,7 +145,7 @@ export const deleteTheme = createAsyncThunk(
   "theme/deleteTheme",
   async (themeKey, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`${THEME_PATH}/${themeKey}`);
+      const response = await api.delete(API_URLS.themeById(themeKey));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {

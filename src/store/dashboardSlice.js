@@ -1,8 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const DASHBOARD_KPI_PATH = "/config/api/v1/dashboard/kpis";
-const DASHBOARD_CHALLENGE_ACTION_PATH = "/config/api/v1/dashboard/challenges/action";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   items: [],
@@ -17,7 +15,7 @@ export const fetchDashboardKpis = createAsyncThunk(
   "dashboard/fetchDashboardKpis",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get(DASHBOARD_KPI_PATH);
+      const response = await api.get(API_URLS.dashboardKpis);
       const payload = response?.data || {};
 
       if (!payload?.success) {
@@ -37,7 +35,7 @@ export const postDashboardChallengeAction = createAsyncThunk(
   "dashboard/postDashboardChallengeAction",
   async (payload, { rejectWithValue }) => {
     try {
-      const response = await api.post(DASHBOARD_CHALLENGE_ACTION_PATH, payload);
+      const response = await api.post(API_URLS.dashboardChallengeAction, payload);
       const responsePayload = response?.data || {};
 
       if (!responsePayload?.success) {

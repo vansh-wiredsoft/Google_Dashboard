@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const KPI_SUGGESTION_MAPPING_PATH = "/config/api/v1/admin/kpi-suggestion-mappings";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   items: [],
@@ -79,7 +78,7 @@ export const fetchKpiSuggestionMappings = createAsyncThunk(
   "kpiSuggestionMapping/fetchKpiSuggestionMappings",
   async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get(KPI_SUGGESTION_MAPPING_PATH, {
+      const response = await api.get(API_URLS.kpiSuggestionMappings, {
         params: buildListParams(params),
       });
       const payload = response?.data || {};
@@ -114,7 +113,7 @@ export const fetchKpiSuggestionMappingById = createAsyncThunk(
   "kpiSuggestionMapping/fetchKpiSuggestionMappingById",
   async (mappingId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${KPI_SUGGESTION_MAPPING_PATH}/${mappingId}`);
+      const response = await api.get(API_URLS.kpiSuggestionMappingById(mappingId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -139,7 +138,7 @@ export const createKpiSuggestionMapping = createAsyncThunk(
   "kpiSuggestionMapping/createKpiSuggestionMapping",
   async (mapping, { rejectWithValue }) => {
     try {
-      const response = await api.post(KPI_SUGGESTION_MAPPING_PATH, mapping);
+      const response = await api.post(API_URLS.kpiSuggestionMappings, mapping);
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -169,7 +168,7 @@ export const updateKpiSuggestionMapping = createAsyncThunk(
   async ({ mappingId, mapping }, { rejectWithValue }) => {
     try {
       const response = await api.put(
-        `${KPI_SUGGESTION_MAPPING_PATH}/${mappingId}`,
+        API_URLS.kpiSuggestionMappingById(mappingId),
         mapping,
       );
       const payload = response?.data || {};
@@ -200,7 +199,7 @@ export const deleteKpiSuggestionMapping = createAsyncThunk(
   "kpiSuggestionMapping/deleteKpiSuggestionMapping",
   async (mappingId, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`${KPI_SUGGESTION_MAPPING_PATH}/${mappingId}`);
+      const response = await api.delete(API_URLS.kpiSuggestionMappingById(mappingId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {

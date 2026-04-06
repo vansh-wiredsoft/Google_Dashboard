@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const USER_UPLOAD_PATH = "/config/api/v1/users/upload";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   loading: false,
@@ -17,7 +16,7 @@ export const uploadUserFile = createAsyncThunk(
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await api.post(USER_UPLOAD_PATH, formData);
+      const response = await api.post(API_URLS.userUpload, formData);
 
       const payload = response?.data || {};
       if (!payload?.success) {

@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
+import { API_URLS } from "../services/apiUrls";
 import {
   clearAuthSession,
   getRole,
@@ -24,7 +25,7 @@ export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async ({ username, password }, { rejectWithValue }) => {
     try {
-      const response = await api.post("/authentication/api/v1/auth/login", {
+      const response = await api.post(API_URLS.authLogin, {
         username,
         password,
       });

@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const QUESTION_HIERARCHY_PATH = "/config/api/v1/kpiquestions/hierarchy";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   items: [],
@@ -13,7 +12,7 @@ export const fetchQuestionHierarchy = createAsyncThunk(
   "questionHierarchy/fetchQuestionHierarchy",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get(QUESTION_HIERARCHY_PATH);
+      const response = await api.get(API_URLS.questionHierarchy);
       const payload = response?.data || {};
 
       if (!payload?.success) {

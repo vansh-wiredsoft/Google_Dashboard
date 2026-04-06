@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const SESSION_PATH = "/config/api/v1/sessions";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   createdSession: null,
@@ -124,7 +123,7 @@ export const createSession = createAsyncThunk(
   "session/createSession",
   async ({ title, description, companyId }, { rejectWithValue }) => {
     try {
-      const response = await api.post(SESSION_PATH, {
+      const response = await api.post(API_URLS.sessions, {
         title,
         description,
         company_id: String(companyId),
@@ -154,7 +153,7 @@ export const addQuestionsToSession = createAsyncThunk(
   "session/addQuestionsToSession",
   async ({ sessionId, questionIds }, { rejectWithValue }) => {
     try {
-      const response = await api.post(`${SESSION_PATH}/${sessionId}/questions`, {
+      const response = await api.post(API_URLS.sessionQuestions(sessionId), {
         question_ids: questionIds,
       });
 
@@ -182,7 +181,7 @@ export const fetchSessionQuestions = createAsyncThunk(
   "session/fetchSessionQuestions",
   async (sessionId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${SESSION_PATH}/${sessionId}/questions`);
+      const response = await api.get(API_URLS.sessionQuestions(sessionId));
       const payload = response?.data || {};
 
       if (!payload?.success) {
@@ -210,7 +209,7 @@ export const setSessionQuestions = createAsyncThunk(
   "session/setSessionQuestions",
   async ({ sessionId, questionIds }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`${SESSION_PATH}/${sessionId}/questions`, {
+      const response = await api.put(API_URLS.sessionQuestions(sessionId), {
         question_ids: questionIds,
       });
       const payload = response?.data || {};
@@ -238,7 +237,7 @@ export const removeSessionQuestions = createAsyncThunk(
   "session/removeSessionQuestions",
   async ({ sessionId, questionIds }, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`${SESSION_PATH}/${sessionId}/questions`, {
+      const response = await api.delete(API_URLS.sessionQuestions(sessionId), {
         data: {
           question_ids: questionIds,
         },
@@ -272,7 +271,7 @@ export const removeSingleSessionQuestion = createAsyncThunk(
   async ({ sessionId, questionId }, { rejectWithValue }) => {
     try {
       const response = await api.delete(
-        `${SESSION_PATH}/${sessionId}/questions/${questionId}`,
+        API_URLS.sessionQuestionById(sessionId, questionId),
       );
       const payload = response?.data || {};
 
@@ -300,7 +299,7 @@ export const reorderSessionQuestions = createAsyncThunk(
   "session/reorderSessionQuestions",
   async ({ sessionId, items }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`${SESSION_PATH}/${sessionId}/questions/order`, {
+      const response = await api.put(API_URLS.sessionQuestionsOrder(sessionId), {
         items,
       });
       const payload = response?.data || {};
@@ -331,7 +330,7 @@ export const updateSession = createAsyncThunk(
   "session/updateSession",
   async ({ sessionId, title, description, companyId }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`${SESSION_PATH}/${sessionId}`, {
+      const response = await api.patch(API_URLS.sessionById(sessionId), {
         title,
         description,
         company_id: companyId ? String(companyId) : null,
@@ -361,7 +360,7 @@ export const deleteSession = createAsyncThunk(
   "session/deleteSession",
   async (sessionId, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`${SESSION_PATH}/${sessionId}`);
+      const response = await api.delete(API_URLS.sessionById(sessionId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -387,7 +386,7 @@ export const fetchSessions = createAsyncThunk(
   "session/fetchSessions",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get(SESSION_PATH);
+      const response = await api.get(API_URLS.sessions);
       const payload = response?.data || {};
 
       if (!payload?.success) {
@@ -413,7 +412,7 @@ export const fetchMySubmissions = createAsyncThunk(
   "session/fetchMySubmissions",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${SESSION_PATH}/my-submissions`);
+      const response = await api.get(API_URLS.sessionMySubmissions);
       const payload = response?.data || {};
 
       if (!payload?.success) {
@@ -449,7 +448,7 @@ export const fetchSessionById = createAsyncThunk(
   "session/fetchSessionById",
   async (sessionId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${SESSION_PATH}/${sessionId}`);
+      const response = await api.get(API_URLS.sessionById(sessionId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -477,7 +476,7 @@ export const fetchSessionPreview = createAsyncThunk(
   "session/fetchSessionPreview",
   async (sessionId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${SESSION_PATH}/${sessionId}/form/preview`);
+      const response = await api.get(API_URLS.sessionPreview(sessionId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -505,7 +504,7 @@ export const publishSession = createAsyncThunk(
   "session/publishSession",
   async (sessionId, { rejectWithValue }) => {
     try {
-      const response = await api.post(`${SESSION_PATH}/${sessionId}/publish`);
+      const response = await api.post(API_URLS.sessionPublish(sessionId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -531,7 +530,7 @@ export const fetchSessionForm = createAsyncThunk(
   "session/fetchSessionForm",
   async (sessionId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${SESSION_PATH}/${sessionId}/form`);
+      const response = await api.get(API_URLS.sessionForm(sessionId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -557,7 +556,7 @@ export const submitSessionForm = createAsyncThunk(
   "session/submitSessionForm",
   async ({ sessionId, email, answers }, { rejectWithValue }) => {
     try {
-      const response = await api.post(`${SESSION_PATH}/${sessionId}/form/submit`, {
+      const response = await api.post(API_URLS.sessionFormSubmit(sessionId), {
         email,
         answers,
       });

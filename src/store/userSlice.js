@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const USER_PATH = "/config/api/v1/users";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   users: [],
@@ -54,7 +53,7 @@ export const fetchUsers = createAsyncThunk(
   "user/fetchUsers",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get(USER_PATH);
+      const response = await api.get(API_URLS.users);
       const payload = response?.data || {};
 
       if (!payload?.success) {
@@ -83,7 +82,7 @@ export const fetchUserById = createAsyncThunk(
   "user/fetchUserById",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${USER_PATH}/${userId}`);
+      const response = await api.get(API_URLS.userById(userId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -109,7 +108,7 @@ export const createUser = createAsyncThunk(
   "user/createUser",
   async (user, { rejectWithValue }) => {
     try {
-      const response = await api.post(USER_PATH, user);
+      const response = await api.post(API_URLS.users, user);
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -135,7 +134,7 @@ export const updateUser = createAsyncThunk(
   "user/updateUser",
   async ({ userId, user }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`${USER_PATH}/${userId}`, user);
+      const response = await api.put(API_URLS.userById(userId), user);
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -161,7 +160,7 @@ export const deleteUser = createAsyncThunk(
   "user/deleteUser",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`${USER_PATH}/${userId}`);
+      const response = await api.delete(API_URLS.userById(userId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {

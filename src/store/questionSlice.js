@@ -1,8 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getApiErrorMessage } from "../services/api";
-
-const QUESTION_PATH = "/config/api/v1/kpi-questions";
-const QUESTION_UPLOAD_PATH = "/config/api/v1/kpiquestions/upload";
+import { API_URLS } from "../services/apiUrls";
 
 const initialState = {
   items: [],
@@ -55,7 +53,7 @@ export const fetchQuestions = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await api.get(QUESTION_PATH, {
+      const response = await api.get(API_URLS.questions, {
         params: {
           skip,
           limit,
@@ -95,7 +93,7 @@ export const fetchQuestionById = createAsyncThunk(
   "question/fetchQuestionById",
   async (questionId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${QUESTION_PATH}/${questionId}`);
+      const response = await api.get(API_URLS.questionById(questionId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -118,7 +116,7 @@ export const createQuestion = createAsyncThunk(
   "question/createQuestion",
   async (question, { rejectWithValue }) => {
     try {
-      const response = await api.post(QUESTION_PATH, question);
+      const response = await api.post(API_URLS.questions, question);
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -144,7 +142,7 @@ export const updateQuestion = createAsyncThunk(
   "question/updateQuestion",
   async ({ questionId, question }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`${QUESTION_PATH}/${questionId}`, question);
+      const response = await api.put(API_URLS.questionById(questionId), question);
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -170,7 +168,7 @@ export const deleteQuestion = createAsyncThunk(
   "question/deleteQuestion",
   async (questionId, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`${QUESTION_PATH}/${questionId}`);
+      const response = await api.delete(API_URLS.questionById(questionId));
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
@@ -199,7 +197,7 @@ export const uploadQuestionFile = createAsyncThunk(
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await api.post(QUESTION_UPLOAD_PATH, formData);
+      const response = await api.post(API_URLS.questionUpload, formData);
       const payload = response?.data || {};
 
       if (!payload?.success) {
