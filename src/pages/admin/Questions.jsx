@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -21,16 +21,22 @@ import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import FileDownloadRoundedIcon from "@mui/icons-material/FileDownloadRounded";
+import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 import Layout from "../../layouts/commonLayout/Layout";
 import {
   clearQuestionDeleteState,
   clearQuestionListError,
+  clearQuestionUploadError,
   deleteQuestion,
   fetchQuestions,
+  resetQuestionUpload,
+  uploadQuestionFile,
 } from "../../store/questionSlice";
 import { fetchThemes } from "../../store/themeSlice";
 import { fetchKpis } from "../../store/kpiSlice";
 import { getSurfaceBackground } from "../../theme";
+import { downloadTemplateFile } from "../../utils/downloadTemplate";
 
 const filterFieldSx = {
   "& .MuiInputBase-root": {
@@ -44,6 +50,7 @@ export default function Questions() {
   const navigate = useNavigate();
   const location = useLocation();
   const feedback = location.state?.feedback;
+  const fileInputRef = useRef(null);
   const { items: themeItems } = useSelector((state) => state.theme);
   const { items: kpiItems } = useSelector((state) => state.kpi);
   const {
@@ -54,6 +61,9 @@ export default function Questions() {
     deleteLoading,
     deleteError,
     deleteMessage,
+    uploadLoading,
+    uploadError,
+    uploadStatus,
   } = useSelector((state) => state.question);
   const [filters, setFilters] = useState({
     themeKey: "",
@@ -67,6 +77,7 @@ export default function Questions() {
     search: "",
     status: "all",
   });
+  const [uploadFeedback, setUploadFeedback] = useState(null);
 
   const isActive =
     appliedFilters.status === "all"
@@ -101,6 +112,7 @@ export default function Questions() {
     return () => {
       dispatch(clearQuestionListError());
       dispatch(clearQuestionDeleteState());
+      dispatch(resetQuestionUpload());
     };
   }, [dispatch]);
 
@@ -139,6 +151,40 @@ export default function Questions() {
       // Redux state already stores the error.
     }
   }, [dispatch]);
+
+  const handleImport = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    dispatch(resetQuestionUpload());
+    setUploadFeedback(null);
+
+    try {
+      await dispatch(uploadQuestionFile(file)).unwrap();
+      await dispatch(
+        fetchQuestions({
+          skip: 0,
+          limit: 50,
+          themeKey: appliedFilters.themeKey,
+          kpiKey: appliedFilters.kpiKey,
+          search: appliedFilters.search,
+          isActive,
+        }),
+      ).unwrap();
+      setUploadFeedback({
+        severity: "success",
+        message: `Question file "${file.name}" uploaded successfully.`,
+      });
+    } catch {
+      // Redux state already stores the error.
+    }
+
+    event.target.value = "";
+  };
+
+  const handleDownloadFormat = () => {
+    downloadTemplateFile("templates/MasterData.xlsx", "MasterData.xlsx");
+  };
 
   const handleApplyFilters = () => {
     setAppliedFilters({
@@ -280,6 +326,12 @@ export default function Questions() {
         {listError && <Alert severity="error">{listError}</Alert>}
         {deleteError && <Alert severity="error">{deleteError}</Alert>}
         {deleteMessage && <Alert severity="success">{deleteMessage}</Alert>}
+        {uploadFeedback && (
+          <Alert severity={uploadFeedback.severity}>{uploadFeedback.message}</Alert>
+        )}
+        {uploadStatus === "error" && uploadError && (
+          <Alert severity="error">{uploadError}</Alert>
+        )}
 
         <Paper
           elevation={0}
@@ -320,6 +372,23 @@ export default function Questions() {
               </Button>
               <Button
                 variant="outlined"
+                startIcon={<FileDownloadRoundedIcon />}
+                onClick={handleDownloadFormat}
+                sx={{ whiteSpace: "nowrap" }}
+              >
+                Download format
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<UploadFileRoundedIcon />}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadLoading}
+                sx={{ whiteSpace: "nowrap" }}
+              >
+                {uploadLoading ? "Uploading..." : "Import Excel"}
+              </Button>
+              <Button
+                variant="outlined"
                 startIcon={<RefreshRoundedIcon />}
                 onClick={() =>
                   dispatch(
@@ -339,6 +408,19 @@ export default function Questions() {
               </Button>
             </Stack>
           </Stack>
+
+          <input
+            hidden
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleImport}
+            onClick={() => {
+              if (uploadError) {
+                dispatch(clearQuestionUploadError());
+              }
+            }}
+          />
 
           <Box
             sx={{

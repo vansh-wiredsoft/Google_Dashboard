@@ -19,6 +19,7 @@ import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import FileDownloadRoundedIcon from "@mui/icons-material/FileDownloadRounded";
 import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 import Layout from "../../layouts/commonLayout/Layout";
 import { fetchCompanies } from "../../store/companySlice";
@@ -34,6 +35,7 @@ import {
   uploadUserFile,
 } from "../../store/userUploadSlice";
 import { getSurfaceBackground } from "../../theme";
+import { downloadTemplateFile } from "../../utils/downloadTemplate";
 
 export default function CompanyUsers() {
   const theme = useTheme();
@@ -110,6 +112,10 @@ export default function CompanyUsers() {
     }
 
     event.target.value = "";
+  };
+
+  const handleDownloadFormat = () => {
+    downloadTemplateFile("templates/CompanyUserData.xlsx", "CompanyUserData.xlsx");
   };
 
   const columns = useMemo(
@@ -275,6 +281,14 @@ export default function CompanyUsers() {
                 sx={{ height: 40, px: 2.5, whiteSpace: "nowrap" }}
               >
                 Add User
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<FileDownloadRoundedIcon />}
+                onClick={handleDownloadFormat}
+                sx={{ height: 40, px: 2, whiteSpace: "nowrap" }}
+              >
+                Download format
               </Button>
               <Button
                 variant="outlined"

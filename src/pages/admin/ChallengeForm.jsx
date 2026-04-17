@@ -101,6 +101,32 @@ export default function ChallengeForm({ mode }) {
   }, [dispatch, id, mode]);
 
   useEffect(() => {
+    if (mode !== "edit" || !selectedChallenge) return;
+
+    setDraftForm({
+      name: selectedChallenge.name || "",
+      challengeType: selectedChallenge.challenge_type || "",
+      description: selectedChallenge.description || "",
+      targetValue: selectedChallenge.target_value || 0,
+      xpReward: selectedChallenge.xp_reward || 0,
+      icon: selectedChallenge.icon || "",
+      isDaily: Boolean(selectedChallenge.is_daily),
+      isActive: Boolean(selectedChallenge.is_active),
+    });
+
+    setDraftMappings(
+      selectedChallenge.kpi_mappings?.length
+        ? selectedChallenge.kpi_mappings.map((mapping, index) => ({
+            localId: mapping.id || `${mapping.kpi_key || "mapping"}-${index}`,
+            kpiKey: mapping.kpi_key || "",
+            startDate: mapping.start_date || "",
+            endDate: mapping.end_date || "",
+          }))
+        : [defaultMapping()],
+    );
+  }, [mode, selectedChallenge]);
+
+  useEffect(() => {
     return () => {
       dispatch(clearChallengeCreateState());
       dispatch(clearChallengeUpdateState());
