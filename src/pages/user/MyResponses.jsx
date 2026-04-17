@@ -208,12 +208,16 @@ export default function MyResponses() {
     const responses = mySubmissions.flatMap(
       (session) => session.responses || [],
     );
-    const averageScore = responses.length
-      ? responses.reduce(
+const averageScore = responses.length
+  ? Number(
+      (
+        responses.reduce(
           (total, item) => total + (item.weighted_index || 0),
           0,
         ) / responses.length
-      : 0;
+      ).toFixed(2)
+    )
+  : 0;
     const overdueForms = unansweredLinks.filter((item) => {
       const daysOpen = getDaysSince(item.published_at);
       return daysOpen !== null && daysOpen >= 7;
@@ -237,7 +241,7 @@ export default function MyResponses() {
     [mySubmissions, selectedSessionId],
   );
   const selectedResponse = selectedSession?.responses?.[0] || null;
-  const selectedScore = Number(selectedResponse?.weighted_index || 0);
+  const selectedScore = selectedResponse?.weighted_index ?? 0;
   const selectedTone = getScoreTone(selectedScore, theme);
   const selectedScorePct = Math.max(
     0,
@@ -840,7 +844,7 @@ export default function MyResponses() {
                         {selectedScore}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        / 100
+                        / 5
                       </Typography>
                     </Box>
                   </Paper>
@@ -853,12 +857,7 @@ export default function MyResponses() {
           !mySubmissionsLoading &&
           mySubmissions.map((session) => {
             const latestResponse = session.responses?.[0];
-            const latestScore = Number(latestResponse?.weighted_index || 0);
-            console.log(typeof latestScore);
-            console.log(
-              "latestResponse?.weighted_index  ===>>",
-              latestResponse.weighted_index,
-            );
+            const latestScore = latestResponse?.weighted_index ?? 0;
 
             const scoreTone = getScoreTone(latestScore, theme);
             const progress = Math.max(
@@ -1429,7 +1428,7 @@ export default function MyResponses() {
                                 variant="body2"
                                 color="text.secondary"
                               >
-                                / 100
+                                / 5
                               </Typography>
                             </Box>
                           </Paper>
