@@ -23,6 +23,7 @@ import {
 import { fetchQuestions } from "../../store/questionSlice";
 import { fetchThemes } from "../../store/themeSlice";
 import { getSurfaceBackground } from "../../theme";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 export default function KpiSuggestionMappingView() {
   const theme = useTheme();
@@ -192,15 +193,11 @@ export default function KpiSuggestionMappingView() {
               ["Priority", selectedMapping.priority],
               [
                 "Created At",
-                selectedMapping.created_at
-                  ? new Date(selectedMapping.created_at).toLocaleString()
-                  : "-",
+                formatDateTimeIST(selectedMapping.created_at),
               ],
               [
                 "Updated At",
-                selectedMapping.updated_at
-                  ? new Date(selectedMapping.updated_at).toLocaleString()
-                  : "-",
+                formatDateTimeIST(selectedMapping.updated_at),
               ],
             ].map(([label, value]) => (
               <Paper key={label} variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>

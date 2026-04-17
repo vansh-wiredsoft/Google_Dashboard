@@ -19,6 +19,7 @@ import {
   fetchAdminSuggestionById,
 } from "../../store/adminSuggestionSlice";
 import { getSurfaceBackground } from "../../theme";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 export default function SuggestionView() {
   const theme = useTheme();
@@ -194,9 +195,7 @@ export default function SuggestionView() {
                 Created At
               </Typography>
               <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
-                {selectedSuggestion.created_at
-                  ? new Date(selectedSuggestion.created_at).toLocaleString()
-                  : "-"}
+                {formatDateTimeIST(selectedSuggestion.created_at)}
               </Typography>
             </Paper>
             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
@@ -204,9 +203,7 @@ export default function SuggestionView() {
                 Updated At
               </Typography>
               <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
-                {selectedSuggestion.updated_at
-                  ? new Date(selectedSuggestion.updated_at).toLocaleString()
-                  : "-"}
+                {formatDateTimeIST(selectedSuggestion.updated_at)}
               </Typography>
             </Paper>
           </Box>

@@ -27,6 +27,7 @@ import {
   deleteCompany,
 } from "../../store/companySlice";
 import { getSurfaceBackground } from "../../theme";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 export default function CompanyData() {
   const theme = useTheme();
@@ -117,8 +118,7 @@ export default function CompanyData() {
         headerName: "Updated At",
         flex: 1,
         minWidth: 190,
-        valueFormatter: (value) =>
-          value ? new Date(value).toLocaleString() : "-",
+        valueFormatter: (value) => formatDateTimeIST(value),
       },
       {
         field: "actions",

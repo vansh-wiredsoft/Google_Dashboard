@@ -36,6 +36,7 @@ import {
 } from "../../store/userUploadSlice";
 import { getSurfaceBackground } from "../../theme";
 import { downloadTemplateFile } from "../../utils/downloadTemplate";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 export default function CompanyUsers() {
   const theme = useTheme();
@@ -187,8 +188,7 @@ export default function CompanyUsers() {
         headerName: "Updated At",
         flex: 1,
         minWidth: 190,
-        valueFormatter: (value) =>
-          value ? new Date(value).toLocaleString() : "-",
+        valueFormatter: (value) => formatDateTimeIST(value),
       },
       {
         field: "actions",

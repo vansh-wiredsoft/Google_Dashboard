@@ -19,6 +19,7 @@ import {
   fetchThemeById,
 } from "../../store/themeSlice";
 import { getSurfaceBackground } from "../../theme";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 export default function ThemeView() {
   const theme = useTheme();
@@ -153,9 +154,7 @@ export default function ThemeView() {
                 Created At
               </Typography>
               <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
-                {selectedTheme.created_at
-                  ? new Date(selectedTheme.created_at).toLocaleString()
-                  : "-"}
+                {formatDateTimeIST(selectedTheme.created_at)}
               </Typography>
             </Paper>
             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
@@ -163,9 +162,7 @@ export default function ThemeView() {
                 Updated At
               </Typography>
               <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
-                {selectedTheme.updated_at
-                  ? new Date(selectedTheme.updated_at).toLocaleString()
-                  : "-"}
+                {formatDateTimeIST(selectedTheme.updated_at)}
               </Typography>
             </Paper>
           </Box>

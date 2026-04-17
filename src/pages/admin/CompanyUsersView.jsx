@@ -16,6 +16,7 @@ import Layout from "../../layouts/commonLayout/Layout";
 import { fetchCompanies } from "../../store/companySlice";
 import { clearUserDetailState, fetchUserById } from "../../store/userSlice";
 import { getSurfaceBackground } from "../../theme";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 export default function CompanyUsersView() {
   const theme = useTheme();
@@ -129,15 +130,11 @@ export default function CompanyUsersView() {
               ["Status", selectedUser.is_active ? "Active" : "Inactive"],
               [
                 "Created At",
-                selectedUser.created_at
-                  ? new Date(selectedUser.created_at).toLocaleString()
-                  : "-",
+                formatDateTimeIST(selectedUser.created_at),
               ],
               [
                 "Updated At",
-                selectedUser.updated_at
-                  ? new Date(selectedUser.updated_at).toLocaleString()
-                  : "-",
+                formatDateTimeIST(selectedUser.updated_at),
               ],
             ].map(([label, value]) => (
               <Paper key={label} variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>

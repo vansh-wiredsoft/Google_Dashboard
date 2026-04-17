@@ -39,22 +39,7 @@ import {
   fetchMySubmissions,
 } from "../../store/sessionSlice";
 import { getSurfaceBackground, getRaisedGradient } from "../../theme";
-
-function formatDateTime(value) {
-  if (!value) return "-";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
-}
-
-function formatDate(value) {
-  if (!value) return "-";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString();
-}
+import { formatDateIST, formatDateTimeIST } from "../../utils/dateTime";
 
 function getDaysSince(value) {
   if (!value) return null;
@@ -65,16 +50,32 @@ function getDaysSince(value) {
 }
 
 function getScoreTone(score, theme) {
-  if (score >= 75) {
-    return { label: "Strong", color: theme.palette.success.main, bg: alpha(theme.palette.success.main, 0.14) };
+  if (score >= 4) {
+    return {
+      label: "Strong",
+      color: theme.palette.success.main,
+      bg: alpha(theme.palette.success.main, 0.14),
+    };
   }
-  if (score >= 50) {
-    return { label: "Balanced", color: theme.palette.warning.main, bg: alpha(theme.palette.warning.main, 0.14) };
+  if (score >= 3) {
+    return {
+      label: "Balanced",
+      color: theme.palette.warning.main,
+      bg: alpha(theme.palette.warning.main, 0.14),
+    };
   }
-  if (score >= 30) {
-    return { label: "Needs Attention", color: theme.palette.error.main, bg: alpha(theme.palette.error.main, 0.14) };
+  if (score >= 2) {
+    return {
+      label: "Needs Attention",
+      color: theme.palette.error.main,
+      bg: alpha(theme.palette.error.main, 0.14),
+    };
   }
-  return { label: "Critical", color: theme.palette.error.dark, bg: alpha(theme.palette.error.main, 0.2) };
+  return {
+    label: "Critical",
+    color: theme.palette.error.dark,
+    bg: alpha(theme.palette.error.main, 0.2),
+  };
 }
 
 function getKpiIcon(index) {
@@ -117,7 +118,7 @@ function ScoreBar({ score, color }) {
 
 function SummaryCard({ label, value, sublabel, icon, accent, tone }) {
   return (
-      <Paper
+    <Paper
       elevation={0}
       sx={{
         p: 2.25,
@@ -148,7 +149,15 @@ function SummaryCard({ label, value, sublabel, icon, accent, tone }) {
           <Typography variant="body2" color="text.secondary">
             {label}
           </Typography>
-          <Typography variant="h5" sx={{ fontWeight: 850, lineHeight: 1.05, mt: 0.5, color: tone || "text.primary" }}>
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 850,
+              lineHeight: 1.05,
+              mt: 0.5,
+              color: tone || "text.primary",
+            }}
+          >
             {value}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
@@ -196,9 +205,14 @@ export default function MyResponses() {
   }, [myLinks, mySubmissions]);
 
   const summary = useMemo(() => {
-    const responses = mySubmissions.flatMap((session) => session.responses || []);
+    const responses = mySubmissions.flatMap(
+      (session) => session.responses || [],
+    );
     const averageScore = responses.length
-      ? responses.reduce((total, item) => total + (item.total_score || 0), 0) / responses.length
+      ? responses.reduce(
+          (total, item) => total + (item.weighted_index || 0),
+          0,
+        ) / responses.length
       : 0;
     const overdueForms = unansweredLinks.filter((item) => {
       const daysOpen = getDaysSince(item.published_at);
@@ -209,19 +223,26 @@ export default function MyResponses() {
       submittedForms: mySubmissions.length,
       pendingForms: unansweredLinks.length,
       overdueForms: overdueForms.length,
-      averageScore: Number(averageScore.toFixed(1)),
+      averageScore,
     };
   }, [mySubmissions, unansweredLinks]);
 
   const visibleTab =
     !mySubmissions.length && unansweredLinks.length ? "pending" : activeTab;
   const selectedSession = useMemo(
-    () => mySubmissions.find((session) => session.session_id === selectedSessionId) || null,
+    () =>
+      mySubmissions.find(
+        (session) => session.session_id === selectedSessionId,
+      ) || null,
     [mySubmissions, selectedSessionId],
   );
   const selectedResponse = selectedSession?.responses?.[0] || null;
-  const selectedScore = Number(selectedResponse?.total_score || 0);
+  const selectedScore = Number(selectedResponse?.weighted_index || 0);
   const selectedTone = getScoreTone(selectedScore, theme);
+  const selectedScorePct = Math.max(
+    0,
+    Math.min(100, (selectedScore / 5) * 100),
+  );
   const selectedBreakdown = selectedResponse?.kpi_scores || [];
 
   return (
@@ -234,7 +255,10 @@ export default function MyResponses() {
             borderRadius: 3,
             border: `1px solid ${alpha(theme.palette.primary.main, 0.16)}`,
             bgcolor: getSurfaceBackground(theme),
-            backgroundImage: getRaisedGradient(theme, theme.palette.primary.main),
+            backgroundImage: getRaisedGradient(
+              theme,
+              theme.palette.primary.main,
+            ),
           }}
         >
           <Stack spacing={1.25}>
@@ -303,7 +327,9 @@ export default function MyResponses() {
           </Grid>
         </Paper>
 
-        {mySubmissionsError && <Alert severity="error">{mySubmissionsError}</Alert>}
+        {mySubmissionsError && (
+          <Alert severity="error">{mySubmissionsError}</Alert>
+        )}
         {myLinksError && <Alert severity="error">{myLinksError}</Alert>}
         {!mySubmissionsError && mySubmissionsMessage && (
           <Alert severity="success">{mySubmissionsMessage}</Alert>
@@ -420,7 +446,9 @@ export default function MyResponses() {
           })}
         </Box>
 
-        {visibleTab === "submitted" && !mySubmissionsLoading && !mySubmissions.length ? (
+        {visibleTab === "submitted" &&
+        !mySubmissionsLoading &&
+        !mySubmissions.length ? (
           <Paper
             elevation={0}
             sx={{
@@ -440,243 +468,135 @@ export default function MyResponses() {
           </Paper>
         ) : null}
 
-        {selectedSessionId === "__hidden__" && visibleTab === "submitted" && selectedSession && (
-          <Stack spacing={2.5}>
-            <Button
-              onClick={() => {
-                setSelectedSessionId(null);
-                setExpandedKpiKey(null);
-              }}
-              variant="text"
-              sx={{
-                width: "fit-content",
-                px: 0,
-                color: theme.palette.text.secondary,
-                fontWeight: 700,
-              }}
-            >
-              Back to My Responses
-            </Button>
-
-            <Paper
-              elevation={0}
-              sx={{
-                borderRadius: 3,
-                overflow: "hidden",
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
-                bgcolor: getSurfaceBackground(theme),
-              }}
-            >
-              <Box
+        {selectedSessionId === "__hidden__" &&
+          visibleTab === "submitted" &&
+          selectedSession && (
+            <Stack spacing={2.5}>
+              <Button
+                onClick={() => {
+                  setSelectedSessionId(null);
+                  setExpandedKpiKey(null);
+                }}
+                variant="text"
                 sx={{
-                  p: { xs: 2.25, sm: 3 },
-                  backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 55%, ${theme.palette.success.main} 100%)`,
+                  width: "fit-content",
+                  px: 0,
+                  color: theme.palette.text.secondary,
+                  fontWeight: 700,
                 }}
               >
-                <Stack
-                  direction={{ xs: "column", md: "row" }}
-                  justifyContent="space-between"
-                  spacing={2}
-                >
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography
-                      variant="overline"
-                      sx={{
-                        letterSpacing: 1.2,
-                        color: alpha("#fff", 0.7),
-                      }}
-                    >
-                      {selectedSession.title}
-                    </Typography>
-                    <Typography
-                      variant="h4"
-                      sx={{ fontWeight: 900, color: "#fff", lineHeight: 1.05, mt: 0.5 }}
-                    >
-                      Wellness Check-in
-                    </Typography>
-                    <Typography sx={{ color: alpha("#fff", 0.75), mt: 0.8 }}>
-                      Submitted {formatDateTime(selectedResponse?.submitted_at)}
-                    </Typography>
-                  </Box>
+                Back to My Responses
+              </Button>
 
-                  <Box sx={{ textAlign: { xs: "left", md: "right" } }}>
-                    <Typography sx={{ fontSize: 12, color: alpha("#fff", 0.75) }}>
-                      Wellness Index
-                    </Typography>
-                    <Typography
-                      sx={{
-                        fontSize: { xs: 48, sm: 58 },
-                        fontWeight: 900,
-                        color: "#fff",
-                        lineHeight: 1,
-                      }}
-                    >
-                      {selectedScore.toFixed(1)}
-                    </Typography>
-                    <Typography sx={{ color: alpha("#fff", 0.85), mt: 0.6 }}>
-                      {selectedTone.label}
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                <Box sx={{ mt: 2.5 }}>
-                  <Box
-                    sx={{
-                      height: 6,
-                      borderRadius: 999,
-                      bgcolor: alpha("#fff", 0.18),
-                      overflow: "hidden",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        height: "100%",
-                        width: `${Math.max(4, Math.min(100, selectedScore))}%`,
-                        borderRadius: 999,
-                        bgcolor: alpha("#fff", 0.92),
-                      }}
-                    />
-                  </Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      mt: 0.6,
-                      fontSize: 11,
-                      color: alpha("#fff", 0.65),
-                    }}
-                  >
-                    <span>0</span>
-                    <span>40 Moderate</span>
-                    <span>60 Good</span>
-                    <span>80 Excellent</span>
-                    <span>100</span>
-                  </Box>
-                </Box>
-              </Box>
-
-              <Box sx={{ p: { xs: 2.25, sm: 3 } }}>
-                <Grid container spacing={1.5}>
-                  {selectedBreakdown.map((item, index) => {
-                    const isExpanded = expandedKpiKey === item.kpi_key;
-                    const accent = [
-                      theme.palette.info.main,
-                      theme.palette.warning.main,
-                      theme.palette.success.main,
-                      theme.palette.primary.main,
-                      theme.palette.secondary.main,
-                    ][index % 5];
-                    const average = Number(item.average_score || 0);
-
-                    return (
-                      <Grid key={item.kpi_key} size={{ xs: 12, md: 6, xl: 4 }}>
-                        <Paper
-                          variant="outlined"
-                          onClick={() => setExpandedKpiKey(isExpanded ? null : item.kpi_key)}
-                          sx={{
-                            p: 1.75,
-                            borderRadius: 3,
-                            height: "100%",
-                            cursor: "pointer",
-                            borderColor: isExpanded
-                              ? alpha(accent, 0.45)
-                              : alpha(theme.palette.primary.main, 0.12),
-                            bgcolor: alpha(theme.palette.common.white, 0.02),
-                          }}
-                        >
-                          <Stack spacing={1.25}>
-                            <Stack direction="row" alignItems="center" spacing={1}>
-                              <Box
-                                sx={{
-                                  width: 36,
-                                  height: 36,
-                                  borderRadius: 2,
-                                  display: "grid",
-                                  placeItems: "center",
-                                  color: accent,
-                                  bgcolor: alpha(accent, 0.12),
-                                }}
-                              >
-                                {getKpiIcon(index)}
-                              </Box>
-                              <Box sx={{ minWidth: 0, flex: 1 }}>
-                                <Stack
-                                  direction="row"
-                                  justifyContent="space-between"
-                                  spacing={1}
-                                  alignItems="center"
-                                >
-                                  <Typography sx={{ fontWeight: 850 }}>
-                                    {item.kpi_name}
-                                  </Typography>
-                                  <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}>
-                                    <Typography sx={{ fontWeight: 900, color: accent }}>
-                                      {average.toFixed(2)}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      /5
-                                    </Typography>
-                                  </Box>
-                                </Stack>
-                                <Stack
-                                  direction="row"
-                                  spacing={1}
-                                  alignItems="center"
-                                  sx={{ mt: 0.8 }}
-                                >
-                                  <ScoreBar score={average} color={accent} />
-                                  <Typography variant="caption" color="text.secondary">
-                                    {Math.round(((average - 1) / 4) * 100)}%
-                                  </Typography>
-                                </Stack>
-                              </Box>
-                              <Typography sx={{ color: alpha(theme.palette.text.secondary, 0.8) }}>
-                                {isExpanded ? "▲" : "▼"}
-                              </Typography>
-                            </Stack>
-
-                            {isExpanded && (
-                              <Box
-                                sx={{
-                                  mt: 0.5,
-                                  pt: 1.2,
-                                  borderTop: `1px solid ${alpha(theme.palette.divider, 0.9)}`,
-                                }}
-                              >
-                                <Stack spacing={0.75}>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Total Score: {item.total_score}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Questions: {item.question_count}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Average Score: {average.toFixed(2)}
-                                  </Typography>
-                                </Stack>
-                              </Box>
-                            )}
-                          </Stack>
-                        </Paper>
-                      </Grid>
-                    );
-                  })}
-                </Grid>
-
-                <Paper
+              <Paper
+                elevation={0}
+                sx={{
+                  borderRadius: 3,
+                  overflow: "hidden",
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
+                  bgcolor: getSurfaceBackground(theme),
+                }}
+              >
+                <Box
                   sx={{
-                    mt: 2.5,
-                    p: { xs: 2, sm: 2.5 },
-                    borderRadius: 3,
-                    border: `1px solid ${alpha(theme.palette.success.main, 0.16)}`,
-                    bgcolor: alpha(theme.palette.success.main, 0.04),
+                    p: { xs: 2.25, sm: 3 },
+                    backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 55%, ${theme.palette.success.main} 100%)`,
                   }}
                 >
-                  <Typography sx={{ fontWeight: 850, color: theme.palette.success.main, mb: 1.5 }}>
-                    Wellness Index Breakdown
-                  </Typography>
-                  <Stack spacing={1.1}>
+                  <Stack
+                    direction={{ xs: "column", md: "row" }}
+                    justifyContent="space-between"
+                    spacing={2}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        variant="overline"
+                        sx={{
+                          letterSpacing: 1.2,
+                          color: alpha("#fff", 0.7),
+                        }}
+                      >
+                        {selectedSession.title}
+                      </Typography>
+                      <Typography
+                        variant="h4"
+                        sx={{
+                          fontWeight: 900,
+                          color: "#fff",
+                          lineHeight: 1.05,
+                          mt: 0.5,
+                        }}
+                      >
+                        Wellness Check-in
+                      </Typography>
+                      <Typography sx={{ color: alpha("#fff", 0.75), mt: 0.8 }}>
+                        Submitted{" "}
+                        {formatDateTimeIST(selectedResponse?.submitted_at)}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ textAlign: { xs: "left", md: "right" } }}>
+                      <Typography
+                        sx={{ fontSize: 12, color: alpha("#fff", 0.75) }}
+                      >
+                        Wellness Index
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: { xs: 48, sm: 58 },
+                          fontWeight: 900,
+                          color: "#fff",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {selectedScore}
+                      </Typography>
+                      <Typography sx={{ color: alpha("#fff", 0.85), mt: 0.6 }}>
+                        {selectedTone.label}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Box sx={{ mt: 2.5 }}>
+                    <Box
+                      sx={{
+                        height: 6,
+                        borderRadius: 999,
+                        bgcolor: alpha("#fff", 0.18),
+                        overflow: "hidden",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          height: "100%",
+                          width: `${Math.max(4, selectedScorePct)}%`,
+                          borderRadius: 999,
+                          bgcolor: alpha("#fff", 0.92),
+                        }}
+                      />
+                    </Box>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        mt: 0.6,
+                        fontSize: 11,
+                        color: alpha("#fff", 0.65),
+                      }}
+                    >
+                      <span>0</span>
+                      <span>40 Moderate</span>
+                      <span>60 Good</span>
+                      <span>80 Excellent</span>
+                      <span>100</span>
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Box sx={{ p: { xs: 2.25, sm: 3 } }}>
+                  <Grid container spacing={1.5}>
                     {selectedBreakdown.map((item, index) => {
+                      const isExpanded = expandedKpiKey === item.kpi_key;
                       const accent = [
                         theme.palette.info.main,
                         theme.palette.warning.main,
@@ -685,365 +605,578 @@ export default function MyResponses() {
                         theme.palette.secondary.main,
                       ][index % 5];
                       const average = Number(item.average_score || 0);
-                      const contribution = (average / 5) * (item.total_score || 0);
 
                       return (
-                        <Stack
-                          key={`${item.kpi_key}-breakdown`}
-                          direction={{ xs: "column", sm: "row" }}
-                          spacing={1.25}
-                          alignItems={{ sm: "center" }}
+                        <Grid
+                          key={item.kpi_key}
+                          size={{ xs: 12, md: 6, xl: 4 }}
                         >
-                          <Box sx={{ width: { xs: "100%", sm: 120 }, flexShrink: 0 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                              {item.kpi_name}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ flex: 1 }}>
-                            <ScoreBar score={average} color={accent} />
-                          </Box>
-                          <Typography variant="body2" color="text.secondary" sx={{ minWidth: 90, textAlign: { sm: "center" } }}>
-                            {average.toFixed(2)} / 5
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ minWidth: 70, textAlign: "right", fontWeight: 800, color: accent }}
+                          <Paper
+                            variant="outlined"
+                            onClick={() =>
+                              setExpandedKpiKey(
+                                isExpanded ? null : item.kpi_key,
+                              )
+                            }
+                            sx={{
+                              p: 1.75,
+                              borderRadius: 3,
+                              height: "100%",
+                              cursor: "pointer",
+                              borderColor: isExpanded
+                                ? alpha(accent, 0.45)
+                                : alpha(theme.palette.primary.main, 0.12),
+                              bgcolor: alpha(theme.palette.common.white, 0.02),
+                            }}
                           >
-                            +{contribution.toFixed(1)}
-                          </Typography>
-                        </Stack>
+                            <Stack spacing={1.25}>
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={1}
+                              >
+                                <Box
+                                  sx={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: 2,
+                                    display: "grid",
+                                    placeItems: "center",
+                                    color: accent,
+                                    bgcolor: alpha(accent, 0.12),
+                                  }}
+                                >
+                                  {getKpiIcon(index)}
+                                </Box>
+                                <Box sx={{ minWidth: 0, flex: 1 }}>
+                                  <Stack
+                                    direction="row"
+                                    justifyContent="space-between"
+                                    spacing={1}
+                                    alignItems="center"
+                                  >
+                                    <Typography sx={{ fontWeight: 850 }}>
+                                      {item.kpi_name}
+                                    </Typography>
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "baseline",
+                                        gap: 0.5,
+                                      }}
+                                    >
+                                      <Typography
+                                        sx={{ fontWeight: 900, color: accent }}
+                                      >
+                                        {average.toFixed(2)}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        /5
+                                      </Typography>
+                                    </Box>
+                                  </Stack>
+                                  <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    alignItems="center"
+                                    sx={{ mt: 0.8 }}
+                                  >
+                                    <ScoreBar score={average} color={accent} />
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {Math.round(((average - 1) / 4) * 100)}%
+                                    </Typography>
+                                  </Stack>
+                                </Box>
+                                <Typography
+                                  sx={{
+                                    color: alpha(
+                                      theme.palette.text.secondary,
+                                      0.8,
+                                    ),
+                                  }}
+                                >
+                                  {isExpanded ? "▲" : "▼"}
+                                </Typography>
+                              </Stack>
+
+                              {isExpanded && (
+                                <Box
+                                  sx={{
+                                    mt: 0.5,
+                                    pt: 1.2,
+                                    borderTop: `1px solid ${alpha(theme.palette.divider, 0.9)}`,
+                                  }}
+                                >
+                                  <Stack spacing={0.75}>
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Total Score: {item.total_score}
+                                    </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Questions: {item.question_count}
+                                    </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Average Score: {average.toFixed(2)}
+                                    </Typography>
+                                  </Stack>
+                                </Box>
+                              )}
+                            </Stack>
+                          </Paper>
+                        </Grid>
                       );
                     })}
-                  </Stack>
-                  <Box
+                  </Grid>
+
+                  <Paper
                     sx={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      alignItems: "baseline",
-                      gap: 1,
-                      mt: 2,
+                      mt: 2.5,
+                      p: { xs: 2, sm: 2.5 },
+                      borderRadius: 3,
+                      border: `1px solid ${alpha(theme.palette.success.main, 0.16)}`,
+                      bgcolor: alpha(theme.palette.success.main, 0.04),
                     }}
                   >
-                    <Typography variant="body2" color="text.secondary">
-                      Wellness Index =
+                    <Typography
+                      sx={{
+                        fontWeight: 850,
+                        color: theme.palette.success.main,
+                        mb: 1.5,
+                      }}
+                    >
+                      Wellness Index Breakdown
                     </Typography>
-                    <Typography sx={{ fontSize: 28, fontWeight: 900, color: theme.palette.success.main }}>
-                      {selectedScore.toFixed(1)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      / 100
-                    </Typography>
-                  </Box>
-                </Paper>
-              </Box>
-            </Paper>
-          </Stack>
-        )}
+                    <Stack spacing={1.1}>
+                      {selectedBreakdown.map((item, index) => {
+                        const accent = [
+                          theme.palette.info.main,
+                          theme.palette.warning.main,
+                          theme.palette.success.main,
+                          theme.palette.primary.main,
+                          theme.palette.secondary.main,
+                        ][index % 5];
+                        const average = Number(item.average_score || 0);
+                        const contribution =
+                          (average / 5) * (item.total_score || 0);
 
-        {visibleTab === "submitted" && !mySubmissionsLoading &&
+                        return (
+                          <Stack
+                            key={`${item.kpi_key}-breakdown`}
+                            direction={{ xs: "column", sm: "row" }}
+                            spacing={1.25}
+                            alignItems={{ sm: "center" }}
+                          >
+                            <Box
+                              sx={{
+                                width: { xs: "100%", sm: 120 },
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 700 }}
+                              >
+                                {item.kpi_name}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ flex: 1 }}>
+                              <ScoreBar score={average} color={accent} />
+                            </Box>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ minWidth: 90, textAlign: { sm: "center" } }}
+                            >
+                              {average.toFixed(2)} / 5
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                minWidth: 70,
+                                textAlign: "right",
+                                fontWeight: 800,
+                                color: accent,
+                              }}
+                            >
+                              +{contribution.toFixed(1)}
+                            </Typography>
+                          </Stack>
+                        );
+                      })}
+                    </Stack>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "baseline",
+                        gap: 1,
+                        mt: 2,
+                      }}
+                    >
+                      <Typography variant="body2" color="text.secondary">
+                        Wellness Index =
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: 28,
+                          fontWeight: 900,
+                          color: theme.palette.success.main,
+                        }}
+                      >
+                        {selectedScore}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        / 100
+                      </Typography>
+                    </Box>
+                  </Paper>
+                </Box>
+              </Paper>
+            </Stack>
+          )}
+
+        {visibleTab === "submitted" &&
+          !mySubmissionsLoading &&
           mySubmissions.map((session) => {
             const latestResponse = session.responses?.[0];
-            const latestScore = Number(latestResponse?.total_score || 0);
+            const latestScore = Number(latestResponse?.weighted_index || 0);
+            console.log(typeof latestScore);
+            console.log(
+              "latestResponse?.weighted_index  ===>>",
+              latestResponse.weighted_index,
+            );
+
             const scoreTone = getScoreTone(latestScore, theme);
-            const progress = Math.max(4, Math.min(100, latestScore));
+            const progress = Math.max(
+              4,
+              Math.min(100, (latestScore / 5) * 100),
+            );
             const isSelected = selectedSessionId === session.session_id;
 
             return (
-            <Paper
-              key={session.session_id}
-              elevation={0}
-              sx={{
-                p: { xs: 2, sm: 2.5 },
-                borderRadius: 3,
-                border: `1px solid ${isSelected ? alpha(theme.palette.primary.main, 0.32) : alpha(theme.palette.primary.main, 0.12)}`,
-                bgcolor: getSurfaceBackground(theme),
-                backgroundImage: isSelected
-                  ? `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.08)} 0%, ${alpha(theme.palette.primary.main, 0.06)} 100%)`
-                  : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 45%)`,
-                boxShadow: isSelected ? `0 12px 28px ${alpha(theme.palette.primary.main, 0.14)}` : "none",
-                overflow: "hidden",
-                transition: "all 0.2s ease",
-                cursor: "pointer",
-              }}
-              onClick={() => {
-                setSelectedSessionId(isSelected ? null : session.session_id);
-                setExpandedKpiKey(null);
-              }}
-            >
-              <Stack spacing={2}>
-                <Stack
-                  direction={{ xs: "column", md: "row" }}
-                  justifyContent="space-between"
-                  spacing={1.5}
-                  alignItems={{ md: "flex-start" }}
-                >
-                  <Box sx={{ minWidth: 0 }}>
-                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                      <Chip
-                        label="SUBMITTED"
-                        size="small"
-                        icon={<CheckCircleRoundedIcon fontSize="inherit" />}
-                        sx={{
-                          width: "fit-content",
-                          fontWeight: 800,
-                          bgcolor: alpha(theme.palette.success.main, 0.14),
-                          color: theme.palette.success.main,
-                          border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
-                        }}
-                      />
-                      <Typography variant="body2" color="text.secondary">
-                        {session.responses.length} submission{session.responses.length === 1 ? "" : "s"}
-                        {latestResponse?.submitted_at ? ` - Latest ${formatDateTime(latestResponse.submitted_at)}` : ""}
-                      </Typography>
-                    </Stack>
-                    <Typography variant="h6" sx={{ fontWeight: 850, mt: 1 }}>
-                      {session.title}
-                    </Typography>
-                    <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                      {session.description || "No description provided."}
-                    </Typography>
-                  </Box>
-
-                <Stack alignItems={{ xs: "flex-start", md: "flex-end" }} spacing={0.75} sx={{ flexShrink: 0 }}>
-                  <Typography sx={{ fontSize: { xs: 40, sm: 48 }, lineHeight: 1, fontWeight: 900, color: scoreTone.color }}>
-                    {latestScore.toFixed(1)}
-                  </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        px: 1.15,
-                        py: 0.4,
-                        borderRadius: 999,
-                        bgcolor: scoreTone.bg,
-                        color: scoreTone.color,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {scoreTone.label}
-                    </Typography>
-                    <Button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setSelectedSessionId(isSelected ? null : session.session_id);
-                        setExpandedKpiKey(null);
-                      }}
-                      variant="text"
-                      sx={{
-                        minWidth: 0,
-                        px: 0.75,
-                        py: 0.25,
-                        color: theme.palette.primary.main,
-                        fontWeight: 800,
-                      }}
-                    >
-                      {isSelected ? "Collapse" : "Expand"}
-                    </Button>
-                  </Stack>
-                </Stack>
-
-                {!!latestResponse?.kpi_scores?.length && (
-                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ rowGap: 1 }}>
-                    {latestResponse.kpi_scores.map((item, index) => (
-                      <Chip
-                        key={item.kpi_key}
-                        icon={
-                          <Box component="span" sx={{ display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: theme.palette.primary.main }}>
-                            {getKpiIcon(index)}
-                          </Box>
-                        }
-                        label={`${item.kpi_name} ${Number(item.average_score || 0).toFixed(1)}`}
-                        size="small"
-                        sx={{
-                          bgcolor: alpha(theme.palette.primary.main, 0.08),
-                          color: "text.primary",
-                          border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
-                          fontWeight: 700,
-                        }}
-                      />
-                    ))}
-                  </Stack>
-                )}
-
-                <Stack direction="row" spacing={1.5} alignItems="center">
-                  <Typography variant="body2" color="text.secondary">Response score</Typography>
-                  <Box sx={{ flex: 1, minWidth: 120 }}>
-                    <Box sx={{ height: 6, borderRadius: 999, bgcolor: alpha(theme.palette.text.primary, 0.08), overflow: "hidden" }}>
-                      <Box sx={{ height: "100%", width: `${progress}%`, borderRadius: 999, background: `linear-gradient(90deg, ${theme.palette.success.main}, ${scoreTone.color})` }} />
-                    </Box>
-                  </Box>
-                  <Typography variant="body2" sx={{ color: scoreTone.color, fontWeight: 800 }}>
-                    {latestScore.toFixed(1)}
-                  </Typography>
-                </Stack>
-
-                {isSelected && (
-                  <Box
-                    sx={{
-                      mt: 1,
-                      pt: 2,
-                      borderTop: `1px solid ${alpha(theme.palette.divider, 0.9)}`,
-                    }}
+              <Paper
+                key={session.session_id}
+                elevation={0}
+                sx={{
+                  p: { xs: 2, sm: 2.5 },
+                  borderRadius: 3,
+                  border: `1px solid ${isSelected ? alpha(theme.palette.primary.main, 0.32) : alpha(theme.palette.primary.main, 0.12)}`,
+                  bgcolor: getSurfaceBackground(theme),
+                  backgroundImage: isSelected
+                    ? `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.08)} 0%, ${alpha(theme.palette.primary.main, 0.06)} 100%)`
+                    : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 45%)`,
+                  boxShadow: isSelected
+                    ? `0 12px 28px ${alpha(theme.palette.primary.main, 0.14)}`
+                    : "none",
+                  overflow: "hidden",
+                  transition: "all 0.2s ease",
+                  cursor: "pointer",
+                }}
+                onClick={() => {
+                  setSelectedSessionId(isSelected ? null : session.session_id);
+                  setExpandedKpiKey(null);
+                }}
+              >
+                <Stack spacing={2}>
+                  <Stack
+                    direction={{ xs: "column", md: "row" }}
+                    justifyContent="space-between"
+                    spacing={1.5}
+                    alignItems={{ md: "flex-start" }}
                   >
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        overflow: "hidden",
-                        borderRadius: 3,
-                        border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
-                        bgcolor: getSurfaceBackground(theme),
-                      }}
+                    <Box sx={{ minWidth: 0 }}>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        flexWrap="wrap"
+                        useFlexGap
+                      >
+                        <Chip
+                          label="SUBMITTED"
+                          size="small"
+                          icon={<CheckCircleRoundedIcon fontSize="inherit" />}
+                          sx={{
+                            width: "fit-content",
+                            fontWeight: 800,
+                            bgcolor: alpha(theme.palette.success.main, 0.14),
+                            color: theme.palette.success.main,
+                            border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                          }}
+                        />
+                        <Typography variant="body2" color="text.secondary">
+                          {session.responses.length} submission
+                          {session.responses.length === 1 ? "" : "s"}
+                          {latestResponse?.submitted_at
+                            ? ` - Latest ${formatDateTimeIST(latestResponse.submitted_at)}`
+                            : ""}
+                        </Typography>
+                      </Stack>
+                      <Typography variant="h6" sx={{ fontWeight: 850, mt: 1 }}>
+                        {session.title}
+                      </Typography>
+                      <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                        {session.description || "No description provided."}
+                      </Typography>
+                    </Box>
+
+                    <Stack
+                      alignItems={{ xs: "flex-start", md: "flex-end" }}
+                      spacing={0.75}
+                      sx={{ flexShrink: 0 }}
                     >
-                      <Box
+                      <Typography
                         sx={{
-                          p: { xs: 2.25, sm: 3 },
-                          backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 55%, ${theme.palette.success.main} 100%)`,
+                          fontSize: { xs: 40, sm: 48 },
+                          lineHeight: 1,
+                          fontWeight: 900,
+                          color: scoreTone.color,
                         }}
                       >
-                        <Stack
-                          direction={{ xs: "column", md: "row" }}
-                          justifyContent="space-between"
-                          spacing={2}
-                        >
-                          <Box sx={{ minWidth: 0 }}>
-                            <Typography
-                              variant="overline"
-                              sx={{ letterSpacing: 1.2, color: alpha("#fff", 0.7) }}
-                            >
-                              {session.title}
-                            </Typography>
-                            <Typography
-                              variant="h4"
-                              sx={{ fontWeight: 900, color: "#fff", lineHeight: 1.05, mt: 0.5 }}
-                            >
-                              Wellness Check-in
-                            </Typography>
-                            <Typography sx={{ color: alpha("#fff", 0.75), mt: 0.8 }}>
-                              Submitted {formatDateTime(latestResponse?.submitted_at)}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ textAlign: { xs: "left", md: "right" } }}>
-                            <Typography sx={{ fontSize: 12, color: alpha("#fff", 0.75) }}>
-                              Wellness Index
-                            </Typography>
-                            <Typography
-                              sx={{
-                                fontSize: { xs: 48, sm: 58 },
-                                fontWeight: 900,
-                                color: "#fff",
-                                lineHeight: 1,
-                              }}
-                            >
-                              {latestScore.toFixed(1)}
-                            </Typography>
-                            <Typography sx={{ color: alpha("#fff", 0.85), mt: 0.6 }}>
-                              {scoreTone.label}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                        <Box sx={{ mt: 2.5 }}>
-                          <Box sx={{ height: 6, borderRadius: 999, bgcolor: alpha("#fff", 0.18), overflow: "hidden" }}>
+                        {latestScore}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          px: 1.15,
+                          py: 0.4,
+                          borderRadius: 999,
+                          bgcolor: scoreTone.bg,
+                          color: scoreTone.color,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {scoreTone.label}
+                      </Typography>
+                      <Button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedSessionId(
+                            isSelected ? null : session.session_id,
+                          );
+                          setExpandedKpiKey(null);
+                        }}
+                        variant="text"
+                        sx={{
+                          minWidth: 0,
+                          px: 0.75,
+                          py: 0.25,
+                          color: theme.palette.primary.main,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {isSelected ? "Collapse" : "Expand"}
+                      </Button>
+                    </Stack>
+                  </Stack>
+
+                  {!!latestResponse?.kpi_scores?.length && (
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      useFlexGap
+                      flexWrap="wrap"
+                      sx={{ rowGap: 1 }}
+                    >
+                      {latestResponse.kpi_scores.map((item, index) => (
+                        <Chip
+                          key={item.kpi_key}
+                          icon={
                             <Box
+                              component="span"
                               sx={{
-                                height: "100%",
-                                width: `${progress}%`,
-                                borderRadius: 999,
-                                bgcolor: alpha("#fff", 0.92),
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 15,
+                                color: theme.palette.primary.main,
                               }}
-                            />
-                          </Box>
-                          <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0.6, fontSize: 11, color: alpha("#fff", 0.65) }}>
-                            <span>0</span>
-                            <span>40 Moderate</span>
-                            <span>60 Good</span>
-                            <span>80 Excellent</span>
-                            <span>100</span>
-                          </Box>
-                        </Box>
-                      </Box>
-
-                      <Box sx={{ p: { xs: 2.25, sm: 3 } }}>
-                        <Grid container spacing={1.5}>
-                          {latestResponse?.kpi_scores?.map((item, index) => {
-                            const accent = [
-                              theme.palette.info.main,
-                              theme.palette.warning.main,
-                              theme.palette.success.main,
-                              theme.palette.primary.main,
-                              theme.palette.secondary.main,
-                            ][index % 5];
-                            const average = Number(item.average_score || 0);
-                            return (
-                              <Grid key={item.kpi_key} size={{ xs: 12, md: 6, xl: 4 }}>
-                                <Paper
-                                  variant="outlined"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setExpandedKpiKey(expandedKpiKey === item.kpi_key ? null : item.kpi_key);
-                                  }}
-                                  sx={{
-                                    p: 1.6,
-                                    borderRadius: 3,
-                                    height: "100%",
-                                    cursor: "pointer",
-                                    borderColor: expandedKpiKey === item.kpi_key
-                                      ? alpha(accent, 0.45)
-                                      : alpha(theme.palette.primary.main, 0.12),
-                                    bgcolor: alpha(theme.palette.common.white, 0.02),
-                                  }}
-                                >
-                                  <Stack spacing={1}>
-                                    <Stack direction="row" alignItems="center" spacing={1}>
-                                      <Box sx={{ width: 36, height: 36, borderRadius: 2, display: "grid", placeItems: "center", color: accent, bgcolor: alpha(accent, 0.12) }}>
-                                        {getKpiIcon(index)}
-                                      </Box>
-                                      <Box sx={{ minWidth: 0, flex: 1 }}>
-                                        <Stack direction="row" justifyContent="space-between" spacing={1} alignItems="center">
-                                          <Typography sx={{ fontWeight: 850 }}>{item.kpi_name}</Typography>
-                                          <Typography sx={{ fontWeight: 900, color: accent }}>
-                                            {average.toFixed(2)}
-                                          </Typography>
-                                        </Stack>
-                                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.8 }}>
-                                          <ScoreBar score={average} color={accent} />
-                                          <Typography variant="caption" color="text.secondary">
-                                            {Math.round(((average - 1) / 4) * 100)}%
-                                          </Typography>
-                                        </Stack>
-                                      </Box>
-                                    </Stack>
-                                    {expandedKpiKey === item.kpi_key && (
-                                      <Stack spacing={0.6} sx={{ pt: 1, borderTop: `1px solid ${alpha(theme.palette.divider, 0.9)}` }}>
-                                        <Typography variant="body2" color="text.secondary">
-                                          Total Score: {item.total_score}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                          Questions: {item.question_count}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                          Average Score: {average.toFixed(2)}
-                                        </Typography>
-                                      </Stack>
-                                    )}
-                                  </Stack>
-                                </Paper>
-                              </Grid>
-                            );
-                          })}
-                        </Grid>
-
-                        <Paper
+                            >
+                              {getKpiIcon(index)}
+                            </Box>
+                          }
+                          label={`${item.kpi_name} ${Number(item.average_score || 0).toFixed(1)}`}
+                          size="small"
                           sx={{
-                            mt: 2.5,
-                            p: { xs: 2, sm: 2.5 },
-                            borderRadius: 3,
-                            border: `1px solid ${alpha(theme.palette.success.main, 0.16)}`,
-                            bgcolor: alpha(theme.palette.success.main, 0.04),
+                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            color: "text.primary",
+                            border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
+                            fontWeight: 700,
+                          }}
+                        />
+                      ))}
+                    </Stack>
+                  )}
+
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Typography variant="body2" color="text.secondary">
+                      Response score
+                    </Typography>
+                    <Box sx={{ flex: 1, minWidth: 120 }}>
+                      <Box
+                        sx={{
+                          height: 6,
+                          borderRadius: 999,
+                          bgcolor: alpha(theme.palette.text.primary, 0.08),
+                          overflow: "hidden",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            height: "100%",
+                            width: `${progress}%`,
+                            borderRadius: 999,
+                            background: `linear-gradient(90deg, ${theme.palette.success.main}, ${scoreTone.color})`,
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: scoreTone.color, fontWeight: 800 }}
+                    >
+                      {latestScore}
+                    </Typography>
+                  </Stack>
+
+                  {isSelected && (
+                    <Box
+                      sx={{
+                        mt: 1,
+                        pt: 2,
+                        borderTop: `1px solid ${alpha(theme.palette.divider, 0.9)}`,
+                      }}
+                    >
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          overflow: "hidden",
+                          borderRadius: 3,
+                          border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
+                          bgcolor: getSurfaceBackground(theme),
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            p: { xs: 2.25, sm: 3 },
+                            backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 55%, ${theme.palette.success.main} 100%)`,
                           }}
                         >
-                          <Typography sx={{ fontWeight: 850, color: theme.palette.success.main, mb: 1.5 }}>
-                            Wellness Index Breakdown
-                          </Typography>
-                          <Stack spacing={1.1}>
+                          <Stack
+                            direction={{ xs: "column", md: "row" }}
+                            justifyContent="space-between"
+                            spacing={2}
+                          >
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography
+                                variant="overline"
+                                sx={{
+                                  letterSpacing: 1.2,
+                                  color: alpha("#fff", 0.7),
+                                }}
+                              >
+                                {session.title}
+                              </Typography>
+                              <Typography
+                                variant="h4"
+                                sx={{
+                                  fontWeight: 900,
+                                  color: "#fff",
+                                  lineHeight: 1.05,
+                                  mt: 0.5,
+                                }}
+                              >
+                                Wellness Check-in
+                              </Typography>
+                              <Typography
+                                sx={{ color: alpha("#fff", 0.75), mt: 0.8 }}
+                              >
+                                Submitted{" "}
+                                {formatDateTimeIST(
+                                  latestResponse?.submitted_at,
+                                )}
+                              </Typography>
+                            </Box>
+                            <Box
+                              sx={{ textAlign: { xs: "left", md: "right" } }}
+                            >
+                              <Typography
+                                sx={{
+                                  fontSize: 12,
+                                  color: alpha("#fff", 0.75),
+                                }}
+                              >
+                                Wellness Index
+                              </Typography>
+                              <Typography
+                                sx={{
+                                  fontSize: { xs: 48, sm: 58 },
+                                  fontWeight: 900,
+                                  color: "#fff",
+                                  lineHeight: 1,
+                                }}
+                              >
+                                {latestScore}
+                              </Typography>
+                              <Typography
+                                sx={{ color: alpha("#fff", 0.85), mt: 0.6 }}
+                              >
+                                {scoreTone.label}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                          <Box sx={{ mt: 2.5 }}>
+                            <Box
+                              sx={{
+                                height: 6,
+                                borderRadius: 999,
+                                bgcolor: alpha("#fff", 0.18),
+                                overflow: "hidden",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  height: "100%",
+                                  width: `${progress}%`,
+                                  borderRadius: 999,
+                                  bgcolor: alpha("#fff", 0.92),
+                                }}
+                              />
+                            </Box>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                mt: 0.6,
+                                fontSize: 11,
+                                color: alpha("#fff", 0.65),
+                              }}
+                            >
+                              <span>0</span>
+                              <span>40 Moderate</span>
+                              <span>60 Good</span>
+                              <span>80 Excellent</span>
+                              <span>100</span>
+                            </Box>
+                          </Box>
+                        </Box>
+
+                        <Box sx={{ p: { xs: 2.25, sm: 3 } }}>
+                          <Grid container spacing={1.5}>
                             {latestResponse?.kpi_scores?.map((item, index) => {
                               const accent = [
                                 theme.palette.info.main,
@@ -1053,168 +1186,409 @@ export default function MyResponses() {
                                 theme.palette.secondary.main,
                               ][index % 5];
                               const average = Number(item.average_score || 0);
-                              const contribution = (average / 5) * (item.total_score || 0);
                               return (
-                                <Stack key={`${item.kpi_key}-breakdown`} direction={{ xs: "column", sm: "row" }} spacing={1.25} alignItems={{ sm: "center" }}>
-                                  <Box sx={{ width: { xs: "100%", sm: 120 }, flexShrink: 0 }}>
-                                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                                      {item.kpi_name}
-                                    </Typography>
-                                  </Box>
-                                  <Box sx={{ flex: 1 }}>
-                                    <ScoreBar score={average} color={accent} />
-                                  </Box>
-                                  <Typography variant="body2" color="text.secondary" sx={{ minWidth: 90, textAlign: { sm: "center" } }}>
-                                    {average.toFixed(2)} / 5
-                                  </Typography>
-                                  <Typography variant="body2" sx={{ minWidth: 70, textAlign: "right", fontWeight: 800, color: accent }}>
-                                    +{contribution.toFixed(1)}
-                                  </Typography>
-                                </Stack>
+                                <Grid
+                                  key={item.kpi_key}
+                                  size={{ xs: 12, md: 6, xl: 4 }}
+                                >
+                                  <Paper
+                                    variant="outlined"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      setExpandedKpiKey(
+                                        expandedKpiKey === item.kpi_key
+                                          ? null
+                                          : item.kpi_key,
+                                      );
+                                    }}
+                                    sx={{
+                                      p: 1.6,
+                                      borderRadius: 3,
+                                      height: "100%",
+                                      cursor: "pointer",
+                                      borderColor:
+                                        expandedKpiKey === item.kpi_key
+                                          ? alpha(accent, 0.45)
+                                          : alpha(
+                                              theme.palette.primary.main,
+                                              0.12,
+                                            ),
+                                      bgcolor: alpha(
+                                        theme.palette.common.white,
+                                        0.02,
+                                      ),
+                                    }}
+                                  >
+                                    <Stack spacing={1}>
+                                      <Stack
+                                        direction="row"
+                                        alignItems="center"
+                                        spacing={1}
+                                      >
+                                        <Box
+                                          sx={{
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: 2,
+                                            display: "grid",
+                                            placeItems: "center",
+                                            color: accent,
+                                            bgcolor: alpha(accent, 0.12),
+                                          }}
+                                        >
+                                          {getKpiIcon(index)}
+                                        </Box>
+                                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                                          <Stack
+                                            direction="row"
+                                            justifyContent="space-between"
+                                            spacing={1}
+                                            alignItems="center"
+                                          >
+                                            <Typography
+                                              sx={{ fontWeight: 850 }}
+                                            >
+                                              {item.kpi_name}
+                                            </Typography>
+                                            <Typography
+                                              sx={{
+                                                fontWeight: 900,
+                                                color: accent,
+                                              }}
+                                            >
+                                              {average.toFixed(2)}
+                                            </Typography>
+                                          </Stack>
+                                          <Stack
+                                            direction="row"
+                                            spacing={1}
+                                            alignItems="center"
+                                            sx={{ mt: 0.8 }}
+                                          >
+                                            <ScoreBar
+                                              score={average}
+                                              color={accent}
+                                            />
+                                            <Typography
+                                              variant="caption"
+                                              color="text.secondary"
+                                            >
+                                              {Math.round(
+                                                ((average - 1) / 4) * 100,
+                                              )}
+                                              %
+                                            </Typography>
+                                          </Stack>
+                                        </Box>
+                                      </Stack>
+                                      {expandedKpiKey === item.kpi_key && (
+                                        <Stack
+                                          spacing={0.6}
+                                          sx={{
+                                            pt: 1,
+                                            borderTop: `1px solid ${alpha(theme.palette.divider, 0.9)}`,
+                                          }}
+                                        >
+                                          <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                          >
+                                            Total Score: {item.total_score}
+                                          </Typography>
+                                          <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                          >
+                                            Questions: {item.question_count}
+                                          </Typography>
+                                          <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                          >
+                                            Average Score: {average.toFixed(2)}
+                                          </Typography>
+                                        </Stack>
+                                      )}
+                                    </Stack>
+                                  </Paper>
+                                </Grid>
                               );
                             })}
-                          </Stack>
-                          <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline", gap: 1, mt: 2 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Wellness Index =
-                            </Typography>
-                            <Typography sx={{ fontSize: 28, fontWeight: 900, color: theme.palette.success.main }}>
-                              {latestScore.toFixed(1)}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              / 100
-                            </Typography>
-                          </Box>
-                        </Paper>
-                      </Box>
-                    </Paper>
-                  </Box>
-                )}
+                          </Grid>
 
-                <Collapse in={false}>
-                  <Stack spacing={2} sx={{ pt: 1 }}>
-                    {session.responses.map((response, responseIndex) => (
-                      <Paper
-                        key={response.response_id}
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: 3 }}
-                      >
-                        <Stack spacing={2}>
-                          <Stack
-                            direction={{ xs: "column", md: "row" }}
-                            justifyContent="space-between"
-                            spacing={1.5}
+                          <Paper
+                            sx={{
+                              mt: 2.5,
+                              p: { xs: 2, sm: 2.5 },
+                              borderRadius: 3,
+                              border: `1px solid ${alpha(theme.palette.success.main, 0.16)}`,
+                              bgcolor: alpha(theme.palette.success.main, 0.04),
+                            }}
                           >
-                            <Box>
-                              <Typography sx={{ fontWeight: 700 }}>
-                                Submission {responseIndex + 1}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {response.employee_email || "-"}
-                              </Typography>
-                            </Box>
-                            <Stack
-                              direction={{ xs: "column", sm: "row" }}
-                              spacing={1}
-                              useFlexGap
-                              flexWrap="wrap"
+                            <Typography
+                              sx={{
+                                fontWeight: 850,
+                                color: theme.palette.success.main,
+                                mb: 1.5,
+                              }}
                             >
-                              <Chip
-                                label={`Submitted: ${formatDateTime(response.submitted_at)}`}
-                                variant="outlined"
-                              />
-                              <Chip
-                                label={`Total Score: ${response.total_score}`}
-                                color="primary"
-                              />
-                            </Stack>
-                          </Stack>
-
-                          {!!response.kpi_scores.length && (
-                            <Box>
-                              <Typography sx={{ fontWeight: 700, mb: 1.2 }}>
-                                KPI Scores
-                              </Typography>
-                              <Grid container spacing={1.25}>
-                                {response.kpi_scores.map((item) => (
-                                  <Grid key={item.kpi_key} size={{ xs: 12, md: 6, xl: 4 }}>
-                                    <Paper
-                                      variant="outlined"
-                                      sx={{ p: 1.5, borderRadius: 2.5, height: "100%" }}
+                              Wellness Index Breakdown
+                            </Typography>
+                            <Stack spacing={1.1}>
+                              {latestResponse?.kpi_scores?.map(
+                                (item, index) => {
+                                  const accent = [
+                                    theme.palette.info.main,
+                                    theme.palette.warning.main,
+                                    theme.palette.success.main,
+                                    theme.palette.primary.main,
+                                    theme.palette.secondary.main,
+                                  ][index % 5];
+                                  const average = Number(
+                                    item.average_score || 0,
+                                  );
+                                  const contribution =
+                                    (average / 5) * (item.total_score || 0);
+                                  return (
+                                    <Stack
+                                      key={`${item.kpi_key}-breakdown`}
+                                      direction={{ xs: "column", sm: "row" }}
+                                      spacing={1.25}
+                                      alignItems={{ sm: "center" }}
                                     >
-                                      <Typography sx={{ fontWeight: 700 }}>
-                                        {item.kpi_name}
-                                      </Typography>
+                                      <Box
+                                        sx={{
+                                          width: { xs: "100%", sm: 120 },
+                                          flexShrink: 0,
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ fontWeight: 700 }}
+                                        >
+                                          {item.kpi_name}
+                                        </Typography>
+                                      </Box>
+                                      <Box sx={{ flex: 1 }}>
+                                        <ScoreBar
+                                          score={average}
+                                          color={accent}
+                                        />
+                                      </Box>
                                       <Typography
                                         variant="body2"
                                         color="text.secondary"
-                                        sx={{ mt: 0.6 }}
+                                        sx={{
+                                          minWidth: 90,
+                                          textAlign: { sm: "center" },
+                                        }}
                                       >
-                                        Total Score: {item.total_score}
+                                        {average.toFixed(2)} / 5
                                       </Typography>
-                                      <Typography variant="body2" color="text.secondary">
-                                        Questions: {item.question_count}
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          minWidth: 70,
+                                          textAlign: "right",
+                                          fontWeight: 800,
+                                          color: accent,
+                                        }}
+                                      >
+                                        +{contribution.toFixed(1)}
                                       </Typography>
-                                      <Typography variant="body2" color="text.secondary">
-                                        Average Score: {item.average_score}
-                                      </Typography>
-                                    </Paper>
-                                  </Grid>
-                                ))}
-                              </Grid>
-                            </Box>
-                          )}
-
-                          <Divider />
-
-                          <Box>
-                            <Typography sx={{ fontWeight: 700, mb: 1.2 }}>
-                              Answered Questions
-                            </Typography>
-                            <Stack spacing={1.25}>
-                              {response.questions.map((question, index) => (
-                                <Paper
-                                  key={`${response.response_id}-${question.question_code}-${index}`}
-                                  variant="outlined"
-                                  sx={{ p: 1.5, borderRadius: 2.5 }}
-                                >
-                                  <Stack spacing={0.75}>
-                                    <Stack
-                                      direction={{ xs: "column", sm: "row" }}
-                                      justifyContent="space-between"
-                                      spacing={1}
-                                    >
-                                      <Typography sx={{ fontWeight: 700 }}>
-                                        {question.question_text}
-                                      </Typography>
-                                      <Chip
-                                        label={`Score: ${question.score}`}
-                                        size="small"
-                                        color="primary"
-                                        variant="outlined"
-                                      />
                                     </Stack>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Code: {question.question_code}
-                                    </Typography>
-                                    <Typography variant="body2">
-                                      Selected Option:{" "}
-                                      <Box component="span" sx={{ fontWeight: 700 }}>
-                                        {question.selected_option}
-                                      </Box>
-                                    </Typography>
-                                  </Stack>
-                                </Paper>
-                              ))}
+                                  );
+                                },
+                              )}
                             </Stack>
-                          </Box>
-                        </Stack>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                alignItems: "baseline",
+                                gap: 1,
+                                mt: 2,
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Wellness Index =
+                              </Typography>
+                              <Typography
+                                sx={{
+                                  fontSize: 28,
+                                  fontWeight: 900,
+                                  color: theme.palette.success.main,
+                                }}
+                              >
+                                {latestScore}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                / 100
+                              </Typography>
+                            </Box>
+                          </Paper>
+                        </Box>
                       </Paper>
-                    ))}
-                  </Stack>
-                </Collapse>
-              </Stack>
-            </Paper>
+                    </Box>
+                  )}
+
+                  <Collapse in={false}>
+                    <Stack spacing={2} sx={{ pt: 1 }}>
+                      {session.responses.map((response, responseIndex) => {
+                        return (
+                          <Paper
+                            key={response.response_id}
+                            variant="outlined"
+                            sx={{ p: 2, borderRadius: 3 }}
+                          >
+                            <Stack spacing={2}>
+                              <Stack
+                                direction={{ xs: "column", md: "row" }}
+                                justifyContent="space-between"
+                                spacing={1.5}
+                              >
+                                <Box>
+                                  <Typography sx={{ fontWeight: 700 }}>
+                                    Submission {responseIndex + 1}
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    {response.employee_email || "-"}
+                                  </Typography>
+                                </Box>
+                                <Stack
+                                  direction={{ xs: "column", sm: "row" }}
+                                  spacing={1}
+                                  useFlexGap
+                                  flexWrap="wrap"
+                                >
+                                  <Chip
+                                    label={`Submitted: ${formatDateTimeIST(response.submitted_at)}`}
+                                    variant="outlined"
+                                  />
+                                  <Chip
+                                    label={`Weighted Index: ${response.weighted_index ?? "-"}`}
+                                    color="primary"
+                                  />
+                                </Stack>
+                              </Stack>
+
+                              {!!response.kpi_scores.length && (
+                                <Box>
+                                  <Typography sx={{ fontWeight: 700, mb: 1.2 }}>
+                                    KPI Scores
+                                  </Typography>
+                                  <Grid container spacing={1.25}>
+                                    {response.kpi_scores.map((item) => (
+                                      <Grid
+                                        key={item.kpi_key}
+                                        size={{ xs: 12, md: 6, xl: 4 }}
+                                      >
+                                        <Paper
+                                          variant="outlined"
+                                          sx={{
+                                            p: 1.5,
+                                            borderRadius: 2.5,
+                                            height: "100%",
+                                          }}
+                                        >
+                                          <Typography sx={{ fontWeight: 700 }}>
+                                            {item.kpi_name}
+                                          </Typography>
+                                          <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            sx={{ mt: 0.6 }}
+                                          >
+                                            Total Score: {item.total_score}
+                                          </Typography>
+                                          <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                          >
+                                            Questions: {item.question_count}
+                                          </Typography>
+                                          <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                          >
+                                            Average Score: {item.average_score}
+                                          </Typography>
+                                        </Paper>
+                                      </Grid>
+                                    ))}
+                                  </Grid>
+                                </Box>
+                              )}
+
+                              <Divider />
+
+                              <Box>
+                                <Typography sx={{ fontWeight: 700, mb: 1.2 }}>
+                                  Answered Questions
+                                </Typography>
+                                <Stack spacing={1.25}>
+                                  {response.questions.map((question, index) => (
+                                    <Paper
+                                      key={`${response.response_id}-${question.question_code}-${index}`}
+                                      variant="outlined"
+                                      sx={{ p: 1.5, borderRadius: 2.5 }}
+                                    >
+                                      <Stack spacing={0.75}>
+                                        <Stack
+                                          direction={{
+                                            xs: "column",
+                                            sm: "row",
+                                          }}
+                                          justifyContent="space-between"
+                                          spacing={1}
+                                        >
+                                          <Typography sx={{ fontWeight: 700 }}>
+                                            {question.question_text}
+                                          </Typography>
+                                          <Chip
+                                            label={`Score: ${question.score}`}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                          />
+                                        </Stack>
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                        >
+                                          Code: {question.question_code}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                          Selected Option:{" "}
+                                          <Box
+                                            component="span"
+                                            sx={{ fontWeight: 700 }}
+                                          >
+                                            {question.selected_option}
+                                          </Box>
+                                        </Typography>
+                                      </Stack>
+                                    </Paper>
+                                  ))}
+                                </Stack>
+                              </Box>
+                            </Stack>
+                          </Paper>
+                        );
+                      })}
+                    </Stack>
+                  </Collapse>
+                </Stack>
+              </Paper>
             );
           })}
 
@@ -1245,8 +1619,14 @@ export default function MyResponses() {
                 const daysOpen = getDaysSince(item.published_at);
                 const isOverdue = daysOpen !== null && daysOpen >= 7;
                 const statusColor = isOverdue
-                  ? { main: theme.palette.error.main, contrast: theme.palette.error.contrastText }
-                  : { main: theme.palette.warning.main, contrast: theme.palette.warning.contrastText };
+                  ? {
+                      main: theme.palette.error.main,
+                      contrast: theme.palette.error.contrastText,
+                    }
+                  : {
+                      main: theme.palette.warning.main,
+                      contrast: theme.palette.warning.contrastText,
+                    };
 
                 return (
                   <Paper
@@ -1260,12 +1640,19 @@ export default function MyResponses() {
                     }}
                   >
                     <Stack spacing={1.75}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1.5}>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="flex-start"
+                        spacing={1.5}
+                      >
                         <Stack spacing={1} sx={{ minWidth: 0, flex: 1 }}>
                           <Chip
                             label={isOverdue ? "OVERDUE" : "PENDING"}
                             size="small"
-                            icon={<HourglassBottomRoundedIcon fontSize="inherit" />}
+                            icon={
+                              <HourglassBottomRoundedIcon fontSize="inherit" />
+                            }
                             sx={{
                               width: "fit-content",
                               fontWeight: 800,
@@ -1298,15 +1685,24 @@ export default function MyResponses() {
                         </Box>
                       </Stack>
 
-                      <Stack direction={{ xs: "column", sm: "row" }} spacing={1} useFlexGap flexWrap="wrap">
+                      <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        spacing={1}
+                        useFlexGap
+                        flexWrap="wrap"
+                      >
                         <Chip
-                          label={`Published: ${formatDate(item.published_at)}`}
+                          label={`Published: ${formatDateIST(item.published_at)}`}
                           variant="outlined"
                           size="small"
                           icon={<CalendarMonthRoundedIcon />}
                         />
                         <Chip
-                          label={daysOpen === null ? "Open form available" : `Open for ${daysOpen} day${daysOpen === 1 ? "" : "s"}`}
+                          label={
+                            daysOpen === null
+                              ? "Open form available"
+                              : `Open for ${daysOpen} day${daysOpen === 1 ? "" : "s"}`
+                          }
                           size="small"
                           sx={{
                             bgcolor: alpha(statusColor.main, 0.08),
@@ -1316,7 +1712,12 @@ export default function MyResponses() {
                         />
                       </Stack>
 
-                      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1.25} alignItems={{ sm: "center" }}>
+                      <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        justifyContent="space-between"
+                        spacing={1.25}
+                        alignItems={{ sm: "center" }}
+                      >
                         <Typography variant="body2" color="text.secondary">
                           Review the form and submit it when you are ready.
                         </Typography>
@@ -1326,7 +1727,11 @@ export default function MyResponses() {
                           target="_blank"
                           rel="noreferrer"
                           disabled={!item.form_url}
-                          sx={{ minWidth: 140, borderRadius: 2.2, fontWeight: 800 }}
+                          sx={{
+                            minWidth: 140,
+                            borderRadius: 2.2,
+                            fontWeight: 800,
+                          }}
                         >
                           Open Form
                         </Button>

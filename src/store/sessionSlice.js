@@ -99,6 +99,7 @@ const normalizeSessionSubmission = (item, index) => ({
   employee_email: item?.employee_email || "",
   submitted_at: item?.submitted_at || "",
   total_score: Number(item?.total_score) || 0,
+  weighted_index: Number(item?.weighted_index) || 0,
   questions: Array.isArray(item?.questions)
     ? item.questions.map(normalizeSubmissionQuestion)
     : [],

@@ -31,6 +31,7 @@ import {
 import { fetchKpis } from "../../store/kpiSlice";
 import { fetchThemes } from "../../store/themeSlice";
 import { getSurfaceBackground } from "../../theme";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 const filterFieldSx = {
   "& .MuiInputBase-root": {
@@ -250,16 +251,14 @@ export default function Challenges() {
         headerName: "Created At",
         flex: 1,
         minWidth: 190,
-        valueFormatter: (value) =>
-          value ? new Date(value).toLocaleString() : "-",
+        valueFormatter: (value) => formatDateTimeIST(value),
       },
       {
         field: "updated_at",
         headerName: "Updated At",
         flex: 1,
         minWidth: 190,
-        valueFormatter: (value) =>
-          value ? new Date(value).toLocaleString() : "-",
+        valueFormatter: (value) => formatDateTimeIST(value),
       },
       {
         field: "actions",

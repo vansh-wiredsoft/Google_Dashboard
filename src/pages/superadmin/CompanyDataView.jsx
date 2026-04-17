@@ -28,6 +28,7 @@ import {
   fetchCompanyById,
 } from "../../store/companySlice";
 import { getSurfaceBackground } from "../../theme";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 const emptyAdminForm = {
   username: "",
@@ -195,9 +196,7 @@ export default function CompanyDataView() {
               ["Status", selectedCompany.is_active ? "Active" : "Inactive"],
               [
                 "Updated At",
-                selectedCompany.updated_at
-                  ? new Date(selectedCompany.updated_at).toLocaleString()
-                  : "-",
+                formatDateTimeIST(selectedCompany.updated_at),
               ],
               ["Admin Added", selectedCompany.admin ? "Yes" : "No"],
             ].map(([label, value]) => (

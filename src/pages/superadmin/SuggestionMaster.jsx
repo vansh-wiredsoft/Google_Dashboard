@@ -33,6 +33,7 @@ import {
   fetchAdminSuggestions,
 } from "../../store/adminSuggestionSlice";
 import { getRaisedGradient, getSurfaceBackground } from "../../theme";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 const suggestionTypeOptions = ["aahar", "vihar", "aushadh"];
 const doshaOptions = ["all", "vata", "pitta", "kapha"];
@@ -367,8 +368,7 @@ export default function SuggestionMaster() {
         flex: 1.05,
         minWidth: 220,
         headerAlign: "left",
-        valueFormatter: (value) =>
-          value ? new Date(value).toLocaleString() : "-",
+        valueFormatter: (value) => formatDateTimeIST(value),
       },
       {
         field: "actions",

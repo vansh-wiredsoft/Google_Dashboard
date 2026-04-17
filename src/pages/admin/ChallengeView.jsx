@@ -20,6 +20,7 @@ import {
   clearChallengeDetailState,
   fetchChallengeById,
 } from "../../store/challengeSlice";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 export default function ChallengeView() {
   const dispatch = useDispatch();
@@ -191,21 +192,17 @@ export default function ChallengeView() {
                 <Typography variant="caption" color="text.secondary">
                   Created At
                 </Typography>
-                <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
-                  {selectedChallenge.created_at
-                    ? new Date(selectedChallenge.created_at).toLocaleString()
-                    : "-"}
-                </Typography>
+              <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                {formatDateTimeIST(selectedChallenge.created_at)}
+              </Typography>
               </Paper>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
                 <Typography variant="caption" color="text.secondary">
                   Updated At
                 </Typography>
-                <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
-                  {selectedChallenge.updated_at
-                    ? new Date(selectedChallenge.updated_at).toLocaleString()
-                    : "-"}
-                </Typography>
+              <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                {formatDateTimeIST(selectedChallenge.updated_at)}
+              </Typography>
               </Paper>
               <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
                 <Typography variant="caption" color="text.secondary">

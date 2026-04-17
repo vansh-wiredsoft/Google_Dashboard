@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { formatDateIST, formatDateTimeISTShort } from "../../utils/dateTime";
 
 // ─── BRAND COLORS ─────────────────────────────────────────────────────────────
 const C = {
@@ -709,7 +710,7 @@ const KPI_SCHEDULE_MAP = Object.fromEntries(
   COMPANY_KPI_SCHEDULE.map(e => [e.kpi, { ...e, status: _kpiStatus(e) }])
 );
 const isKpiActive = kpiId => KPI_SCHEDULE_MAP[kpiId]?.status === "active";
-const _fmtDate = dt => dt.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"2-digit"});
+const _fmtDate = dt => formatDateIST(dt);
 
 // ─── CHALLENGE DEFINITIONS ────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2502,7 +2503,7 @@ function ReminderSettings(){
   };
 
   const isSnoozing = settings.snooze_until && new Date(settings.snooze_until) > new Date();
-  const snoozeEnds = isSnoozing ? new Date(settings.snooze_until).toLocaleString("en-IN",{hour:"2-digit",minute:"2-digit",day:"numeric",month:"short"}) : null;
+  const snoozeEnds = isSnoozing ? formatDateTimeISTShort(settings.snooze_until) : null;
 
   const REMINDER_TYPES = [
     { key:"remind_on_incomplete",  icon:"📋", label:"Daily challenge reminder",      sub:"Fires at your set time if any challenge is uncomplete" },
@@ -3754,7 +3755,7 @@ export default function App(){
             <span style={{fontSize:7.5,background:"rgba(232,160,32,0.15)",color:C.gold,borderRadius:5,padding:"2px 6px",fontWeight:700}}>📡</span>
           )}
           <div style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>
-            {new Date().toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short",year:"2-digit"})}
+            {formatDateIST(new Date())}
           </div>
         </div>
       </div>

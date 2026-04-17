@@ -38,6 +38,7 @@ import {
 } from "../../store/sessionSlice";
 import { getSurfaceBackground } from "../../theme";
 import { alpha } from "@mui/material/styles";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 export default function Sessions() {
   const theme = useTheme();
@@ -173,9 +174,7 @@ export default function Sessions() {
         flex: 1,
         minWidth: 180,
         renderCell: (params) => {
-          const displayValue = params.value
-            ? new Date(params.value).toLocaleString()
-            : "-";
+          const displayValue = formatDateTimeIST(params.value);
           return (
             <Tooltip title={displayValue}>
               <Typography variant="body2" noWrap sx={{ width: "100%" }}>

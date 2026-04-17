@@ -33,6 +33,7 @@ import {
 import { fetchQuestions } from "../../store/questionSlice";
 import { fetchThemes } from "../../store/themeSlice";
 import { getSurfaceBackground } from "../../theme";
+import { formatDateTimeIST } from "../../utils/dateTime";
 
 const statusOptions = [
   { label: "All Status", value: "all" },
@@ -209,8 +210,7 @@ export default function KpiSuggestionMapping() {
         headerName: "Updated At",
         minWidth: 190,
         flex: 1,
-        valueFormatter: (value) =>
-          value ? new Date(value).toLocaleString() : "-",
+        valueFormatter: (value) => formatDateTimeIST(value),
       },
       {
         field: "actions",
