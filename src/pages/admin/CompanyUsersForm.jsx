@@ -15,7 +15,6 @@ import {
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import Layout from "../../layouts/commonLayout/Layout";
-import { fetchCompanies } from "../../store/companySlice";
 import {
   clearUserCreateState,
   clearUserDetailState,
@@ -24,6 +23,8 @@ import {
   fetchUserById,
   updateUser,
 } from "../../store/userSlice";
+import api, { getApiErrorMessage } from "../../services/api";
+import { API_URLS } from "../../services/apiUrls";
 import { getSurfaceBackground } from "../../theme";
 
 const emptyForm = {
@@ -32,9 +33,9 @@ const emptyForm = {
   department: "",
   location: "",
   gender: "",
+  age_band: "",
   phone: "",
   email: "",
-  company_id: "",
 };
 
 export default function CompanyUsersForm({ mode }) {
@@ -51,9 +52,10 @@ export default function CompanyUsersForm({ mode }) {
     updateLoading,
     updateError,
   } = useSelector((state) => state.user);
-  const { companies, companiesLoading } = useSelector((state) => state.company);
   const [form, setForm] = useState(mode === "edit" ? {} : emptyForm);
   const [formError, setFormError] = useState("");
+  const [companyMe, setCompanyMe] = useState(null);
+  const [companyError, setCompanyError] = useState("");
 
   const pageTitle = useMemo(
     () => (mode === "edit" ? "Edit User" : "Add User"),
@@ -61,7 +63,30 @@ export default function CompanyUsersForm({ mode }) {
   );
 
   useEffect(() => {
-    dispatch(fetchCompanies());
+    let isMounted = true;
+
+    const fetchCompanyMe = async () => {
+      try {
+        const response = await api.get(API_URLS.companyMe);
+        const payload = response?.data || {};
+        if (!payload?.success || !payload?.data) {
+          throw new Error(payload?.message || "Failed to fetch company details.");
+        }
+        if (isMounted) {
+          setCompanyMe(payload.data);
+          setCompanyError("");
+        }
+      } catch (error) {
+        if (isMounted) {
+          setCompanyMe(null);
+          setCompanyError(
+            getApiErrorMessage(error, "Failed to fetch company details."),
+          );
+        }
+      }
+    };
+
+    fetchCompanyMe();
 
     if (mode === "edit" && id) {
       dispatch(fetchUserById(id));
@@ -85,9 +110,9 @@ export default function CompanyUsersForm({ mode }) {
       department: selectedUser?.department || "",
       location: selectedUser?.location || "",
       gender: selectedUser?.gender || "",
+      age_band: selectedUser?.age_band || "",
       phone: selectedUser?.phone || "",
       email: selectedUser?.email || "",
-      company_id: selectedUser?.company_id || "",
       ...form,
     };
   }, [form, mode, selectedUser]);
@@ -100,10 +125,12 @@ export default function CompanyUsersForm({ mode }) {
       !resolvedForm.location.trim() ||
       !resolvedForm.gender.trim() ||
       !resolvedForm.phone.trim() ||
-      !resolvedForm.email.trim() ||
-      !resolvedForm.company_id
+      !resolvedForm.email.trim()
     ) {
       return "Complete all required user fields.";
+    }
+    if (!companyMe?.id) {
+      return "Company details are unavailable. Please refresh and try again.";
     }
 
     return "";
@@ -124,9 +151,10 @@ export default function CompanyUsersForm({ mode }) {
       department: resolvedForm.department.trim(),
       location: resolvedForm.location.trim(),
       gender: resolvedForm.gender.trim(),
+      age_band: resolvedForm.age_band,
       phone: resolvedForm.phone.trim(),
       email: resolvedForm.email.trim(),
-      company_id: resolvedForm.company_id,
+      company_id: companyMe?.id,
     };
 
     try {
@@ -205,9 +233,9 @@ export default function CompanyUsersForm({ mode }) {
           </Button>
         </Stack>
 
-        {(formError || detailError || createError || updateError) && (
+        {(formError || companyError || detailError || createError || updateError) && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {formError || detailError || createError || updateError}
+            {formError || companyError || detailError || createError || updateError}
           </Alert>
         )}
 
@@ -270,6 +298,24 @@ export default function CompanyUsersForm({ mode }) {
             ))}
           </TextField>
           <TextField
+            label="Age Band"
+            value={resolvedForm.age_band}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, age_band: event.target.value }))
+            }
+            select
+            fullWidth
+          >
+            <MenuItem value="">Select Age Band</MenuItem>
+            {["20-25", "26-30", "31-35", "36-40", "41-50", "50+"].map(
+              (option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ),
+            )}
+          </TextField>
+          <TextField
             label="Phone"
             value={resolvedForm.phone}
             onChange={(event) =>
@@ -287,21 +333,10 @@ export default function CompanyUsersForm({ mode }) {
           />
           <TextField
             label="Company"
-            value={resolvedForm.company_id}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, company_id: event.target.value }))
-            }
-            select
+            value={companyMe?.company_name || ""}
             fullWidth
-            disabled={companiesLoading}
-          >
-            <MenuItem value="">Select Company</MenuItem>
-            {companies.map((company) => (
-              <MenuItem key={company.id} value={company.id}>
-                {company.company_name}
-              </MenuItem>
-            ))}
-          </TextField>
+            disabled
+          />
         </Box>
 
         <Stack direction="row" spacing={1.25} sx={{ mt: 3 }}>

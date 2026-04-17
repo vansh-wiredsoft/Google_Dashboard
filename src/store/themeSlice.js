@@ -27,6 +27,12 @@ const normalizeTheme = (item, index = 0) => ({
   id: String(item?.theme_key || index),
   theme_key: String(item?.theme_key || index),
   theme_display_name: item?.theme_display_name || "Untitled Theme",
+  description: item?.description || "",
+  duration_days:
+    item?.duration_days === null || item?.duration_days === undefined
+      ? null
+      : Number(item.duration_days),
+  target_audience: item?.target_audience || "",
   is_active: Boolean(item?.is_active),
   created_at: item?.created_at || "",
   updated_at: item?.updated_at || "",
@@ -72,10 +78,16 @@ export const fetchThemes = createAsyncThunk(
 
 export const createTheme = createAsyncThunk(
   "theme/createTheme",
-  async ({ themeDisplayName }, { rejectWithValue }) => {
+  async (
+    { themeDisplayName, description = "", durationDays = null, targetAudience = "" },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await api.post(API_URLS.themes, {
         theme_display_name: themeDisplayName,
+        description,
+        duration_days: durationDays,
+        target_audience: targetAudience,
       });
 
       const payload = response?.data || {};
@@ -117,10 +129,23 @@ export const fetchThemeById = createAsyncThunk(
 
 export const updateTheme = createAsyncThunk(
   "theme/updateTheme",
-  async ({ themeKey, themeDisplayName, isActive }, { rejectWithValue }) => {
+  async (
+    {
+      themeKey,
+      themeDisplayName,
+      description = "",
+      durationDays = null,
+      targetAudience = "",
+      isActive,
+    },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await api.put(API_URLS.themeById(themeKey), {
         theme_display_name: themeDisplayName,
+        description,
+        duration_days: durationDays,
+        target_audience: targetAudience,
         is_active: isActive,
       });
 

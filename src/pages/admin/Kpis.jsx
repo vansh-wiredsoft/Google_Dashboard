@@ -139,6 +139,17 @@ export default function Kpis() {
         valueGetter: (_, row) => themeNameByKey[row.theme_key] || row.theme_key || "-",
       },
       {
+        field: "domain_category",
+        headerName: "Domain Category",
+        flex: 1.1,
+        minWidth: 200,
+      },
+      {
+        field: "wi_weight",
+        headerName: "WI Weight",
+        minWidth: 120,
+      },
+      {
         field: "start_date",
         headerName: "Start Date",
         minWidth: 130,

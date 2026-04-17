@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
   Box,
+  Button,
   Chip,
   Collapse,
   Divider,
@@ -22,6 +23,8 @@ import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import Layout from "../../layouts/commonLayout/Layout";
 import {
   clearMySubmissionsState,
+  clearMyLinksState,
+  fetchMyLinks,
   fetchMySubmissions,
 } from "../../store/sessionSlice";
 import { getSurfaceBackground } from "../../theme";
@@ -82,13 +85,18 @@ export default function MyResponses() {
     mySubmissionsLoading,
     mySubmissionsError,
     mySubmissionsMessage,
+    myLinks,
+    myLinksLoading,
+    myLinksError,
   } = useSelector((state) => state.session);
 
   useEffect(() => {
     dispatch(fetchMySubmissions());
+    dispatch(fetchMyLinks({ skip: 0, limit: 50 }));
 
     return () => {
       dispatch(clearMySubmissionsState());
+      dispatch(clearMyLinksState());
     };
   }, [dispatch]);
 
@@ -110,6 +118,23 @@ export default function MyResponses() {
       score: totalScore,
     };
   }, [mySubmissions]);
+
+  const unansweredLinks = useMemo(() => {
+    const submittedIds = new Set(
+      mySubmissions
+        .filter((session) => (session.responses || []).length)
+        .map((session) => session.session_id),
+    );
+    return myLinks.filter((item) => !submittedIds.has(item.session_id));
+  }, [myLinks, mySubmissions]);
+
+  const summaryWithPending = useMemo(
+    () => ({
+      ...summary,
+      pending: unansweredLinks.length,
+    }),
+    [summary, unansweredLinks.length],
+  );
 
   useEffect(() => {
     setExpandedSessions((current) =>
@@ -143,11 +168,11 @@ export default function MyResponses() {
         >
           <Stack spacing={1}>
             <Typography variant="h5" sx={{ fontWeight: 800 }}>
-              My Submitted Responses
+              My Responses
             </Typography>
             <Typography color="text.secondary">
               Review your submitted session responses, selected answers, and KPI
-              score breakdowns.
+              score breakdowns and unanswered responses.
             </Typography>
           </Stack>
 
@@ -155,35 +180,43 @@ export default function MyResponses() {
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <SummaryCard
                 label="Sessions Submitted"
-                value={summary.sessions}
+                value={summaryWithPending.sessions}
                 icon={<ChecklistRoundedIcon fontSize="small" />}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <SummaryCard
                 label="Total Responses"
-                value={summary.responses}
+                value={summaryWithPending.responses}
                 icon={<TaskAltRoundedIcon fontSize="small" />}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <SummaryCard
                 label="Questions Answered"
-                value={summary.questions}
+                value={summaryWithPending.questions}
                 icon={<QueryStatsRoundedIcon fontSize="small" />}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <SummaryCard
                 label="Total Score"
-                value={summary.score}
+                value={summaryWithPending.score}
                 icon={<QueryStatsRoundedIcon fontSize="small" />}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+              <SummaryCard
+                label="Pending Forms"
+                value={summaryWithPending.pending}
+                icon={<ChecklistRoundedIcon fontSize="small" />}
               />
             </Grid>
           </Grid>
         </Paper>
 
         {mySubmissionsError && <Alert severity="error">{mySubmissionsError}</Alert>}
+        {myLinksError && <Alert severity="error">{myLinksError}</Alert>}
         {!mySubmissionsError && mySubmissionsMessage && (
           <Alert severity="success">{mySubmissionsMessage}</Alert>
         )}
@@ -200,6 +233,112 @@ export default function MyResponses() {
             }}
           >
             <Typography>Loading your submitted responses...</Typography>
+          </Paper>
+        ) : null}
+
+        {myLinksLoading ? (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: getSurfaceBackground(theme),
+            }}
+          >
+            <Typography>Loading your pending session forms...</Typography>
+          </Paper>
+        ) : null}
+
+        {!myLinksLoading && !!unansweredLinks.length ? (
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 3 },
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: getSurfaceBackground(theme),
+            }}
+          >
+            <Stack spacing={2}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                  Pending Session Forms
+                </Typography>
+                <Typography color="text.secondary" sx={{ mt: 0.6 }}>
+                  These sessions are published but not yet submitted.
+                </Typography>
+              </Box>
+
+              <Stack spacing={1.5}>
+                {unansweredLinks.map((item) => (
+                  <Paper
+                    key={item.session_id}
+                    variant="outlined"
+                    sx={{ p: 2, borderRadius: 2.5 }}
+                  >
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      justifyContent="space-between"
+                      spacing={1.5}
+                    >
+                      <Box>
+                        <Typography sx={{ fontWeight: 700 }}>
+                          {item.title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {item.description || "No description provided."}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 0.8 }}
+                        >
+                          Published: {formatDateTime(item.published_at)}
+                        </Typography>
+                      </Box>
+                      <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        spacing={1}
+                        alignItems={{ sm: "center" }}
+                      >
+                        <Button
+                          variant="outlined"
+                          href={item.form_url || undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          disabled={!item.form_url}
+                        >
+                          Open Form
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            </Stack>
+          </Paper>
+        ) : null}
+
+        {!myLinksLoading && !unansweredLinks.length ? (
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 3 },
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: getSurfaceBackground(theme),
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              No pending forms
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+              You have submitted all available session forms.
+            </Typography>
           </Paper>
         ) : null}
 

@@ -8,6 +8,7 @@ const initialState = {
   sessionQuestions: [],
   sessions: [],
   mySubmissions: [],
+  myLinks: [],
   sessionDetails: null,
   sessionPreview: null,
   sessionForm: null,
@@ -21,6 +22,7 @@ const initialState = {
   deleteLoading: false,
   listLoading: false,
   mySubmissionsLoading: false,
+  myLinksLoading: false,
   detailLoading: false,
   previewLoading: false,
   publishLoading: false,
@@ -36,6 +38,7 @@ const initialState = {
   deleteMessage: "",
   listMessage: "",
   mySubmissionsMessage: "",
+  myLinksMessage: "",
   detailMessage: "",
   previewMessage: "",
   publishMessage: "",
@@ -49,6 +52,7 @@ const initialState = {
   deleteError: null,
   listError: null,
   mySubmissionsError: null,
+  myLinksError: null,
   detailError: null,
   previewError: null,
   publishError: null,
@@ -117,6 +121,14 @@ const normalizeSubmissionSession = (item, index) => ({
             new Date(left.submitted_at || 0).getTime(),
         )
     : [],
+});
+
+const normalizeMyLink = (item, index) => ({
+  session_id: item?.session_id || `session-${index + 1}`,
+  title: item?.title || "Untitled Session",
+  description: item?.description || "",
+  published_at: item?.published_at || "",
+  form_url: item?.form_url || "",
 });
 
 export const createSession = createAsyncThunk(
@@ -444,6 +456,40 @@ export const fetchMySubmissions = createAsyncThunk(
   },
 );
 
+export const fetchMyLinks = createAsyncThunk(
+  "session/fetchMyLinks",
+  async ({ skip = 0, limit = 50 } = {}, { rejectWithValue }) => {
+    try {
+      const response = await api.get(API_URLS.sessionMyLinks, {
+        params: { skip, limit },
+      });
+      const payload = response?.data || {};
+
+      if (!payload?.success) {
+        return rejectWithValue(
+          payload?.message || "Failed to fetch session links.",
+        );
+      }
+
+      const items = Array.isArray(payload?.data?.items)
+        ? payload.data.items.map(normalizeMyLink)
+        : [];
+
+      return {
+        items,
+        message: payload?.message || "Session links fetched successfully.",
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to fetch session links due to server/network error.",
+        ),
+      );
+    }
+  },
+);
+
 export const fetchSessionById = createAsyncThunk(
   "session/fetchSessionById",
   async (sessionId, { rejectWithValue }) => {
@@ -602,6 +648,12 @@ const sessionSlice = createSlice({
       state.mySubmissionsLoading = false;
       state.mySubmissionsError = null;
       state.mySubmissionsMessage = "";
+    },
+    clearMyLinksState(state) {
+      state.myLinks = [];
+      state.myLinksLoading = false;
+      state.myLinksError = null;
+      state.myLinksMessage = "";
     },
     clearSessionDetailError(state) {
       state.detailError = null;
@@ -892,6 +944,21 @@ const sessionSlice = createSlice({
         state.mySubmissionsError =
           action.payload || "Failed to fetch submitted sessions.";
       })
+      .addCase(fetchMyLinks.pending, (state) => {
+        state.myLinksLoading = true;
+        state.myLinksError = null;
+        state.myLinksMessage = "";
+      })
+      .addCase(fetchMyLinks.fulfilled, (state, action) => {
+        state.myLinksLoading = false;
+        state.myLinks = action.payload.items;
+        state.myLinksMessage = action.payload.message;
+      })
+      .addCase(fetchMyLinks.rejected, (state, action) => {
+        state.myLinksLoading = false;
+        state.myLinksError =
+          action.payload || "Failed to fetch session links.";
+      })
       .addCase(fetchSessionById.pending, (state) => {
         state.detailLoading = true;
         state.detailError = null;
@@ -980,6 +1047,7 @@ export const {
   clearSessionError,
   clearSessionListError,
   clearMySubmissionsState,
+  clearMyLinksState,
   clearSessionDetailError,
   clearSessionDetails,
   clearSessionPreview,

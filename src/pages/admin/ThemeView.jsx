@@ -113,6 +113,30 @@ export default function ThemeView() {
             </Paper>
             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
               <Typography variant="caption" color="text.secondary">
+                Description
+              </Typography>
+              <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                {selectedTheme.description || "-"}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                Duration (Days)
+              </Typography>
+              <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                {selectedTheme.duration_days ?? "-"}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                Target Audience
+              </Typography>
+              <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                {selectedTheme.target_audience || "-"}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+              <Typography variant="caption" color="text.secondary">
                 Status
               </Typography>
               <Box sx={{ mt: 1 }}>

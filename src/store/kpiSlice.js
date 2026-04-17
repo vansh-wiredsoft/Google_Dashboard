@@ -27,8 +27,12 @@ const normalizeKpi = (item, index = 0) => ({
   id: String(item?.kpi_key || index),
   kpi_key: String(item?.kpi_key || index),
   display_name: item?.display_name || "Untitled KPI",
-  description: item?.description || "",
   theme_key: item?.theme_key || "",
+  domain_category: item?.domain_category || "",
+  wi_weight:
+    item?.wi_weight === null || item?.wi_weight === undefined
+      ? null
+      : Number(item.wi_weight),
   start_date: item?.start_date || "",
   end_date: item?.end_date || "",
   is_active: Boolean(item?.is_active),
@@ -74,14 +78,15 @@ export const fetchKpis = createAsyncThunk(
 export const createKpi = createAsyncThunk(
   "kpi/createKpi",
   async (
-    { displayName, description, themeKey, startDate, endDate },
+    { displayName, themeKey, domainCategory = "", wiWeight = null, startDate, endDate },
     { rejectWithValue },
   ) => {
     try {
       const response = await api.post(API_URLS.kpis, {
         display_name: displayName,
-        description: description || "",
         theme_key: themeKey,
+        domain_category: domainCategory,
+        wi_weight: wiWeight,
         start_date: startDate,
         end_date: endDate,
       });
@@ -126,14 +131,24 @@ export const fetchKpiById = createAsyncThunk(
 export const updateKpi = createAsyncThunk(
   "kpi/updateKpi",
   async (
-    { kpiKey, displayName, description, themeKey, startDate, endDate, isActive },
+    {
+      kpiKey,
+      displayName,
+      themeKey,
+      domainCategory = "",
+      wiWeight = null,
+      startDate,
+      endDate,
+      isActive,
+    },
     { rejectWithValue },
   ) => {
     try {
       const response = await api.put(API_URLS.kpiById(kpiKey), {
         display_name: displayName,
-        description: description || "",
         theme_key: themeKey,
+        domain_category: domainCategory,
+        wi_weight: wiWeight,
         start_date: startDate,
         end_date: endDate,
         is_active: isActive,

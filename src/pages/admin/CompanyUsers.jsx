@@ -141,6 +141,11 @@ export default function CompanyUsers() {
         minWidth: 120,
       },
       {
+        field: "age_band",
+        headerName: "Age Band",
+        minWidth: 120,
+      },
+      {
         field: "phone",
         headerName: "Phone",
         minWidth: 150,

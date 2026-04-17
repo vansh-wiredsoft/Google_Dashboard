@@ -47,8 +47,9 @@ export default function KpiForm({ mode }) {
   } = useSelector((state) => state.kpi);
   const [form, setForm] = useState({
     displayName: "",
-    description: "",
     themeKey: "",
+    domainCategory: "",
+    wiWeight: "",
     startDate: today,
     endDate: today,
     isActive: true,
@@ -66,8 +67,12 @@ export default function KpiForm({ mode }) {
     if (mode === "edit" && selectedKpi) {
       setForm({
         displayName: selectedKpi.display_name || "",
-        description: selectedKpi.description || "",
         themeKey: selectedKpi.theme_key || "",
+        domainCategory: selectedKpi.domain_category || "",
+        wiWeight:
+          selectedKpi.wi_weight === null || selectedKpi.wi_weight === undefined
+            ? ""
+            : String(selectedKpi.wi_weight),
         startDate: selectedKpi.start_date || today,
         endDate: selectedKpi.end_date || today,
         isActive: Boolean(selectedKpi.is_active),
@@ -111,8 +116,9 @@ export default function KpiForm({ mode }) {
           updateKpi({
             kpiKey: id,
             displayName: form.displayName.trim(),
-            description: form.description.trim(),
             themeKey: form.themeKey,
+            domainCategory: form.domainCategory.trim(),
+            wiWeight: form.wiWeight === "" ? null : Number(form.wiWeight),
             startDate: form.startDate,
             endDate: form.endDate,
             isActive: form.isActive,
@@ -133,8 +139,9 @@ export default function KpiForm({ mode }) {
       await dispatch(
         createKpi({
           displayName: form.displayName.trim(),
-          description: form.description.trim(),
           themeKey: form.themeKey,
+          domainCategory: form.domainCategory.trim(),
+          wiWeight: form.wiWeight === "" ? null : Number(form.wiWeight),
           startDate: form.startDate,
           endDate: form.endDate,
         }),
@@ -248,19 +255,32 @@ export default function KpiForm({ mode }) {
               fullWidth
             />
           </Stack>
-          <TextField
-            label="KPI Description"
-            value={form.description}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                description: event.target.value,
-              }))
-            }
-            multiline
-            minRows={3}
-            fullWidth
-          />
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="Domain Category"
+              value={form.domainCategory}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  domainCategory: event.target.value,
+                }))
+              }
+              fullWidth
+            />
+            <TextField
+              label="WI Weight"
+              type="number"
+              inputProps={{ min: 0 }}
+              value={form.wiWeight}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  wiWeight: event.target.value,
+                }))
+              }
+              fullWidth
+            />
+          </Stack>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               label="Start Date"

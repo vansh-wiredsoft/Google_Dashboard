@@ -45,7 +45,11 @@ import {
 } from "recharts";
 import Layout from "../../layouts/commonLayout/Layout";
 import DashboardChallenges from "./DashboardChallenges";
-import { fetchDashboardKpis } from "../../store/dashboardSlice";
+import {
+  fetchDashboardKpis,
+  fetchSessionSuggestions,
+} from "../../store/dashboardSlice";
+import { fetchMySubmissions } from "../../store/sessionSlice";
 import { getRaisedGradient, getSurfaceBackground } from "../../theme";
 
 const METRIC_ICON_SET = [
@@ -103,6 +107,19 @@ const getMetricIcon = (index) => METRIC_ICON_SET[index % METRIC_ICON_SET.length]
 const getMetricColor = (index) => METRIC_COLOR_SET[index % METRIC_COLOR_SET.length];
 const getChallengeColor = (challengeType, index) =>
   CHALLENGE_TYPE_COLORS[String(challengeType || "").toLowerCase()] ||
+  METRIC_COLOR_SET[index % METRIC_COLOR_SET.length];
+
+const SUGGESTION_TYPE_COLORS = {
+  aahar: "#16a34a",
+  vihara: "#2563eb",
+  nidra: "#7c3aed",
+  charya: "#f59e0b",
+  manas: "#c026d3",
+  ojas: "#0f766e",
+};
+
+const getSuggestionColor = (type, index) =>
+  SUGGESTION_TYPE_COLORS[String(type || "").toLowerCase()] ||
   METRIC_COLOR_SET[index % METRIC_COLOR_SET.length];
 
 const getChallengeTypeOptions = (challengeType) => {
@@ -199,36 +216,6 @@ const doshaData = [
   { name: "Vata", value: 30, color: "#0ea5e9" },
   { name: "Pitta", value: 34, color: "#f97316" },
   { name: "Kapha", value: 36, color: "#22c55e" },
-];
-
-const suggestions = [
-  {
-    title: "Digestion",
-    flagged: "T2 - 20 flagged",
-    color: "#65a30d",
-    items: [
-      "Eat lighter dinners and keep a 2-hour gap before sleep.",
-      "Add warm water and fiber-rich foods during workdays.",
-    ],
-  },
-  {
-    title: "Stress",
-    flagged: "T2 - 30 flagged",
-    color: "#ea580c",
-    items: [
-      "Schedule two short breaks between long task blocks.",
-      "Reduce late caffeine and add a wind-down routine.",
-    ],
-  },
-  {
-    title: "Pain/Posture",
-    flagged: "T2 - 19 flagged",
-    color: "#c026d3",
-    items: [
-      "Stand and stretch every 45 minutes during desk work.",
-      "Raise laptop height to reduce neck strain.",
-    ],
-  },
 ];
 
 const focusActions = [
@@ -956,7 +943,11 @@ export default function Dashboard() {
     items: dashboardItems,
     loading: dashboardLoading,
     error: dashboardError,
+    suggestions,
+    suggestionsLoading,
+    suggestionsError,
   } = useSelector((state) => state.dashboard);
+  const { mySubmissions } = useSelector((state) => state.session);
   const chartTooltipStyles = {
     contentStyle: {
       backgroundColor: getSurfaceBackground(theme, 0.98),
@@ -975,7 +966,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     dispatch(fetchDashboardKpis());
+    dispatch(fetchMySubmissions());
   }, [dispatch]);
+
+  const latestSubmissionSessionId = useMemo(() => {
+    if (!mySubmissions.length) return "";
+    return mySubmissions[0]?.session_id || "";
+  }, [mySubmissions]);
+
+  useEffect(() => {
+    if (!latestSubmissionSessionId) return;
+    dispatch(fetchSessionSuggestions(latestSubmissionSessionId));
+  }, [dispatch, latestSubmissionSessionId]);
 
   const metrics = useMemo(
     () =>
@@ -1001,6 +1003,23 @@ export default function Dashboard() {
       ),
     [dashboardItems],
   );
+
+  const suggestionItems = useMemo(() => {
+    return Array.isArray(suggestions?.items) ? suggestions.items : [];
+  }, [suggestions]);
+
+  const suggestionTierLabels = useMemo(() => {
+    const triggerModes = new Set(
+      suggestionItems.flatMap((item) =>
+        (item.triggers || []).map((trigger) => trigger.trigger_mode),
+      ),
+    );
+
+    return {
+      hasKpiRisk: triggerModes.has("kpi_risk"),
+      hasQuestionScore: triggerModes.has("question_score"),
+    };
+  }, [suggestionItems]);
 
   return (
     <Layout role="user" title="Wellness Dashboard">
@@ -1412,75 +1431,154 @@ export default function Dashboard() {
                 Lifestyle Suggestions
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Focus areas this week using static wellness signals
+                Focus areas this week based on your latest session insights
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1}>
-              <Chip
-                label="Tier 1 - KPI risk"
-                size="small"
-                sx={{ fontWeight: 700 }}
-              />
-              <Chip
-                label="Tier 2 - Question score"
-                size="small"
-                variant="outlined"
-                sx={{ fontWeight: 700 }}
-              />
-            </Stack>
+            {(suggestionTierLabels.hasKpiRisk ||
+              suggestionTierLabels.hasQuestionScore) && (
+              <Stack direction="row" spacing={1}>
+                {suggestionTierLabels.hasKpiRisk && (
+                  <Chip
+                    label="Tier 1 - KPI risk"
+                    size="small"
+                    sx={{ fontWeight: 700 }}
+                  />
+                )}
+                {suggestionTierLabels.hasQuestionScore && (
+                  <Chip
+                    label="Tier 2 - Question score"
+                    size="small"
+                    variant="outlined"
+                    sx={{ fontWeight: 700 }}
+                  />
+                )}
+              </Stack>
+            )}
           </Stack>
 
-          <Grid container spacing={2}>
-            {suggestions.map((item) => (
-              <Grid key={item.title} size={{ xs: 12, md: 4 }}>
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    borderLeft: `4px solid ${item.color}`,
-                    height: "100%",
-                  }}
-                >
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    sx={{ mb: 1.5 }}
-                  >
-                    <Typography sx={{ fontWeight: 800, color: item.color }}>
-                      {item.title}
-                    </Typography>
-                    <Chip
-                      label={item.flagged}
-                      size="small"
+          {suggestionsError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {suggestionsError}
+            </Alert>
+          )}
+
+          {suggestionsLoading && (
+            <Typography>Loading lifestyle suggestions...</Typography>
+          )}
+
+          {!suggestionsLoading && suggestionItems.length === 0 && (
+            <Typography color="text.secondary">
+              No lifestyle suggestions are available yet.
+            </Typography>
+          )}
+
+          {!suggestionsLoading && suggestionItems.length > 0 && (
+            <Grid container spacing={2}>
+              {suggestionItems.map((item, index) => {
+                const accent = getSuggestionColor(item.suggestion_type, index);
+                const triggerBadges = (item.triggers || [])
+                  .sort((left, right) => (left.priority || 0) - (right.priority || 0))
+                  .slice(0, 2);
+
+                return (
+                  <Grid key={item.suggestion_id || item.title} size={{ xs: 12, md: 4 }}>
+                    <Paper
+                      variant="outlined"
                       sx={{
-                        bgcolor: alpha(item.color, 0.1),
-                        color: item.color,
-                        fontWeight: 700,
+                        p: 2,
+                        borderRadius: 3,
+                        borderLeft: `4px solid ${accent}`,
+                        height: "100%",
                       }}
-                    />
-                  </Stack>
-                  <Stack spacing={1}>
-                    {item.items.map((text) => (
-                      <Box
-                        key={text}
-                        sx={{
-                          p: 1.2,
-                          borderRadius: 2,
-                          bgcolor: alpha(item.color, 0.06),
-                        }}
-                      >
-                        <Typography variant="body2" color="text.secondary">
-                          {text}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Stack>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
+                    >
+                      <Stack spacing={1.4}>
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                        >
+                          <Typography sx={{ fontWeight: 800, color: accent }}>
+                            {item.title}
+                          </Typography>
+                        </Stack>
+
+                        {!!item.description && (
+                          <Typography variant="body2" color="text.secondary">
+                            {item.description}
+                          </Typography>
+                        )}
+
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          {!!item.suggestion_type && (
+                            <Chip
+                              label={item.suggestion_type}
+                              size="small"
+                              sx={{ fontWeight: 700 }}
+                            />
+                          )}
+                          {!!item.difficulty && (
+                            <Chip
+                              label={item.difficulty}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                          {!!item.duration_mins && (
+                            <Chip
+                              label={`${item.duration_mins} mins`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                          {!!item.dosha_type && (
+                            <Chip
+                              label={`Dosha: ${item.dosha_type}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                        </Stack>
+
+                        {!!triggerBadges.length && (
+                          <Stack spacing={0.8}>
+                            {triggerBadges.map((trigger, triggerIndex) => (
+                              <Box
+                                key={`${item.suggestion_id}-trigger-${triggerIndex}`}
+                                sx={{
+                                  p: 1,
+                                  borderRadius: 2,
+                                  bgcolor: alpha(accent, 0.06),
+                                }}
+                              >
+                                <Typography variant="caption" color="text.secondary">
+                                  {trigger.trigger_mode === "kpi_risk"
+                                    ? `KPI risk: ${trigger.kpi_display_name || trigger.kpi_key} (${trigger.risk_level || "risk"})`
+                                    : `Question: ${trigger.question_text || trigger.question_key} (${trigger.question_score || 0})`}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Stack>
+                        )}
+
+                        {!!item.url && (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            href={item.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            sx={{ alignSelf: "flex-start" }}
+                          >
+                            View Resource
+                          </Button>
+                        )}
+                      </Stack>
+                    </Paper>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          )}
         </SectionCard>
           </>
         )}

@@ -14,9 +14,11 @@ export const API_URLS = {
   companyById: (companyId) => `/config/api/v1/companies/${companyId}`,
   companyAdmin: (companyId) => `/config/api/v1/companies/${companyId}/admin`,
   companyUpload: "/config/api/v1/companies/upload",
+  companyMe: "/config/api/v1/companies/me",
 
   dashboardKpis: "/config/api/v1/dashboard/kpis",
   dashboardChallengeAction: "/config/api/v1/dashboard/challenges/action",
+  sessionSuggestions: (sessionId) => `/api/v1/sessions/${sessionId}/suggestions`,
 
   kpis: "/config/api/v1/kpi",
   kpiById: (kpiKey) => `/config/api/v1/kpi/${kpiKey}`,
@@ -37,6 +39,7 @@ export const API_URLS = {
     `/config/api/v1/sessions/${sessionId}/questions/${questionId}`,
   sessionQuestionsOrder: (sessionId) =>
     `/config/api/v1/sessions/${sessionId}/questions/order`,
+  sessionMyLinks: "/config/api/v1/sessions/my-links",
   sessionMySubmissions: "/config/api/v1/sessions/my-submissions",
   sessionPreview: (sessionId) => `/config/api/v1/sessions/${sessionId}/form/preview`,
   sessionPublish: (sessionId) => `/config/api/v1/sessions/${sessionId}/publish`,

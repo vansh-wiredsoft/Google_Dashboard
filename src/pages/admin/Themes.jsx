@@ -116,6 +116,23 @@ export default function Themes() {
         minWidth: 240,
       },
       {
+        field: "description",
+        headerName: "Description",
+        flex: 1.6,
+        minWidth: 260,
+      },
+      {
+        field: "duration_days",
+        headerName: "Duration (Days)",
+        minWidth: 150,
+      },
+      {
+        field: "target_audience",
+        headerName: "Target Audience",
+        flex: 1.1,
+        minWidth: 200,
+      },
+      {
         field: "is_active",
         headerName: "Status",
         minWidth: 130,

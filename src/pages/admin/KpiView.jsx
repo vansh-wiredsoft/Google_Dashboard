@@ -110,6 +110,18 @@ export default function KpiView() {
               <Typography sx={{ mt: 0.8, fontWeight: 600 }}>{themeName}</Typography>
             </Paper>
             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+              <Typography variant="caption" color="text.secondary">Domain Category</Typography>
+              <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                {selectedKpi.domain_category || "-"}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+              <Typography variant="caption" color="text.secondary">WI Weight</Typography>
+              <Typography sx={{ mt: 0.8, fontWeight: 600 }}>
+                {selectedKpi.wi_weight ?? "-"}
+              </Typography>
+            </Paper>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
               <Typography variant="caption" color="text.secondary">Status</Typography>
               <Box sx={{ mt: 1 }}>
                 <Chip

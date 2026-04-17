@@ -41,6 +41,7 @@ const normalizeUser = (item, index = 0) => ({
   department: item?.department || "",
   location: item?.location || "",
   gender: item?.gender || "",
+  age_band: item?.age_band || "",
   phone: String(item?.phone ?? ""),
   email: item?.email || "",
   company_id: item?.company_id || "",

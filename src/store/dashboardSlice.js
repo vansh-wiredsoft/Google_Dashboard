@@ -9,7 +9,42 @@ const initialState = {
   actionLoadingById: {},
   actionErrorById: {},
   actionResultById: {},
+  suggestions: {
+    session_id: "",
+    response_id: "",
+    submitted_at: "",
+    items: [],
+  },
+  suggestionsLoading: false,
+  suggestionsError: "",
 };
+
+const normalizeSuggestionTrigger = (item = {}) => ({
+  trigger_mode: item?.trigger_mode || "",
+  risk_level: item?.risk_level || "",
+  kpi_key: item?.kpi_key || "",
+  kpi_display_name: item?.kpi_display_name || "",
+  kpi_average_score: Number(item?.kpi_average_score) || 0,
+  question_key: item?.question_key || "",
+  question_text: item?.question_text || "",
+  question_score: Number(item?.question_score) || 0,
+  score_threshold_below: Number(item?.score_threshold_below) || 0,
+  priority: Number(item?.priority) || 0,
+});
+
+const normalizeSuggestionItem = (item = {}, index) => ({
+  suggestion_id: item?.suggestion_id || `suggestion-${index + 1}`,
+  suggestion_type: item?.suggestion_type || "",
+  title: item?.title || "Lifestyle Suggestion",
+  description: item?.description || "",
+  url: item?.url || "",
+  dosha_type: item?.dosha_type || "",
+  difficulty: item?.difficulty || "",
+  duration_mins: Number(item?.duration_mins) || 0,
+  triggers: Array.isArray(item?.triggers)
+    ? item.triggers.map(normalizeSuggestionTrigger)
+    : [],
+});
 
 export const fetchDashboardKpis = createAsyncThunk(
   "dashboard/fetchDashboardKpis",
@@ -57,6 +92,40 @@ export const postDashboardChallengeAction = createAsyncThunk(
           "Failed to submit challenge action due to server/network error.",
         ),
       });
+    }
+  },
+);
+
+export const fetchSessionSuggestions = createAsyncThunk(
+  "dashboard/fetchSessionSuggestions",
+  async (sessionId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(API_URLS.sessionSuggestions(sessionId));
+      const payload = response?.data || {};
+
+      if (!payload?.success) {
+        return rejectWithValue(
+          payload?.message || "Failed to fetch session suggestions.",
+        );
+      }
+
+      const data = payload?.data || {};
+
+      return {
+        session_id: data?.session_id || sessionId || "",
+        response_id: data?.response_id || "",
+        submitted_at: data?.submitted_at || "",
+        items: Array.isArray(data?.items)
+          ? data.items.map(normalizeSuggestionItem)
+          : [],
+      };
+    } catch (error) {
+      return rejectWithValue(
+        getApiErrorMessage(
+          error,
+          "Failed to fetch session suggestions due to server/network error.",
+        ),
+      );
     }
   },
 );
@@ -110,6 +179,19 @@ const dashboardSlice = createSlice({
         state.actionLoadingById[challengeId] = false;
         state.actionErrorById[challengeId] =
           action.payload?.message || "Failed to submit challenge action.";
+      })
+      .addCase(fetchSessionSuggestions.pending, (state) => {
+        state.suggestionsLoading = true;
+        state.suggestionsError = "";
+      })
+      .addCase(fetchSessionSuggestions.fulfilled, (state, action) => {
+        state.suggestionsLoading = false;
+        state.suggestions = action.payload;
+      })
+      .addCase(fetchSessionSuggestions.rejected, (state, action) => {
+        state.suggestionsLoading = false;
+        state.suggestionsError =
+          action.payload || "Failed to fetch session suggestions.";
       });
   },
 });

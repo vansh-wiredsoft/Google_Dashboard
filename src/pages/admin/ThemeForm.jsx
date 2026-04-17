@@ -41,6 +41,9 @@ export default function ThemeForm({ mode }) {
     updateError,
   } = useSelector((state) => state.theme);
   const [themeDisplayName, setThemeDisplayName] = useState("");
+  const [description, setDescription] = useState("");
+  const [durationDays, setDurationDays] = useState("");
+  const [targetAudience, setTargetAudience] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [formError, setFormError] = useState("");
 
@@ -53,6 +56,13 @@ export default function ThemeForm({ mode }) {
   useEffect(() => {
     if (mode === "edit" && selectedTheme) {
       setThemeDisplayName(selectedTheme.theme_display_name || "");
+      setDescription(selectedTheme.description || "");
+      setDurationDays(
+        selectedTheme.duration_days === null || selectedTheme.duration_days === undefined
+          ? ""
+          : String(selectedTheme.duration_days),
+      );
+      setTargetAudience(selectedTheme.target_audience || "");
       setIsActive(Boolean(selectedTheme.is_active));
     }
   }, [mode, selectedTheme]);
@@ -84,6 +94,9 @@ export default function ThemeForm({ mode }) {
           updateTheme({
             themeKey: id,
             themeDisplayName: themeDisplayName.trim(),
+            description: description.trim(),
+            durationDays: durationDays === "" ? null : Number(durationDays),
+            targetAudience: targetAudience.trim(),
             isActive,
           }),
         ).unwrap();
@@ -102,6 +115,9 @@ export default function ThemeForm({ mode }) {
       await dispatch(
         createTheme({
           themeDisplayName: themeDisplayName.trim(),
+          description: description.trim(),
+          durationDays: durationDays === "" ? null : Number(durationDays),
+          targetAudience: targetAudience.trim(),
         }),
       ).unwrap();
       navigate("/admin/themes", {
@@ -187,6 +203,28 @@ export default function ThemeForm({ mode }) {
               setFormError("");
               setThemeDisplayName(event.target.value);
             }}
+            fullWidth
+          />
+          <TextField
+            label="Description"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            multiline
+            minRows={3}
+            fullWidth
+          />
+          <TextField
+            label="Duration Days"
+            type="number"
+            inputProps={{ min: 0 }}
+            value={durationDays}
+            onChange={(event) => setDurationDays(event.target.value)}
+            fullWidth
+          />
+          <TextField
+            label="Target Audience"
+            value={targetAudience}
+            onChange={(event) => setTargetAudience(event.target.value)}
             fullWidth
           />
 
