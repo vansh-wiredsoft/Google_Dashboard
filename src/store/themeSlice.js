@@ -26,6 +26,7 @@ const initialState = {
 const normalizeTheme = (item, index = 0) => ({
   id: String(item?.theme_key || index),
   theme_key: String(item?.theme_key || index),
+  company_id: String(item?.company_id || ""),
   theme_display_name: item?.theme_display_name || "Untitled Theme",
   description: item?.description || "",
   duration_days:

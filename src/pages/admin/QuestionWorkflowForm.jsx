@@ -71,8 +71,6 @@ export default function QuestionWorkflowForm({ mode, role = "admin" }) {
 
   useEffect(() => {
     dispatch(fetchCompanies());
-    dispatch(fetchThemes({ isActive: true }));
-    dispatch(fetchKpis({ isActive: true }));
 
     if (mode === "edit" && id) {
       dispatch(fetchQuestionById(id));
@@ -110,14 +108,31 @@ export default function QuestionWorkflowForm({ mode, role = "admin" }) {
     () =>
       form.theme_key
         ? kpiItems.filter((item) => item.theme_key === form.theme_key)
-        : kpiItems,
+        : [],
     [form.theme_key, kpiItems],
   );
 
-  const resolvedCompanyId = useMemo(
+  const selectedCompanyId = useMemo(
     () => (role === "superadmin" ? form.company_id : getCompanyId()),
     [form.company_id, role],
   );
+
+  const resolvedCompanyId = useMemo(
+    () => selectedCompanyId,
+    [selectedCompanyId],
+  );
+
+  useEffect(() => {
+    if (selectedCompanyId) {
+      dispatch(fetchThemes({ isActive: true, companyId: selectedCompanyId }));
+    }
+  }, [dispatch, selectedCompanyId]);
+
+  useEffect(() => {
+    if (selectedCompanyId) {
+      dispatch(fetchKpis({ isActive: true, companyId: selectedCompanyId }));
+    }
+  }, [dispatch, selectedCompanyId]);
 
   const validate = () => {
     if (role === "superadmin" && !resolvedCompanyId) {
@@ -262,6 +277,8 @@ export default function QuestionWorkflowForm({ mode, role = "admin" }) {
               setForm((current) => ({
                 ...current,
                 company_id: event.target.value,
+                theme_key: "",
+                kpi_key: "",
               }))
             }
             fullWidth
@@ -280,6 +297,7 @@ export default function QuestionWorkflowForm({ mode, role = "admin" }) {
           label="Theme"
           select
           value={form.theme_key}
+          disabled={role === "superadmin" && !selectedCompanyId}
           onChange={(event) =>
             setForm((current) => ({
               ...current,
@@ -297,7 +315,11 @@ export default function QuestionWorkflowForm({ mode, role = "admin" }) {
           }
           fullWidth
         >
-          <MenuItem value="">Select Theme</MenuItem>
+          <MenuItem value="">
+            {role === "superadmin" && !selectedCompanyId
+              ? "Select a company first"
+              : "Select Theme"}
+          </MenuItem>
           {themeItems.map((item) => (
             <MenuItem key={item.theme_key} value={item.theme_key}>
               {item.theme_display_name}
@@ -309,12 +331,15 @@ export default function QuestionWorkflowForm({ mode, role = "admin" }) {
           label="KPI"
           select
           value={form.kpi_key}
+          disabled={!form.theme_key}
           onChange={(event) =>
             setForm((current) => ({ ...current, kpi_key: event.target.value }))
           }
           fullWidth
         >
-          <MenuItem value="">Select KPI</MenuItem>
+          <MenuItem value="">
+            {form.theme_key ? "Select KPI" : "Select a theme first"}
+          </MenuItem>
           {filteredKpis.map((item) => (
             <MenuItem key={item.kpi_key} value={item.kpi_key}>
               {item.display_name}

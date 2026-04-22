@@ -63,6 +63,7 @@ export default function ThemeForm({ mode, role = "superadmin" }) {
       );
       setTargetAudience(selectedTheme.target_audience || "");
       setIsActive(Boolean(selectedTheme.is_active));
+      setCompanyId(selectedTheme.company_id || "");
     }
   }, [mode, selectedTheme]);
 
