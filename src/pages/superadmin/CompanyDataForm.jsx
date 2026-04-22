@@ -6,6 +6,8 @@ import {
   Box,
   Button,
   FormControlLabel,
+  IconButton,
+  InputAdornment,
   MenuItem,
   Paper,
   Stack,
@@ -16,6 +18,8 @@ import {
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
+import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import Layout from "../../layouts/commonLayout/Layout";
 import {
   assignCompanyAdmin,
@@ -80,6 +84,7 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
   const [formError, setFormError] = useState("");
   const [companyMe, setCompanyMe] = useState(null);
   const [companyMeError, setCompanyMeError] = useState("");
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   const pageTitle = useMemo(
     () =>
@@ -618,7 +623,7 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
                   />
                   <TextField
                     label="Password"
-                    type="password"
+                    type={showAdminPassword ? "text" : "password"}
                     value={resolvedAdminForm.password}
                     onChange={(event) =>
                       setAdminForm((current) => ({
@@ -631,6 +636,25 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
                         ? "Enter a password to update or replace the company admin."
                         : ""
                     }
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label={
+                              showAdminPassword ? "Hide password" : "Show password"
+                            }
+                            onClick={() => setShowAdminPassword((current) => !current)}
+                            edge="end"
+                          >
+                            {showAdminPassword ? (
+                              <VisibilityOffRoundedIcon />
+                            ) : (
+                              <VisibilityRoundedIcon />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
                     fullWidth
                   />
                   <TextField

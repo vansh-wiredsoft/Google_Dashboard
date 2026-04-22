@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -18,23 +18,31 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
+import FileDownloadRoundedIcon from "@mui/icons-material/FileDownloadRounded";
+import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import Layout from "../../layouts/commonLayout/Layout";
 import {
+  clearCompanyUploadError,
   clearCompanyDeleteState,
   clearCompanyError,
   fetchCompanies,
   deleteCompany,
+  resetCompanyUpload,
+  uploadCompanyFile,
 } from "../../store/companySlice";
 import { getSurfaceBackground } from "../../theme";
 import { formatDateTimeIST } from "../../utils/dateTime";
+import { downloadTemplateFile } from "../../utils/downloadTemplate";
 
 export default function CompanyData() {
   const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const fileInputRef = useRef(null);
   const feedback = location.state?.feedback;
+  const [uploadFeedback, setUploadFeedback] = useState(null);
   const {
     companies,
     companiesLoading,
@@ -42,6 +50,9 @@ export default function CompanyData() {
     deleteLoading,
     deleteError,
     deleteMessage,
+    uploadLoading,
+    uploadError,
+    uploadStatus,
   } = useSelector((state) => state.company);
 
   useEffect(() => {
@@ -52,8 +63,34 @@ export default function CompanyData() {
     return () => {
       dispatch(clearCompanyError());
       dispatch(clearCompanyDeleteState());
+      dispatch(resetCompanyUpload());
     };
   }, [dispatch]);
+
+  const handleImport = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    dispatch(resetCompanyUpload());
+    setUploadFeedback(null);
+
+    try {
+      await dispatch(uploadCompanyFile(file)).unwrap();
+      await dispatch(fetchCompanies()).unwrap();
+      setUploadFeedback({
+        severity: "success",
+        message: `Company file "${file.name}" uploaded successfully.`,
+      });
+    } catch {
+      // Redux state already stores the error.
+    }
+
+    event.target.value = "";
+  };
+
+  const handleDownloadFormat = () => {
+    downloadTemplateFile("templates/MasterData.xlsx", "MasterData.xlsx");
+  };
 
   const handleDelete = async (companyId, companyName) => {
     if (!window.confirm(`Delete company "${companyName}"?`)) return;
@@ -174,6 +211,12 @@ export default function CompanyData() {
         {error && <Alert severity="error">{error}</Alert>}
         {deleteError && <Alert severity="error">{deleteError}</Alert>}
         {deleteMessage && <Alert severity="success">{deleteMessage}</Alert>}
+        {uploadFeedback && (
+          <Alert severity={uploadFeedback.severity}>{uploadFeedback.message}</Alert>
+        )}
+        {uploadStatus === "error" && uploadError && (
+          <Alert severity="error">{uploadError}</Alert>
+        )}
 
         <Paper
           elevation={0}
@@ -220,6 +263,33 @@ export default function CompanyData() {
               </Button>
               <Button
                 variant="outlined"
+                startIcon={<FileDownloadRoundedIcon />}
+                onClick={handleDownloadFormat}
+                sx={{
+                  height: 40,
+                  minWidth: 152,
+                  px: 2,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Download format
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<UploadFileRoundedIcon />}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadLoading}
+                sx={{
+                  height: 40,
+                  minWidth: 152,
+                  px: 2,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {uploadLoading ? "Uploading..." : "Import Excel"}
+              </Button>
+              <Button
+                variant="outlined"
                 startIcon={<RefreshRoundedIcon />}
                 onClick={() => dispatch(fetchCompanies())}
                 disabled={companiesLoading}
@@ -235,6 +305,19 @@ export default function CompanyData() {
               </Button>
             </Stack>
           </Stack>
+
+          <input
+            hidden
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleImport}
+            onClick={() => {
+              if (uploadError) {
+                dispatch(clearCompanyUploadError());
+              }
+            }}
+          />
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Total companies: {companies.length}
