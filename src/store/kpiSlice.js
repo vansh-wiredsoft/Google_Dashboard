@@ -26,6 +26,7 @@ const initialState = {
 const normalizeKpi = (item, index = 0) => ({
   id: String(item?.kpi_key || index),
   kpi_key: String(item?.kpi_key || index),
+  company_id: String(item?.company_id || ""),
   display_name: item?.display_name || "Untitled KPI",
   theme_key: item?.theme_key || "",
   domain_category: item?.domain_category || "",

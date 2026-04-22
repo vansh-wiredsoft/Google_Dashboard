@@ -428,14 +428,14 @@ export default function SessionManagement() {
                 <Button
                   variant="outlined"
                   startIcon={<ArrowBackIcon />}
-                  onClick={() => navigate("/admin/sessions")}
+                  onClick={() => navigate("/super-admin/sessions")}
                 >
                   Back to Sessions
                 </Button>
                 <Button
                   variant="outlined"
                   startIcon={<EditIcon />}
-                  onClick={() => navigate(`/admin/sessions/${sessionId}/edit`)}
+                  onClick={() => navigate(`/super-admin/sessions/${sessionId}/edit`)}
                 >
                   Edit Session
                 </Button>

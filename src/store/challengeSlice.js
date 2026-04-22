@@ -29,6 +29,7 @@ const initialState = {
 const normalizeChallenge = (item, index = 0) => ({
   id: String(item?.challenge_key || index),
   challenge_key: String(item?.challenge_key || index),
+  company_id: String(item?.company_id || ""),
   name: item?.name || "Untitled Challenge",
   challenge_type: item?.challenge_type || "",
   description: item?.description || "",
