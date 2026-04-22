@@ -157,17 +157,22 @@ export const createCompany = createAsyncThunk(
 
 export const updateCompany = createAsyncThunk(
   "company/updateCompany",
-  async ({ companyId, company }, { rejectWithValue }) => {
+  async ({ companyId, company, admin }, { rejectWithValue }) => {
     try {
-      const response = await api.put(API_URLS.companyById(companyId), company);
+      const response = await api.put(API_URLS.companyById(companyId), {
+        company,
+        ...(admin ? { admin } : {}),
+      });
       const payload = response?.data || {};
 
       if (!payload?.success || !payload?.data) {
         return rejectWithValue(payload?.message || "Failed to update company.");
       }
 
+      const updatedCompany = payload.data.company || payload.data;
       return {
-        company: normalizeCompany(payload.data),
+        company: normalizeCompany(updatedCompany),
+        admin: payload.data.admin ? normalizeAdmin(payload.data.admin) : null,
         message: payload?.message || "Company updated successfully.",
       };
     } catch (error) {
@@ -365,6 +370,9 @@ const companySlice = createSlice({
         state.updateLoading = false;
         state.updateMessage = action.payload.message;
         state.selectedCompany = action.payload.company;
+        if (action.payload.admin) {
+          state.selectedCompany.admin = action.payload.admin;
+        }
         state.companies = state.companies.map((item) =>
           item.id === action.payload.company.id ? action.payload.company : item,
         );

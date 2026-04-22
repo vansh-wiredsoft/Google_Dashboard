@@ -22,7 +22,6 @@ import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import Layout from "../../layouts/commonLayout/Layout";
 import {
-  assignCompanyAdmin,
   clearCompanyCreateState,
   clearCompanyDetailState,
   clearCompanyUpdateState,
@@ -286,28 +285,22 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
               no_of_employees: Number(resolvedCompanyForm.no_of_employees) || 0,
               is_active: resolvedCompanyForm.is_active,
             },
+            admin: resolvedAdminEnabled
+              ? {
+                  username: resolvedAdminForm.username.trim(),
+                  email: resolvedAdminForm.email.trim(),
+                  password: resolvedAdminForm.password,
+                  emp_id: resolvedAdminForm.emp_id.trim(),
+                  full_name: resolvedAdminForm.full_name.trim(),
+                  department: resolvedAdminForm.department.trim(),
+                  location: resolvedAdminForm.location.trim(),
+                  gender: resolvedAdminForm.gender.trim(),
+                  phone: resolvedAdminForm.phone.trim(),
+                  is_active: resolvedAdminForm.is_active,
+                }
+              : null,
           }),
         ).unwrap();
-
-        if (resolvedAdminEnabled) {
-          await dispatch(
-            assignCompanyAdmin({
-              companyId: id,
-              admin: {
-                username: resolvedAdminForm.username.trim(),
-                email: resolvedAdminForm.email.trim(),
-                password: resolvedAdminForm.password,
-                emp_id: resolvedAdminForm.emp_id.trim(),
-                full_name: resolvedAdminForm.full_name.trim(),
-                department: resolvedAdminForm.department.trim(),
-                location: resolvedAdminForm.location.trim(),
-                gender: resolvedAdminForm.gender.trim(),
-                phone: resolvedAdminForm.phone.trim(),
-                is_active: resolvedAdminForm.is_active,
-              },
-            }),
-          ).unwrap();
-        }
 
         navigate("/super-admin/company-data", {
           replace: true,

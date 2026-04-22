@@ -35,6 +35,7 @@ const normalizeOption = (item, index = 0) => ({
 
 const normalizeQuestion = (item, index = 0) => ({
   id: String(item?.id || index),
+  company_id: String(item?.company_id || ""),
   theme_key: String(item?.theme_key || ""),
   kpi_key: String(item?.kpi_key || ""),
   question_code: item?.question_code || "",
