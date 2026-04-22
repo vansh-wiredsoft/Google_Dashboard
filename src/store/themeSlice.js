@@ -41,7 +41,7 @@ const normalizeTheme = (item, index = 0) => ({
 export const fetchThemes = createAsyncThunk(
   "theme/fetchThemes",
   async (
-    { skip = 0, limit = 50, search = "", isActive } = {},
+    { skip = 0, limit = 50, search = "", isActive, companyId } = {},
     { rejectWithValue },
   ) => {
     try {
@@ -51,6 +51,7 @@ export const fetchThemes = createAsyncThunk(
           limit,
           ...(search ? { search } : {}),
           ...(typeof isActive === "boolean" ? { is_active: isActive } : {}),
+          ...(companyId ? { company_id: companyId } : {}),
         },
       });
 
@@ -79,7 +80,13 @@ export const fetchThemes = createAsyncThunk(
 export const createTheme = createAsyncThunk(
   "theme/createTheme",
   async (
-    { themeDisplayName, description = "", durationDays = null, targetAudience = "" },
+    {
+      themeDisplayName,
+      description = "",
+      durationDays = null,
+      targetAudience = "",
+      companyId,
+    },
     { rejectWithValue },
   ) => {
     try {
@@ -88,6 +95,7 @@ export const createTheme = createAsyncThunk(
         description,
         duration_days: durationDays,
         target_audience: targetAudience,
+        ...(companyId ? { company_id: companyId } : {}),
       });
 
       const payload = response?.data || {};
@@ -137,6 +145,7 @@ export const updateTheme = createAsyncThunk(
       durationDays = null,
       targetAudience = "",
       isActive,
+      companyId,
     },
     { rejectWithValue },
   ) => {
@@ -147,6 +156,7 @@ export const updateTheme = createAsyncThunk(
         duration_days: durationDays,
         target_audience: targetAudience,
         is_active: isActive,
+        ...(companyId ? { company_id: companyId } : {}),
       });
 
       const payload = response?.data || {};

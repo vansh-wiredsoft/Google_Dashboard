@@ -39,7 +39,7 @@ const filterFieldSx = {
   },
 };
 
-export default function Challenges() {
+export default function Challenges({ role = "admin" }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -272,7 +272,11 @@ export default function Challenges() {
               <IconButton
                 size="small"
                 onClick={() =>
-                  navigate(`/admin/challenges/${row.challenge_key}`)
+                navigate(
+                  role === "admin"
+                    ? `/admin/challenges/${row.challenge_key}`
+                    : `/super-admin/challenges/${row.challenge_key}`,
+                )
                 }
               >
                 <PreviewRoundedIcon fontSize="small" />
@@ -282,7 +286,7 @@ export default function Challenges() {
               <IconButton
                 size="small"
                 onClick={() =>
-                  navigate(`/admin/challenges/${row.challenge_key}/edit`)
+                navigate(`/super-admin/challenges/${row.challenge_key}/edit`)
                 }
               >
                 <EditRoundedIcon fontSize="small" />
@@ -308,7 +312,7 @@ export default function Challenges() {
   );
 
   return (
-    <Layout role="admin" title="Challenges">
+    <Layout role={role} title="Challenges">
       <Stack spacing={2}>
         {feedback && (
           <Alert severity={feedback.severity}>{feedback.message}</Alert>
@@ -347,13 +351,15 @@ export default function Challenges() {
             </Box>
 
             <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              <Button
-                variant="contained"
-                startIcon={<AddRoundedIcon />}
-                onClick={() => navigate("/admin/challenges/add")}
-              >
-                Add Challenge
-              </Button>
+              {role === "superadmin" && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddRoundedIcon />}
+                  onClick={() => navigate("/super-admin/challenges/add")}
+                >
+                  Add Challenge
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 startIcon={<RefreshRoundedIcon />}

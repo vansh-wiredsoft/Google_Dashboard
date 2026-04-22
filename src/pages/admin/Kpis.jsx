@@ -37,7 +37,7 @@ const filterFieldSx = {
   },
 };
 
-export default function Kpis() {
+export default function Kpis({ role = "admin" }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -72,8 +72,13 @@ export default function Kpis() {
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchKpis({ search: appliedFilters.search.trim(), isActive }));
-  }, [appliedFilters.search, dispatch, isActive]);
+    dispatch(
+      fetchKpis({
+        search: appliedFilters.search.trim(),
+        isActive: role === "admin" ? true : isActive,
+      }),
+    );
+  }, [appliedFilters.search, dispatch, isActive, role]);
 
   useEffect(() => {
     return () => {
@@ -93,13 +98,24 @@ export default function Kpis() {
 
   const handleRefresh = () => {
     dispatch(fetchThemes());
-    dispatch(fetchKpis({ search: appliedFilters.search.trim(), isActive }));
+    dispatch(
+      fetchKpis({
+        search: appliedFilters.search.trim(),
+        isActive: role === "admin" ? true : isActive,
+      }),
+    );
   };
 
   const handleDelete = useCallback(async (kpiKey) => {
     try {
+      if (role !== "superadmin") return;
       await dispatch(deleteKpi(kpiKey)).unwrap();
-      dispatch(fetchKpis({ search: appliedFilters.search.trim(), isActive }));
+      dispatch(
+        fetchKpis({
+          search: appliedFilters.search.trim(),
+          isActive: role === "admin" ? true : isActive,
+        }),
+      );
     } catch {
       // Error is already handled in redux state.
     }
@@ -120,7 +136,12 @@ export default function Kpis() {
 
     setFilters(defaultFilters);
     setAppliedFilters(defaultFilters);
-    dispatch(fetchKpis({ search: "", isActive: undefined }));
+    dispatch(
+      fetchKpis({
+        search: "",
+        isActive: role === "admin" ? true : undefined,
+      }),
+    );
   };
 
   const columns = useMemo(
@@ -183,40 +204,50 @@ export default function Kpis() {
             <Tooltip title="View">
               <IconButton
                 size="small"
-                onClick={() => navigate(`/admin/kpis/${row.kpi_key}`)}
+                onClick={() =>
+                  navigate(
+                    role === "admin"
+                      ? `/admin/kpis/${row.kpi_key}`
+                      : `/super-admin/kpis/${row.kpi_key}`,
+                  )
+                }
               >
                 <PreviewRoundedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Edit">
-              <IconButton
-                size="small"
-                onClick={() => navigate(`/admin/kpis/${row.kpi_key}/edit`)}
-              >
-                <EditRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <span>
-                <IconButton
-                  size="small"
-                  color="error"
-                  disabled={deleteLoading}
-                  onClick={() => handleDelete(row.kpi_key)}
-                >
-                  <DeleteOutlineRoundedIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
+            {role === "superadmin" && (
+              <>
+                <Tooltip title="Edit">
+                  <IconButton
+                    size="small"
+                    onClick={() => navigate(`/super-admin/kpis/${row.kpi_key}/edit`)}
+                  >
+                    <EditRoundedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete">
+                  <span>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      disabled={deleteLoading}
+                      onClick={() => handleDelete(row.kpi_key)}
+                    >
+                      <DeleteOutlineRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </>
+            )}
           </Stack>
         ),
       },
     ],
-    [deleteLoading, handleDelete, navigate, themeNameByKey],
+    [deleteLoading, handleDelete, navigate, role, themeNameByKey],
   );
 
   return (
-    <Layout role="admin" title="KPI Master">
+    <Layout role={role} title="KPI Master">
       <Stack spacing={2}>
         {feedback && <Alert severity={feedback.severity}>{feedback.message}</Alert>}
         {listError && <Alert severity="error">{listError}</Alert>}
@@ -249,13 +280,15 @@ export default function Kpis() {
             </Box>
 
             <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              <Button
-                variant="contained"
-                startIcon={<AddRoundedIcon />}
-                onClick={() => navigate("/admin/kpis/add")}
-              >
-                Add KPI
-              </Button>
+              {role === "superadmin" && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddRoundedIcon />}
+                  onClick={() => navigate("/super-admin/kpis/add")}
+                >
+                  Add KPI
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 startIcon={<RefreshRoundedIcon />}
@@ -309,21 +342,25 @@ export default function Kpis() {
               <MenuItem value="active">Active</MenuItem>
               <MenuItem value="inactive">Inactive</MenuItem>
             </TextField>
-            <Button
-              variant="outlined"
-              onClick={handleApplyFilters}
-              disabled={listLoading}
-              sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap" }}
-            >
-              Apply Filters
-            </Button>
-            <Button
-              variant="text"
-              onClick={handleResetFilters}
-              sx={{ minHeight: 56, px: 2, whiteSpace: "nowrap" }}
-            >
-              Reset
-            </Button>
+            {role === "superadmin" && (
+              <>
+                <Button
+                  variant="outlined"
+                  onClick={handleApplyFilters}
+                  disabled={listLoading}
+                  sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap" }}
+                >
+                  Apply Filters
+                </Button>
+                <Button
+                  variant="text"
+                  onClick={handleResetFilters}
+                  sx={{ minHeight: 56, px: 2, whiteSpace: "nowrap" }}
+                >
+                  Reset
+                </Button>
+              </>
+            )}
           </Box>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

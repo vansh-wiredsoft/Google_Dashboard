@@ -40,7 +40,7 @@ import { getSurfaceBackground } from "../../theme";
 import { alpha } from "@mui/material/styles";
 import { formatDateTimeIST } from "../../utils/dateTime";
 
-export default function Sessions() {
+export default function Sessions({ role = "admin" }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -202,7 +202,13 @@ export default function Sessions() {
               <IconButton
                 size="small"
                 color="secondary"
-                onClick={() => navigate(`/admin/sessions/${params.row.id}/manage`)}
+                onClick={() =>
+                  navigate(
+                    role === "admin"
+                      ? `/admin/sessions/${params.row.id}/manage`
+                      : `/super-admin/sessions/${params.row.id}/manage`,
+                  )
+                }
               >
                 <LinkIcon fontSize="small" />
               </IconButton>
@@ -222,7 +228,13 @@ export default function Sessions() {
               <IconButton
                 size="small"
                 color="info"
-                onClick={() => navigate(`/admin/sessions/${params.row.id}/edit`)}
+                onClick={() =>
+                  navigate(
+                    role === "admin"
+                      ? `/admin/sessions/${params.row.id}/edit`
+                      : `/super-admin/sessions/${params.row.id}/edit`,
+                  )
+                }
               >
                 <EditIcon fontSize="small" />
               </IconButton>
@@ -246,7 +258,7 @@ export default function Sessions() {
   );
 
   return (
-    <Layout role="admin" title="Sessions">
+    <Layout role={role} title="Sessions">
       <Paper
         elevation={0}
         sx={{
@@ -273,12 +285,14 @@ export default function Sessions() {
               </Typography>
             </Box>
             <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                onClick={() => navigate("/admin/sessions/add")}
-              >
-                Add Session
-              </Button>
+              {role === "superadmin" && (
+                <Button
+                  variant="contained"
+                  onClick={() => navigate("/super-admin/sessions/add")}
+                >
+                  Add Session
+                </Button>
+              )}
               <Tooltip title="Refresh Sessions">
                 <span>
                   <IconButton

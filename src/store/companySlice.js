@@ -40,7 +40,8 @@ const pickArray = (payload) => {
 
 const normalizeCompany = (item, index = 0) => ({
   id: String(item?.id || item?.company_id || index),
-  company_name: item?.company_name || item?.name || item?.title || "Unnamed Company",
+  company_name:
+    item?.company_name || item?.name || item?.title || "Unnamed Company",
   industry: item?.industry || "",
   size_bucket: item?.size_bucket || "",
   email: item?.email || "",
@@ -55,6 +56,9 @@ const normalizeCompany = (item, index = 0) => ({
 const normalizeAdmin = (item) => ({
   id: String(item?.id || ""),
   emp_id: item?.emp_id || "",
+  username: item?.username || "",
+  password: item?.password || "",
+  age_band: item?.age_band || "",
   full_name: item?.full_name || "",
   department: item?.department || "",
   location: item?.location || "",
@@ -75,7 +79,9 @@ export const fetchCompanies = createAsyncThunk(
       const payload = response?.data || {};
 
       if (!payload?.success) {
-        return rejectWithValue(payload?.message || "Failed to fetch companies.");
+        return rejectWithValue(
+          payload?.message || "Failed to fetch companies.",
+        );
       }
 
       return {
@@ -327,6 +333,8 @@ const companySlice = createSlice({
       })
       .addCase(fetchCompanyById.fulfilled, (state, action) => {
         state.detailLoading = false;
+        console.log("action.payload", action.payload.company);
+
         state.selectedCompany = action.payload.company;
         state.detailMessage = action.payload.message;
       })

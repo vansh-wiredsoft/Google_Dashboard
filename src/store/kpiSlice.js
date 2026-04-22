@@ -42,7 +42,7 @@ const normalizeKpi = (item, index = 0) => ({
 
 export const fetchKpis = createAsyncThunk(
   "kpi/fetchKpis",
-  async ({ skip = 0, limit = 50, search = "", isActive } = {}, { rejectWithValue }) => {
+  async ({ skip = 0, limit = 50, search = "", isActive, companyId } = {}, { rejectWithValue }) => {
     try {
       const response = await api.get(API_URLS.kpis, {
         params: {
@@ -50,6 +50,7 @@ export const fetchKpis = createAsyncThunk(
           limit,
           ...(search ? { search } : {}),
           ...(typeof isActive === "boolean" ? { is_active: isActive } : {}),
+          ...(companyId ? { company_id: companyId } : {}),
         },
       });
 
@@ -78,7 +79,15 @@ export const fetchKpis = createAsyncThunk(
 export const createKpi = createAsyncThunk(
   "kpi/createKpi",
   async (
-    { displayName, themeKey, domainCategory = "", wiWeight = null, startDate, endDate },
+    {
+      displayName,
+      themeKey,
+      domainCategory = "",
+      wiWeight = null,
+      startDate,
+      endDate,
+      companyId,
+    },
     { rejectWithValue },
   ) => {
     try {
@@ -89,6 +98,7 @@ export const createKpi = createAsyncThunk(
         wi_weight: wiWeight,
         start_date: startDate,
         end_date: endDate,
+        ...(companyId ? { company_id: companyId } : {}),
       });
 
       const payload = response?.data || {};
@@ -140,6 +150,7 @@ export const updateKpi = createAsyncThunk(
       startDate,
       endDate,
       isActive,
+      companyId,
     },
     { rejectWithValue },
   ) => {
@@ -152,6 +163,7 @@ export const updateKpi = createAsyncThunk(
         start_date: startDate,
         end_date: endDate,
         is_active: isActive,
+        ...(companyId ? { company_id: companyId } : {}),
       });
 
       const payload = response?.data || {};
