@@ -43,7 +43,10 @@ const normalizeKpi = (item, index = 0) => ({
 
 export const fetchKpis = createAsyncThunk(
   "kpi/fetchKpis",
-  async ({ skip = 0, limit = 50, search = "", isActive, companyId } = {}, { rejectWithValue }) => {
+  async (
+    { skip = 0, limit = 50, search = "", isActive, companyId, themeKey } = {},
+    { rejectWithValue },
+  ) => {
     try {
       const response = await api.get(API_URLS.kpis, {
         params: {
@@ -52,6 +55,7 @@ export const fetchKpis = createAsyncThunk(
           ...(search ? { search } : {}),
           ...(typeof isActive === "boolean" ? { is_active: isActive } : {}),
           ...(companyId ? { company_id: companyId } : {}),
+          ...(themeKey ? { theme_key: themeKey } : {}),
         },
       });
 
