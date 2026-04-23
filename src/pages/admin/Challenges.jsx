@@ -22,6 +22,7 @@ import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import Layout from "../../layouts/commonLayout/Layout";
+import { fetchCompanies } from "../../store/companySlice";
 import {
   clearChallengeDeleteState,
   clearChallengeListError,
@@ -30,6 +31,7 @@ import {
 } from "../../store/challengeSlice";
 import { fetchKpis } from "../../store/kpiSlice";
 import { fetchThemes } from "../../store/themeSlice";
+import { getCompanyId } from "../../utils/roleHelper";
 import { getSurfaceBackground } from "../../theme";
 import { formatDateTimeIST } from "../../utils/dateTime";
 
@@ -45,6 +47,7 @@ export default function Challenges({ role = "admin" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const feedback = location.state?.feedback;
+  const { companies } = useSelector((state) => state.company);
   const { items: kpiItems } = useSelector((state) => state.kpi);
   const { items: themeItems } = useSelector((state) => state.theme);
   const {
@@ -57,6 +60,7 @@ export default function Challenges({ role = "admin" }) {
     deleteMessage,
   } = useSelector((state) => state.challenge);
   const [filters, setFilters] = useState({
+    companyId: role === "admin" ? getCompanyId() : "",
     search: "",
     status: "active",
     kpiKey: "",
@@ -64,6 +68,7 @@ export default function Challenges({ role = "admin" }) {
     endDate: "",
   });
   const [appliedFilters, setAppliedFilters] = useState({
+    companyId: role === "admin" ? getCompanyId() : "",
     search: "",
     status: "active",
     kpiKey: "",
@@ -82,8 +87,10 @@ export default function Challenges({ role = "admin" }) {
       kpiKey: appliedFilters.kpiKey,
       startDate: appliedFilters.startDate,
       endDate: appliedFilters.endDate,
+      companyId: appliedFilters.companyId || undefined,
     }),
     [
+      appliedFilters.companyId,
       appliedFilters.endDate,
       appliedFilters.kpiKey,
       appliedFilters.startDate,
@@ -92,6 +99,7 @@ export default function Challenges({ role = "admin" }) {
   );
 
   useEffect(() => {
+    dispatch(fetchCompanies());
     dispatch(fetchThemes({ isActive: true }));
     dispatch(fetchKpis({ isActive: true }));
   }, [dispatch]);
@@ -120,6 +128,15 @@ export default function Challenges({ role = "admin" }) {
     );
   }, [appliedFilters.search, items]);
 
+  const companyNameById = useMemo(
+    () =>
+      companies.reduce((accumulator, company) => {
+        accumulator[company.id] = company.company_name;
+        return accumulator;
+      }, {}),
+    [companies],
+  );
+
   const themeNameByKey = useMemo(
     () =>
       themeItems.reduce((accumulator, item) => {
@@ -146,6 +163,7 @@ export default function Challenges({ role = "admin" }) {
 
   const handleResetFilters = () => {
     const defaultFilters = {
+      companyId: role === "admin" ? getCompanyId() : "",
       search: "",
       status: "active",
       kpiKey: "",
@@ -161,12 +179,14 @@ export default function Challenges({ role = "admin" }) {
         kpiKey: "",
         startDate: "",
         endDate: "",
+        companyId: role === "admin" ? getCompanyId() : undefined,
       }),
     );
   };
 
   const handleApplyFilters = () => {
     setAppliedFilters({
+      companyId: filters.companyId,
       search: filters.search,
       status: filters.status,
       kpiKey: filters.kpiKey,
@@ -177,6 +197,13 @@ export default function Challenges({ role = "admin" }) {
 
   const columns = useMemo(
     () => [
+      {
+        field: "company_id",
+        headerName: "Company",
+        flex: 1,
+        minWidth: 220,
+        valueGetter: (_, row) => companyNameById[row.company_id] || row.company_id || "-",
+      },
       {
         field: "name",
         headerName: "Challenge Name",
@@ -308,7 +335,7 @@ export default function Challenges({ role = "admin" }) {
         ),
       },
     ],
-    [deleteLoading, handleDelete, navigate],
+    [companyNameById, deleteLoading, handleDelete, navigate, role],
   );
 
   return (
@@ -380,12 +407,38 @@ export default function Challenges({ role = "admin" }) {
                 xs: "1fr",
                 sm: "repeat(2, minmax(0, 1fr))",
                 md: "repeat(2, minmax(0, 1fr))",
-                lg: "repeat(4, minmax(0, 1fr))",
-                xl: "1.15fr 1fr 1fr 1.4fr 0.9fr auto auto",
+                lg: role === "superadmin"
+                  ? "repeat(5, minmax(0, 1fr))"
+                  : "repeat(4, minmax(0, 1fr))",
+                xl: role === "superadmin"
+                  ? "1.15fr 1fr 1fr 1fr 1.4fr 0.9fr auto auto"
+                  : "1fr 1fr 1fr 1.4fr 0.9fr auto auto",
               },
               alignItems: { lg: "end" },
             }}
           >
+            {role === "superadmin" && (
+              <TextField
+                label="Company"
+                select
+                value={filters.companyId}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    companyId: event.target.value,
+                  }))
+                }
+                fullWidth
+                sx={filterFieldSx}
+              >
+                <MenuItem value="">All Companies</MenuItem>
+                {companies.map((company) => (
+                  <MenuItem key={company.id} value={company.id}>
+                    {company.company_name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
             <TextField
               label="KPI"
               select

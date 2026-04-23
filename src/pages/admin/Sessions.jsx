@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -11,8 +11,10 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  MenuItem,
   Paper,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -39,12 +41,19 @@ import {
 import { getSurfaceBackground } from "../../theme";
 import { alpha } from "@mui/material/styles";
 import { formatDateTimeIST } from "../../utils/dateTime";
+import { getCompanyId } from "../../utils/roleHelper";
 
 export default function Sessions({ role = "admin" }) {
   const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    companyId: role === "admin" ? getCompanyId() : "",
+  });
+  const [appliedFilters, setAppliedFilters] = useState({
+    companyId: role === "admin" ? getCompanyId() : "",
+  });
   const {
     sessions,
     listLoading,
@@ -61,11 +70,17 @@ export default function Sessions({ role = "admin" }) {
     sessionPreview,
   } = useSelector((state) => state.session);
   const { companies } = useSelector((state) => state.company);
+  const sessionQuery = useMemo(
+    () => ({
+      ...(appliedFilters.companyId ? { companyId: appliedFilters.companyId } : {}),
+    }),
+    [appliedFilters.companyId],
+  );
 
   useEffect(() => {
     dispatch(fetchCompanies());
-    dispatch(fetchSessions());
-  }, [dispatch]);
+    dispatch(fetchSessions(sessionQuery));
+  }, [dispatch, sessionQuery]);
 
   const sessionRows = useMemo(
     () =>
@@ -79,41 +94,62 @@ export default function Sessions({ role = "admin" }) {
     [sessions, companies],
   );
 
-  const handleDeleteSession = (row) => {
-    if (!window.confirm(`Are you sure you want to delete session "${row.title || row.id}"?`)) {
-      return;
-    }
+  const handleDeleteSession = useCallback(
+    (row) => {
+      if (!window.confirm(`Are you sure you want to delete session "${row.title || row.id}"?`)) {
+        return;
+      }
 
-    dispatch(clearSessionMessages());
-    dispatch(deleteSession(row.id))
-      .unwrap()
-      .then(() => {
-        dispatch(fetchSessions());
-      })
-      .catch(() => {
+      dispatch(clearSessionMessages());
+      dispatch(deleteSession(row.id))
+        .unwrap()
+        .then(() => {
+          dispatch(fetchSessions(sessionQuery));
+        })
+        .catch(() => {
+          // Redux state already contains the error.
+        });
+    },
+    [dispatch, sessionQuery],
+  );
+
+  const handlePreviewSession = useCallback(
+    async (sessionId) => {
+      setPreviewDialogOpen(true);
+
+      try {
+        await dispatch(fetchSessionPreview(sessionId)).unwrap();
+      } catch {
         // Redux state already contains the error.
-      });
-  };
-
-  const handlePreviewSession = async (sessionId) => {
-    setPreviewDialogOpen(true);
-
-    try {
-      await dispatch(fetchSessionPreview(sessionId)).unwrap();
-    } catch {
-      // Redux state already contains the error.
-    }
-  };
+      }
+    },
+    [dispatch],
+  );
 
   const handlePublishSession = async () => {
     if (!sessionPreview?.session_id) return;
 
     try {
       await dispatch(publishSession(sessionPreview.session_id)).unwrap();
-      dispatch(fetchSessions());
+      dispatch(fetchSessions(sessionQuery));
     } catch {
       // Redux state already contains the error.
     }
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      companyId: filters.companyId,
+    });
+  };
+
+  const handleResetFilters = () => {
+    const defaultFilters = {
+      companyId: role === "admin" ? getCompanyId() : "",
+    };
+
+    setFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
   };
 
   const handleClosePreviewDialog = () => {
@@ -254,7 +290,7 @@ export default function Sessions({ role = "admin" }) {
         ),
       },
     ],
-    [deleteLoading, navigate],
+    [deleteLoading, handleDeleteSession, handlePreviewSession, navigate, role],
   );
 
   return (
@@ -299,7 +335,7 @@ export default function Sessions({ role = "admin" }) {
                     size="small"
                     onClick={() => {
                       dispatch(clearSessionListError());
-                      dispatch(fetchSessions());
+                      dispatch(fetchSessions(sessionQuery));
                     }}
                     disabled={listLoading}
                   >
@@ -313,6 +349,63 @@ export default function Sessions({ role = "admin" }) {
           {!!listError && <Alert severity="error">{listError}</Alert>}
           {!!deleteError && <Alert severity="error">{deleteError}</Alert>}
           {!!deleteMessage && <Alert severity="success">{deleteMessage}</Alert>}
+
+          <Box
+            sx={{
+              display: "grid",
+              gap: 1.5,
+              mb: 2,
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+                lg: role === "superadmin"
+                  ? "repeat(2, minmax(0, 1fr)) auto auto"
+                  : "repeat(1, minmax(0, 1fr)) auto auto",
+              },
+              alignItems: { lg: "end" },
+            }}
+          >
+            {role === "superadmin" && (
+              <TextField
+                label="Company"
+                select
+                value={filters.companyId}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    companyId: event.target.value,
+                  }))
+                }
+                fullWidth
+              >
+                <MenuItem value="">All Companies</MenuItem>
+                {companies.map((company) => (
+                  <MenuItem key={company.id} value={company.id}>
+                    {company.company_name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+            {role === "superadmin" && (
+              <Button
+                variant="outlined"
+                onClick={handleApplyFilters}
+                disabled={listLoading}
+                sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap" }}
+              >
+                Apply Filters
+              </Button>
+            )}
+            {role === "superadmin" && (
+              <Button
+                variant="text"
+                onClick={handleResetFilters}
+                sx={{ minHeight: 56, px: 2, whiteSpace: "nowrap" }}
+              >
+                Reset
+              </Button>
+            )}
+          </Box>
 
           <Box sx={{ width: "100%", overflowX: "auto" }}>
             <Box sx={{ height: 520, width: "max-content", minWidth: "100%" }}>
