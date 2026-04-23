@@ -73,9 +73,14 @@ const normalizeAdmin = (item) => ({
 
 export const fetchCompanies = createAsyncThunk(
   "company/fetchCompanies",
-  async (_, { rejectWithValue }) => {
+  async ({ search = "", isActive } = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get(API_URLS.companies);
+      const response = await api.get(API_URLS.companies, {
+        params: {
+          ...(search ? { search } : {}),
+          ...(typeof isActive === "boolean" ? { is_active: isActive } : {}),
+        },
+      });
       const payload = response?.data || {};
 
       if (!payload?.success) {

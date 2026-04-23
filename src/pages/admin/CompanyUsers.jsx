@@ -7,9 +7,11 @@ import {
   Button,
   Chip,
   IconButton,
+  MenuItem,
   Paper,
   Stack,
   Tooltip,
+  TextField,
   Typography,
   useTheme,
 } from "@mui/material";
@@ -47,6 +49,16 @@ export default function CompanyUsers({ role = "admin" }) {
   const fileInputRef = useRef(null);
   const feedback = location.state?.feedback;
   const [uploadFeedback, setUploadFeedback] = useState(null);
+  const [filters, setFilters] = useState({
+    companyId: role === "admin" ? getCompanyId() : "",
+    search: "",
+    status: "all",
+  });
+  const [appliedFilters, setAppliedFilters] = useState({
+    companyId: role === "admin" ? getCompanyId() : "",
+    search: "",
+    status: "all",
+  });
   const {
     users,
     total,
@@ -67,8 +79,27 @@ export default function CompanyUsers({ role = "admin" }) {
 
   useEffect(() => {
     dispatch(fetchCompanies());
-    dispatch(fetchUsers(companyId ? { companyId } : {}));
-  }, [companyId, dispatch]);
+  }, [dispatch]);
+
+  const getUserListParams = useCallback(() => {
+    const resolvedCompanyId =
+      role === "admin"
+        ? companyId
+        : appliedFilters.companyId.trim();
+
+    return {
+      ...(resolvedCompanyId ? { companyId: resolvedCompanyId } : {}),
+      search: appliedFilters.search.trim(),
+      isActive:
+        appliedFilters.status === "all"
+          ? undefined
+          : appliedFilters.status === "active",
+    };
+  }, [appliedFilters.companyId, appliedFilters.search, appliedFilters.status, companyId, role]);
+
+  useEffect(() => {
+    dispatch(fetchUsers(getUserListParams()));
+  }, [dispatch, getUserListParams]);
 
   useEffect(() => {
     return () => {
@@ -112,7 +143,7 @@ export default function CompanyUsers({ role = "admin" }) {
 
     try {
       await dispatch(uploadUserFile(file)).unwrap();
-      await dispatch(fetchUsers()).unwrap();
+      await dispatch(fetchUsers(getUserListParams())).unwrap();
       setUploadFeedback({
         severity: "success",
         message: `User file "${file.name}" uploaded successfully.`,
@@ -126,6 +157,25 @@ export default function CompanyUsers({ role = "admin" }) {
 
   const handleDownloadFormat = () => {
     downloadTemplateFile("templates/CompanyUserData.xlsx", "CompanyUserData.xlsx");
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      companyId: filters.companyId,
+      search: filters.search.trim(),
+      status: filters.status,
+    });
+  };
+
+  const handleResetFilters = () => {
+    const defaultFilters = {
+      companyId: role === "admin" ? getCompanyId() : "",
+      search: "",
+      status: "all",
+    };
+
+    setFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
   };
 
   const columns = useMemo(() => {
@@ -352,7 +402,7 @@ export default function CompanyUsers({ role = "admin" }) {
             <Button
               variant="outlined"
               startIcon={<RefreshRoundedIcon />}
-              onClick={() => dispatch(fetchUsers(role === "admin" && companyId ? { companyId } : {}))}
+              onClick={() => dispatch(fetchUsers(getUserListParams()))}
               disabled={usersLoading}
               sx={{ height: 40, px: 2, whiteSpace: "nowrap" }}
             >
@@ -378,6 +428,86 @@ export default function CompanyUsers({ role = "admin" }) {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Total users: {total || users.length}
           </Typography>
+
+          <Box
+            sx={{
+              display: "grid",
+              gap: 1.5,
+              mb: 2,
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+                lg: role === "superadmin"
+                  ? "repeat(4, minmax(0, 1fr)) auto auto"
+                  : "repeat(3, minmax(0, 1fr)) auto auto",
+              },
+              alignItems: { lg: "end" },
+            }}
+          >
+            {role === "superadmin" && (
+              <TextField
+                label="Company"
+                select
+                value={filters.companyId}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    companyId: event.target.value,
+                  }))
+                }
+                fullWidth
+              >
+                <MenuItem value="">All Companies</MenuItem>
+                {companies.map((company) => (
+                  <MenuItem key={company.id} value={company.id}>
+                    {company.company_name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+            <TextField
+              label="Search"
+              value={filters.search}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  search: event.target.value,
+                }))
+              }
+              fullWidth
+            />
+            <TextField
+              label="Status"
+              select
+              value={filters.status}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
+              fullWidth
+            >
+              <MenuItem value="all">All Status</MenuItem>
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="inactive">Inactive</MenuItem>
+            </TextField>
+            <Button
+              variant="contained"
+              onClick={handleApplyFilters}
+              disabled={usersLoading}
+              sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap" }}
+            >
+              Apply Filters
+            </Button>
+            <Button
+              variant="text"
+              onClick={handleResetFilters}
+              sx={{ minHeight: 56, px: 2, whiteSpace: "nowrap" }}
+            >
+              Reset
+            </Button>
+          </Box>
 
           <Box sx={{ width: "100%", overflowX: "auto" }}>
             <Box sx={{ height: 560, width: "max-content", minWidth: "100%" }}>

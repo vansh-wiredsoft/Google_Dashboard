@@ -52,11 +52,13 @@ const normalizeUser = (item, index = 0) => ({
 
 export const fetchUsers = createAsyncThunk(
   "user/fetchUsers",
-  async ({ companyId } = {}, { rejectWithValue }) => {
+  async ({ companyId, search = "", isActive } = {}, { rejectWithValue }) => {
     try {
       const response = await api.get(API_URLS.users, {
         params: {
           ...(companyId ? { company_id: companyId } : {}),
+          ...(search ? { search } : {}),
+          ...(typeof isActive === "boolean" ? { is_active: isActive } : {}),
         },
       });
       const payload = response?.data || {};

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -6,9 +6,11 @@ import {
   Box,
   Button,
   Chip,
+  MenuItem,
   IconButton,
   Paper,
   Stack,
+  TextField,
   Tooltip,
   Typography,
   useTheme,
@@ -43,6 +45,14 @@ export default function CompanyData() {
   const fileInputRef = useRef(null);
   const feedback = location.state?.feedback;
   const [uploadFeedback, setUploadFeedback] = useState(null);
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "all",
+  });
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: "",
+    status: "all",
+  });
   const {
     companies,
     companiesLoading,
@@ -56,8 +66,18 @@ export default function CompanyData() {
   } = useSelector((state) => state.company);
 
   useEffect(() => {
-    dispatch(fetchCompanies());
-  }, [dispatch]);
+    const isActive =
+      appliedFilters.status === "all"
+        ? undefined
+        : appliedFilters.status === "active";
+
+    dispatch(
+      fetchCompanies({
+        search: appliedFilters.search,
+        isActive,
+      }),
+    );
+  }, [appliedFilters.search, appliedFilters.status, dispatch]);
 
   useEffect(() => {
     return () => {
@@ -76,7 +96,15 @@ export default function CompanyData() {
 
     try {
       await dispatch(uploadCompanyFile(file)).unwrap();
-      await dispatch(fetchCompanies()).unwrap();
+      await dispatch(
+        fetchCompanies({
+          search: appliedFilters.search,
+          isActive:
+            appliedFilters.status === "all"
+              ? undefined
+              : appliedFilters.status === "active",
+        }),
+      ).unwrap();
       setUploadFeedback({
         severity: "success",
         message: `Company file "${file.name}" uploaded successfully.`,
@@ -92,7 +120,32 @@ export default function CompanyData() {
     downloadTemplateFile("templates/MasterData.xlsx", "MasterData.xlsx");
   };
 
-  const handleDelete = async (companyId, companyName) => {
+  const getCompanyListParams = () => ({
+    search: appliedFilters.search,
+    isActive:
+      appliedFilters.status === "all"
+        ? undefined
+        : appliedFilters.status === "active",
+  });
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      search: filters.search.trim(),
+      status: filters.status,
+    });
+  };
+
+  const handleResetFilters = () => {
+    const defaultFilters = {
+      search: "",
+      status: "all",
+    };
+
+    setFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
+  };
+
+  const handleDelete = useCallback(async (companyId, companyName) => {
     if (!window.confirm(`Delete company "${companyName}"?`)) return;
 
     try {
@@ -100,7 +153,7 @@ export default function CompanyData() {
     } catch {
       // Redux state already stores the error.
     }
-  };
+  }, [dispatch]);
 
   const columns = useMemo(
     () => [
@@ -199,7 +252,7 @@ export default function CompanyData() {
         ),
       },
     ],
-    [deleteLoading, navigate],
+    [deleteLoading, handleDelete, navigate],
   );
 
   return (
@@ -291,7 +344,7 @@ export default function CompanyData() {
               <Button
                 variant="outlined"
                 startIcon={<RefreshRoundedIcon />}
-                onClick={() => dispatch(fetchCompanies())}
+                onClick={() => dispatch(fetchCompanies(getCompanyListParams()))}
                 disabled={companiesLoading}
                 sx={{
                   height: 40,
@@ -322,6 +375,63 @@ export default function CompanyData() {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Total companies: {companies.length}
           </Typography>
+
+          {/* <Box
+            sx={{
+              display: "grid",
+              gap: 1.5,
+              mb: 2,
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+                lg: "repeat(4, minmax(0, 1fr)) auto auto",
+              },
+              alignItems: { lg: "end" },
+            }}
+          >
+            <TextField
+              label="Search"
+              value={filters.search}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  search: event.target.value,
+                }))
+              }
+              fullWidth
+            />
+            <TextField
+              label="Status"
+              select
+              value={filters.status}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
+              fullWidth
+            >
+              <MenuItem value="all">All Status</MenuItem>
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="inactive">Inactive</MenuItem>
+            </TextField>
+            <Button
+              variant="contained"
+              onClick={handleApplyFilters}
+              disabled={companiesLoading}
+              sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap" }}
+            >
+              Apply Filters
+            </Button>
+            <Button
+              variant="text"
+              onClick={handleResetFilters}
+              sx={{ minHeight: 56, px: 2, whiteSpace: "nowrap" }}
+            >
+              Reset
+            </Button>
+          </Box> */}
 
           <Box sx={{ width: "100%", overflowX: "auto" }}>
             <Box sx={{ height: 560, width: "max-content", minWidth: "100%" }}>

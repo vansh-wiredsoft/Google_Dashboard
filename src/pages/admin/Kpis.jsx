@@ -22,6 +22,7 @@ import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import Layout from "../../layouts/commonLayout/Layout";
+import { fetchCompanies } from "../../store/companySlice";
 import { fetchThemes } from "../../store/themeSlice";
 import {
   clearKpiDeleteState,
@@ -29,6 +30,7 @@ import {
   deleteKpi,
   fetchKpis,
 } from "../../store/kpiSlice";
+import { getCompanyId } from "../../utils/roleHelper";
 import { getSurfaceBackground } from "../../theme";
 
 const filterFieldSx = {
@@ -52,12 +54,17 @@ export default function Kpis({ role = "admin" }) {
     deleteError,
     deleteMessage,
   } = useSelector((state) => state.kpi);
+  const { companies } = useSelector((state) => state.company);
   const { items: themeItems } = useSelector((state) => state.theme);
   const [filters, setFilters] = useState({
+    companyId: role === "admin" ? getCompanyId() : "",
+    themeKey: "",
     search: "",
     status: "all",
   });
   const [appliedFilters, setAppliedFilters] = useState({
+    companyId: role === "admin" ? getCompanyId() : "",
+    themeKey: "",
     search: "",
     status: "all",
   });
@@ -66,26 +73,6 @@ export default function Kpis({ role = "admin" }) {
     appliedFilters.status === "all"
       ? undefined
       : appliedFilters.status === "active";
-
-  useEffect(() => {
-    dispatch(fetchThemes());
-  }, [dispatch]);
-
-  useEffect(() => {
-    dispatch(
-      fetchKpis({
-        search: appliedFilters.search.trim(),
-        isActive: role === "admin" ? true : isActive,
-      }),
-    );
-  }, [appliedFilters.search, dispatch, isActive, role]);
-
-  useEffect(() => {
-    return () => {
-      dispatch(clearKpiListError());
-      dispatch(clearKpiDeleteState());
-    };
-  }, [dispatch]);
 
   const themeNameByKey = useMemo(
     () =>
@@ -96,33 +83,86 @@ export default function Kpis({ role = "admin" }) {
     [themeItems],
   );
 
-  const handleRefresh = () => {
-    dispatch(fetchThemes());
+  const companyNameById = useMemo(
+    () =>
+      companies.reduce((accumulator, company) => {
+        accumulator[company.id] = company.company_name;
+        return accumulator;
+      }, {}),
+    [companies],
+  );
+
+  useEffect(() => {
+    dispatch(fetchCompanies());
+  }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchThemes({ companyId: appliedFilters.companyId || undefined }));
+  }, [appliedFilters.companyId, dispatch]);
+
+  useEffect(() => {
     dispatch(
       fetchKpis({
         search: appliedFilters.search.trim(),
         isActive: role === "admin" ? true : isActive,
+        companyId: role === "admin" ? getCompanyId() : appliedFilters.companyId || undefined,
+        themeKey: appliedFilters.themeKey || undefined,
+      }),
+    );
+  }, [appliedFilters.companyId, appliedFilters.search, appliedFilters.status, appliedFilters.themeKey, dispatch, isActive, role]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearKpiListError());
+      dispatch(clearKpiDeleteState());
+    };
+  }, [dispatch]);
+
+  const handleRefresh = () => {
+    dispatch(fetchCompanies());
+    dispatch(fetchThemes({ companyId: appliedFilters.companyId || undefined }));
+    dispatch(
+      fetchKpis({
+        search: appliedFilters.search.trim(),
+        isActive: role === "admin" ? true : isActive,
+        companyId: role === "admin" ? getCompanyId() : appliedFilters.companyId || undefined,
+        themeKey: appliedFilters.themeKey || undefined,
       }),
     );
   };
 
-  const handleDelete = useCallback(async (kpiKey) => {
-    try {
-      if (role !== "superadmin") return;
-      await dispatch(deleteKpi(kpiKey)).unwrap();
-      dispatch(
-        fetchKpis({
-          search: appliedFilters.search.trim(),
-          isActive: role === "admin" ? true : isActive,
-        }),
-      );
-    } catch {
-      // Error is already handled in redux state.
-    }
-  }, [appliedFilters.search, dispatch, isActive]);
+  const handleDelete = useCallback(
+    async (kpiKey) => {
+      try {
+        if (role !== "superadmin") return;
+        await dispatch(deleteKpi(kpiKey)).unwrap();
+        dispatch(
+          fetchKpis({
+            search: appliedFilters.search.trim(),
+            isActive: role === "admin" ? true : isActive,
+            companyId:
+              role === "admin" ? getCompanyId() : appliedFilters.companyId || undefined,
+            themeKey: appliedFilters.themeKey || undefined,
+          }),
+        );
+      } catch {
+        // Error is already handled in redux state.
+      }
+    },
+    [
+      appliedFilters.companyId,
+      appliedFilters.search,
+      appliedFilters.themeKey,
+      dispatch,
+      isActive,
+      role,
+    ],
+  );
 
   const handleApplyFilters = () => {
     setAppliedFilters({
+      companyId: filters.companyId,
+      themeKey: filters.themeKey,
       search: filters.search,
       status: filters.status,
     });
@@ -130,6 +170,8 @@ export default function Kpis({ role = "admin" }) {
 
   const handleResetFilters = () => {
     const defaultFilters = {
+      companyId: role === "admin" ? getCompanyId() : "",
+      themeKey: "",
       search: "",
       status: "all",
     };
@@ -140,12 +182,20 @@ export default function Kpis({ role = "admin" }) {
       fetchKpis({
         search: "",
         isActive: role === "admin" ? true : undefined,
+        companyId: role === "admin" ? getCompanyId() : undefined,
       }),
     );
   };
 
   const columns = useMemo(
     () => [
+      {
+        field: "company_id",
+        headerName: "Company",
+        flex: 1.1,
+        minWidth: 220,
+        valueGetter: (_, row) => companyNameById[row.company_id] || row.company_id || "-",
+      },
       {
         field: "display_name",
         headerName: "KPI Name",
@@ -243,7 +293,7 @@ export default function Kpis({ role = "admin" }) {
         ),
       },
     ],
-    [deleteLoading, handleDelete, navigate, role, themeNameByKey],
+    [companyNameById, deleteLoading, handleDelete, navigate, role, themeNameByKey],
   );
 
   return (
@@ -308,11 +358,56 @@ export default function Kpis({ role = "admin" }) {
               gridTemplateColumns: {
                 xs: "1fr",
                 sm: "repeat(2, minmax(0, 1fr))",
-                lg: "repeat(4, minmax(0, 1fr)) auto auto",
+                lg: role === "superadmin"
+                  ? "repeat(4, minmax(0, 1fr)) auto auto"
+                  : "repeat(3, minmax(0, 1fr)) auto auto",
               },
               alignItems: { lg: "end" },
             }}
           >
+            {role === "superadmin" && (
+              <TextField
+                label="Company"
+                select
+                value={filters.companyId}
+                onChange={(event) =>
+                  setFilters((current) => ({
+                    ...current,
+                    companyId: event.target.value,
+                    themeKey: "",
+                  }))
+                }
+                fullWidth
+                sx={filterFieldSx}
+              >
+                <MenuItem value="">All Companies</MenuItem>
+                {companies.map((company) => (
+                  <MenuItem key={company.id} value={company.id}>
+                    {company.company_name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+            <TextField
+              label="Theme"
+              select
+              value={filters.themeKey}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  themeKey: event.target.value,
+                }))
+              }
+              fullWidth
+              sx={filterFieldSx}
+            >
+              <MenuItem value="">All Themes</MenuItem>
+              {themeItems.map((item) => (
+                <MenuItem key={item.theme_key} value={item.theme_key}>
+                  {item.theme_display_name}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Search KPI"
               value={filters.search}
