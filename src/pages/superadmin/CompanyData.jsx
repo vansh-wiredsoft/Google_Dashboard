@@ -65,19 +65,20 @@ export default function CompanyData() {
     uploadStatus,
   } = useSelector((state) => state.company);
 
-  useEffect(() => {
-    const isActive =
-      appliedFilters.status === "all"
-        ? undefined
-        : appliedFilters.status === "active";
+  const getCompanyListParams = useCallback(
+    () => ({
+      search: appliedFilters.search.trim(),
+      isActive:
+        appliedFilters.status === "all"
+          ? undefined
+          : appliedFilters.status === "active",
+    }),
+    [appliedFilters.search, appliedFilters.status],
+  );
 
-    dispatch(
-      fetchCompanies({
-        search: appliedFilters.search,
-        isActive,
-      }),
-    );
-  }, [appliedFilters.search, appliedFilters.status, dispatch]);
+  useEffect(() => {
+    dispatch(fetchCompanies(getCompanyListParams()));
+  }, [dispatch, getCompanyListParams]);
 
   useEffect(() => {
     return () => {
@@ -96,15 +97,7 @@ export default function CompanyData() {
 
     try {
       await dispatch(uploadCompanyFile(file)).unwrap();
-      await dispatch(
-        fetchCompanies({
-          search: appliedFilters.search,
-          isActive:
-            appliedFilters.status === "all"
-              ? undefined
-              : appliedFilters.status === "active",
-        }),
-      ).unwrap();
+      await dispatch(fetchCompanies(getCompanyListParams())).unwrap();
       setUploadFeedback({
         severity: "success",
         message: `Company file "${file.name}" uploaded successfully.`,
@@ -119,14 +112,6 @@ export default function CompanyData() {
   const handleDownloadFormat = () => {
     downloadTemplateFile("templates/MasterData.xlsx", "MasterData.xlsx");
   };
-
-  const getCompanyListParams = () => ({
-    search: appliedFilters.search,
-    isActive:
-      appliedFilters.status === "all"
-        ? undefined
-        : appliedFilters.status === "active",
-  });
 
   const handleApplyFilters = () => {
     setAppliedFilters({
@@ -300,7 +285,7 @@ export default function CompanyData() {
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1} useFlexGap flexWrap="nowrap">
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
               <Button
                 variant="contained"
                 startIcon={<AddRoundedIcon />}
@@ -308,7 +293,7 @@ export default function CompanyData() {
                 sx={{
                   height: 40,
                   px: 2.5,
-                  minWidth: "auto",
+                  flex: { xs: "1 1 100%", sm: "0 0 auto" },
                   whiteSpace: "nowrap",
                 }}
               >
@@ -320,7 +305,7 @@ export default function CompanyData() {
                 onClick={handleDownloadFormat}
                 sx={{
                   height: 40,
-                  minWidth: 152,
+                  flex: { xs: "1 1 100%", sm: "0 0 auto" },
                   px: 2,
                   whiteSpace: "nowrap",
                 }}
@@ -334,7 +319,7 @@ export default function CompanyData() {
                 disabled={uploadLoading}
                 sx={{
                   height: 40,
-                  minWidth: 152,
+                  flex: { xs: "1 1 100%", sm: "0 0 auto" },
                   px: 2,
                   whiteSpace: "nowrap",
                 }}
@@ -348,7 +333,7 @@ export default function CompanyData() {
                 disabled={companiesLoading}
                 sx={{
                   height: 40,
-                  minWidth: 152,
+                  flex: { xs: "1 1 100%", sm: "0 0 auto" },
                   px: 2,
                   py: 1.1,
                   whiteSpace: "nowrap",
@@ -376,7 +361,7 @@ export default function CompanyData() {
             Total companies: {companies.length}
           </Typography>
 
-          {/* <Box
+          <Box
             sx={{
               display: "grid",
               gap: 1.5,
@@ -384,7 +369,7 @@ export default function CompanyData() {
               gridTemplateColumns: {
                 xs: "1fr",
                 sm: "repeat(2, minmax(0, 1fr))",
-                lg: "repeat(4, minmax(0, 1fr)) auto auto",
+                lg: "repeat(2, minmax(0, 1fr)) auto auto",
               },
               alignItems: { lg: "end" },
             }}
@@ -431,7 +416,7 @@ export default function CompanyData() {
             >
               Reset
             </Button>
-          </Box> */}
+          </Box>
 
           <Box sx={{ width: "100%", overflowX: "auto" }}>
             <Box sx={{ height: 560, width: "max-content", minWidth: "100%" }}>
