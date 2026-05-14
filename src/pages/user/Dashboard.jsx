@@ -48,6 +48,7 @@ import DashboardChallenges from "./DashboardChallenges";
 import {
   fetchDashboardKpis,
   fetchSessionSuggestions,
+  fetchWellnessTrends,
 } from "../../store/dashboardSlice";
 import { fetchMySubmissions } from "../../store/sessionSlice";
 import { getRaisedGradient, getSurfaceBackground } from "../../theme";
@@ -939,6 +940,7 @@ export default function Dashboard() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("wellness");
+  const [trendsPeriod, setTrendsPeriod] = useState("weekly");
   const {
     items: dashboardItems,
     loading: dashboardLoading,
@@ -946,6 +948,9 @@ export default function Dashboard() {
     suggestions,
     suggestionsLoading,
     suggestionsError,
+    trends,
+    trendsLoading,
+    trendsError,
   } = useSelector((state) => state.dashboard);
   const { mySubmissions } = useSelector((state) => state.session);
   const chartTooltipStyles = {
@@ -968,6 +973,10 @@ export default function Dashboard() {
     dispatch(fetchDashboardKpis());
     dispatch(fetchMySubmissions());
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchWellnessTrends({ period: trendsPeriod }));
+  }, [dispatch, trendsPeriod]);
 
   const latestSubmissionSessionId = useMemo(() => {
     if (!mySubmissions.length) return "";
@@ -1297,59 +1306,132 @@ const dynamicTrendData = useMemo(() => {
                         Wellness Trends
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Weekly movement across your strongest improvement areas
+                        {trendsPeriod === "daily"
+                          ? "Daily"
+                          : trendsPeriod === "monthly"
+                            ? "Monthly"
+                            : "Weekly"}{" "}
+                        movement across your strongest improvement areas
                       </Typography>
                     </Box>
                     <Stack direction="row" spacing={1}>
-                      <Chip label="Daily" size="small" variant="outlined" />
-                      <Chip label="Weekly" size="small" color="primary" />
-                      <Chip label="Monthly" size="small" variant="outlined" />
+                      {[
+                        { id: "daily", label: "Daily" },
+                        { id: "weekly", label: "Weekly" },
+                        { id: "monthly", label: "Monthly" },
+                      ].map((option) => {
+                        const active = trendsPeriod === option.id;
+                        return (
+                          <Chip
+                            key={option.id}
+                            label={option.label}
+                            size="small"
+                            color={active ? "primary" : "default"}
+                            variant={active ? "filled" : "outlined"}
+                            onClick={() => setTrendsPeriod(option.id)}
+                            sx={{ cursor: "pointer", fontWeight: 700 }}
+                          />
+                        );
+                      })}
                     </Stack>
                   </Stack>
 
-                  <ResponsiveContainer width="100%" height={290}>
-                    <LineChart data={dynamicTrendData}>
-                      <XAxis dataKey="name" />
-                      <YAxis domain={[2, 5]} />
-                      <Tooltip {...chartTooltipStyles} />
-                    {dynamicWellnessData.map((kpi, index) => (
-  <Line
-    key={kpi.name}
-    type="monotone"
-    dataKey={kpi.name}
-    stroke={kpi.color}
-    strokeWidth={3}
-    dot={false}
-  />
-))}
-                    </LineChart>
-                  </ResponsiveContainer>
+                  {trendsError && (
+                    <Alert severity="error" sx={{ mb: 1.5 }}>
+                      {trendsError}
+                    </Alert>
+                  )}
+
+                  {trends.overall.points.length === 0 ? (
+                    <Box
+                      sx={{
+                        height: 290,
+                        display: "grid",
+                        placeItems: "center",
+                        textAlign: "center",
+                        color: "text.secondary",
+                        border: "1px dashed",
+                        borderColor: "divider",
+                        borderRadius: 2,
+                      }}
+                    >
+                      <Box sx={{ px: 2 }}>
+                        <Typography sx={{ fontSize: 32, mb: 0.5 }}>📈</Typography>
+                        <Typography variant="body2">
+                          {trendsLoading
+                            ? "Loading wellness trends…"
+                            : trends.insight ||
+                              "No submissions yet — your trend chart will appear here after your first session."}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={290}>
+                      <LineChart data={trends.overall.points}>
+                        <XAxis dataKey="bucket_label" />
+                        <YAxis domain={[0, 5]} ticks={[1, 2, 3, 4, 5]} />
+                        <Tooltip
+                          {...chartTooltipStyles}
+                          formatter={(value) => [Number(value).toFixed(2), "Score"]}
+                          labelFormatter={(label, items) => {
+                            const at = items?.[0]?.payload?.bucket_at;
+                            if (!at) return label;
+                            try {
+                              const date = new Date(at);
+                              if (Number.isNaN(date.getTime())) return label;
+                              return `${label} · ${date.toLocaleDateString()}`;
+                            } catch {
+                              return label;
+                            }
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="average_score"
+                          stroke={trends.overall.color || "#fb923c"}
+                          strokeWidth={3}
+                          dot={false}
+                          isAnimationActive={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
 
                   <Stack
                     direction={{ xs: "column", sm: "row" }}
                     spacing={1}
+                    alignItems={{ sm: "center" }}
+                    useFlexGap
+                    flexWrap="wrap"
                     sx={{ mt: 1.5 }}
                   >
-                    <Chip
-                      label="Social +17%"
-                      sx={{
-                        bgcolor: alpha("#d946ef", 0.1),
-                        color: "#a21caf",
-                        fontWeight: 700,
-                      }}
-                    />
-                    <Chip
-                      label="Hydration +15%"
-                      sx={{
-                        bgcolor: alpha("#0284c7", 0.1),
-                        color: "#0369a1",
-                        fontWeight: 700,
-                      }}
-                    />
-                    <Typography variant="body2" color="text.secondary">
-                      Most stable gains are showing up in hydration and
-                      recovery.
-                    </Typography>
+                    {trends.top_improvements
+                      .filter((item) => item.delta_percent > 0)
+                      .slice(0, 2)
+                      .map((item) => {
+                        const matched = trends.series.find(
+                          (series) =>
+                            series.kpi_key === item.kpi_key ||
+                            series.kpi_name === item.kpi_name,
+                        );
+                        const accent = matched?.color || theme.palette.primary.main;
+                        return (
+                          <Chip
+                            key={`${item.kpi_key || item.kpi_name}-improve`}
+                            label={`${item.kpi_name} +${Math.round(item.delta_percent)}%`}
+                            sx={{
+                              bgcolor: alpha(accent, 0.12),
+                              color: accent,
+                              fontWeight: 700,
+                            }}
+                          />
+                        );
+                      })}
+                    {trends.insight && (
+                      <Typography variant="body2" color="text.secondary">
+                        {trends.insight}
+                      </Typography>
+                    )}
                   </Stack>
                 </SectionCard>
               </Grid>

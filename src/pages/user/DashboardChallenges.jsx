@@ -19,6 +19,7 @@ import {
   postDashboardChallengeAction,
 } from "../../store/dashboardSlice";
 import { getRaisedGradient, getSurfaceBackground } from "../../theme";
+import ReminderSettings from "./ReminderSettings";
 
 const challengeBadges = [
   { id: "h1", label: "Hydration Hero", icon: "💧", earned: true, level: "Gold", color: "#0284c7" },
@@ -252,21 +253,32 @@ export default function DashboardChallenges({ challenges, loading, error }) {
 
   if (loading) {
     return (
-      <SectionCard>
-        <Typography>Loading challenges...</Typography>
-      </SectionCard>
+      <Stack spacing={2.5}>
+        <SectionCard>
+          <Typography>Loading challenges...</Typography>
+        </SectionCard>
+        <ReminderSettings />
+      </Stack>
     );
   }
 
   if (error) {
-    return <Alert severity="error">{error}</Alert>;
+    return (
+      <Stack spacing={2.5}>
+        <Alert severity="error">{error}</Alert>
+        <ReminderSettings />
+      </Stack>
+    );
   }
 
   if (!challenges.length) {
     return (
-      <SectionCard>
-        <Typography>No active challenges available right now.</Typography>
-      </SectionCard>
+      <Stack spacing={2.5}>
+        <SectionCard>
+          <Typography>No active challenges available right now.</Typography>
+        </SectionCard>
+        <ReminderSettings />
+      </Stack>
     );
   }
 
@@ -814,6 +826,8 @@ export default function DashboardChallenges({ challenges, loading, error }) {
           </SectionCard>
         </Grid>
       </Grid>
+
+      <ReminderSettings />
     </Stack>
   );
 }

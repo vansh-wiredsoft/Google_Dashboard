@@ -22,6 +22,7 @@ import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import Layout from "../../layouts/commonLayout/Layout";
+import usePermissions from "../../hooks/usePermissions";
 import { fetchCompanies } from "../../store/companySlice";
 import {
   clearChallengeDeleteState,
@@ -47,6 +48,10 @@ export default function Challenges({ role = "admin" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const feedback = location.state?.feedback;
+  const { canCreate, canEdit, canDelete } = usePermissions();
+  const canCreateChallenges = canCreate("challenges");
+  const canEditChallenges = canEdit("challenges");
+  const canDeleteChallenges = canDelete("challenges");
   const { companies } = useSelector((state) => state.company);
   const { items: kpiItems } = useSelector((state) => state.kpi);
   const { items: themeItems } = useSelector((state) => state.theme);
@@ -309,33 +314,45 @@ export default function Challenges({ role = "admin" }) {
                 <PreviewRoundedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Edit">
-              <IconButton
-                size="small"
-                onClick={() =>
-                navigate(`/super-admin/challenges/${row.challenge_key}/edit`)
-                }
-              >
-                <EditRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <span>
+            {canEditChallenges && (
+              <Tooltip title="Edit">
                 <IconButton
                   size="small"
-                  color="error"
-                  disabled={deleteLoading}
-                  onClick={() => handleDelete(row.challenge_key, row.name)}
+                  onClick={() =>
+                    navigate(`/super-admin/challenges/${row.challenge_key}/edit`)
+                  }
                 >
-                  <DeleteOutlineRoundedIcon fontSize="small" />
+                  <EditRoundedIcon fontSize="small" />
                 </IconButton>
-              </span>
-            </Tooltip>
+              </Tooltip>
+            )}
+            {canDeleteChallenges && (
+              <Tooltip title="Delete">
+                <span>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    disabled={deleteLoading}
+                    onClick={() => handleDelete(row.challenge_key, row.name)}
+                  >
+                    <DeleteOutlineRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
           </Stack>
         ),
       },
     ],
-    [companyNameById, deleteLoading, handleDelete, navigate, role],
+    [
+      canDeleteChallenges,
+      canEditChallenges,
+      companyNameById,
+      deleteLoading,
+      handleDelete,
+      navigate,
+      role,
+    ],
   );
 
   return (
@@ -378,11 +395,17 @@ export default function Challenges({ role = "admin" }) {
             </Box>
 
             <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              {role === "superadmin" && (
+              {canCreateChallenges && (
                 <Button
                   variant="contained"
                   startIcon={<AddRoundedIcon />}
-                  onClick={() => navigate("/super-admin/challenges/add")}
+                  onClick={() =>
+                    navigate(
+                      role === "admin"
+                        ? "/admin/challenges/add"
+                        : "/super-admin/challenges/add",
+                    )
+                  }
                 >
                   Add Challenge
                 </Button>

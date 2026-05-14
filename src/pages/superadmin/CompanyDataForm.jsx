@@ -26,13 +26,23 @@ import {
   clearCompanyDetailState,
   clearCompanyUpdateState,
   createCompany,
+  fetchCompanies,
   fetchCompanyById,
   updateCompany,
 } from "../../store/companySlice";
+import {
+  clearRoleListState,
+  fetchRolesByTenant,
+} from "../../store/roleSlice";
+import {
+  fetchDepartments,
+  resetDepartments,
+} from "../../store/departmentSlice";
 import api, { getApiErrorMessage } from "../../services/api";
 import { API_URLS } from "../../services/apiUrls";
 import { getCompanyId, setCompanyId } from "../../utils/roleHelper";
 import { getSurfaceBackground } from "../../theme";
+import usePermissions from "../../hooks/usePermissions";
 
 const createCompanyDefaults = {
   company_name: "",
@@ -55,6 +65,8 @@ const createAdminDefaults = {
   gender: "",
   phone: "",
   is_active: true,
+  role_id: "",
+  role_name: "",
 };
 
 export default function CompanyDataForm({ mode, role = "superadmin" }) {
@@ -84,6 +96,24 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
   const [companyMe, setCompanyMe] = useState(null);
   const [companyMeError, setCompanyMeError] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [roleTenantId, setRoleTenantId] = useState(mode === "edit" ? id || "" : "");
+  const { canCreate, canEdit } = usePermissions();
+  const canSubmitForm =
+    role === "admin" || mode === "edit"
+      ? canEdit("company-data")
+      : canCreate("company-data");
+
+  const { companies } = useSelector((state) => state.company);
+  const {
+    items: roleItems,
+    listLoading: rolesLoading,
+    listError: rolesError,
+  } = useSelector((state) => state.role);
+  const {
+    items: departmentItems,
+    listLoading: departmentsLoading,
+    listError: departmentsError,
+  } = useSelector((state) => state.department);
 
   const pageTitle = useMemo(
     () =>
@@ -140,12 +170,25 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
       dispatch(fetchCompanyById(id));
     }
 
+    if (role === "superadmin") {
+      dispatch(fetchCompanies());
+    }
+
     return () => {
       dispatch(clearCompanyCreateState());
       dispatch(clearCompanyUpdateState());
       dispatch(clearCompanyDetailState());
+      dispatch(clearRoleListState());
+      dispatch(resetDepartments());
     };
   }, [dispatch, id, mode, role]);
+
+  useEffect(() => {
+    if (role === "superadmin" && roleTenantId) {
+      dispatch(fetchRolesByTenant(roleTenantId));
+      dispatch(fetchDepartments(roleTenantId));
+    }
+  }, [dispatch, role, roleTenantId]);
 
   const activeCompany = role === "admin" ? companyMe : selectedCompany;
 
@@ -197,6 +240,13 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
         adminForm.is_active ??
         selectedCompany?.admin?.is_active ??
         createAdminDefaults.is_active,
+      role_id:
+        adminForm.role_id ??
+        (selectedCompany?.admin?.role_id != null
+          ? String(selectedCompany.admin.role_id)
+          : ""),
+      role_name:
+        adminForm.role_name ?? selectedCompany?.admin?.role_name ?? "",
     };
   }, [adminForm, mode, role, selectedCompany]);
 
@@ -229,6 +279,10 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
       if (!resolvedAdminForm.password.trim()) {
         return "Enter an admin password to save admin details.";
       }
+
+      if (!resolvedAdminForm.role_id) {
+        return "Select a role for the admin.";
+      }
     }
 
     return "";
@@ -242,6 +296,17 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
     }
 
     setFormError("");
+
+    const adminDepartmentName = resolvedAdminForm.department.trim();
+    const selectedAdminDepartment = departmentItems.find(
+      (item) => item.name === adminDepartmentName,
+    );
+    const selectedAdminRole = roleItems.find(
+      (item) => String(item.id) === String(resolvedAdminForm.role_id),
+    );
+    const adminRoleName =
+      selectedAdminRole?.name ||
+      (resolvedAdminForm.role_name || "").trim();
 
     try {
       if (role === "admin") {
@@ -292,11 +357,16 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
                   password: resolvedAdminForm.password,
                   emp_id: resolvedAdminForm.emp_id.trim(),
                   full_name: resolvedAdminForm.full_name.trim(),
-                  department: resolvedAdminForm.department.trim(),
+                  department: adminDepartmentName,
+                  ...(selectedAdminDepartment
+                    ? { department_id: selectedAdminDepartment.id }
+                    : {}),
                   location: resolvedAdminForm.location.trim(),
                   gender: resolvedAdminForm.gender.trim(),
                   phone: resolvedAdminForm.phone.trim(),
                   is_active: resolvedAdminForm.is_active,
+                  role_id: Number(resolvedAdminForm.role_id),
+                  role_name: adminRoleName,
                 }
               : null,
           }),
@@ -333,11 +403,16 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
                 password: resolvedAdminForm.password,
                 emp_id: resolvedAdminForm.emp_id.trim(),
                 full_name: resolvedAdminForm.full_name.trim(),
-                department: resolvedAdminForm.department.trim(),
+                department: adminDepartmentName,
+                ...(selectedAdminDepartment
+                  ? { department_id: selectedAdminDepartment.id }
+                  : {}),
                 location: resolvedAdminForm.location.trim(),
                 gender: resolvedAdminForm.gender.trim(),
                 phone: resolvedAdminForm.phone.trim(),
                 is_active: resolvedAdminForm.is_active,
+                role_id: Number(resolvedAdminForm.role_id),
+                role_name: adminRoleName,
               }
             : null,
         }),
@@ -481,9 +556,14 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
                 fullWidth
               >
                 <MenuItem value="">Select Size Bucket</MenuItem>
-                {["SMALL", "MEDIUM", "LARGE", "ENTERPRISE"].map((option) => (
-                  <MenuItem key={option} value={option}>
-                    {option}
+                {[
+                  { value: "small", label: "Small" },
+                  { value: "medium", label: "Medium" },
+                  { value: "large", label: "Large" },
+                  { value: "enterprise", label: "Enterprise" },
+                ].map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
                   </MenuItem>
                 ))}
               </TextField>
@@ -593,6 +673,76 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
                   }}
                 >
                   <TextField
+                    label="Tenant (for role list)"
+                    select
+                    value={roleTenantId}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setRoleTenantId(value);
+                      setAdminForm((current) => ({ ...current, role_id: "" }));
+                    }}
+                    disabled={mode === "edit"}
+                    helperText={
+                      mode === "edit"
+                        ? "Roles are scoped to this company."
+                        : "Pick a tenant to load its roles."
+                    }
+                    fullWidth
+                  >
+                    <MenuItem value="">Select tenant</MenuItem>
+                    {companies.map((company) => (
+                      <MenuItem key={company.id} value={company.id}>
+                        {company.company_name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  {(() => {
+                    const adminRoleOptions = roleItems.filter((roleOption) =>
+                      String(roleOption.name || "")
+                        .toLowerCase()
+                        .includes("admin"),
+                    );
+                    return (
+                      <TextField
+                        label="Role"
+                        select
+                        value={resolvedAdminForm.role_id || ""}
+                        onChange={(event) => {
+                          const nextId = event.target.value;
+                          const nextRole = adminRoleOptions.find(
+                            (item) => String(item.id) === String(nextId),
+                          );
+                          setAdminForm((current) => ({
+                            ...current,
+                            role_id: nextId,
+                            role_name: nextRole?.name || "",
+                          }));
+                        }}
+                        disabled={!roleTenantId || rolesLoading}
+                        helperText={
+                          !roleTenantId
+                            ? "Select a tenant first"
+                            : rolesLoading
+                              ? "Loading roles..."
+                              : rolesError
+                                ? rolesError
+                                : adminRoleOptions.length === 0
+                                  ? "No admin roles available for this tenant"
+                                  : ""
+                        }
+                        error={Boolean(rolesError)}
+                        fullWidth
+                      >
+                        <MenuItem value="">Select role</MenuItem>
+                        {adminRoleOptions.map((roleOption) => (
+                          <MenuItem key={roleOption.id} value={roleOption.id}>
+                            {roleOption.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    );
+                  })()}
+                  <TextField
                     label="Username"
                     value={resolvedAdminForm.username}
                     onChange={(event) =>
@@ -681,8 +831,29 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
                         department: event.target.value,
                       }))
                     }
+                    select
                     fullWidth
-                  />
+                    disabled={!roleTenantId || departmentsLoading}
+                    error={Boolean(departmentsError)}
+                    helperText={
+                      !roleTenantId
+                        ? "Select a tenant first"
+                        : departmentsLoading
+                          ? "Loading departments..."
+                          : departmentsError
+                            ? departmentsError
+                            : departmentItems.length === 0
+                              ? "No departments available for this tenant"
+                              : ""
+                    }
+                  >
+                    <MenuItem value="">Select Department</MenuItem>
+                    {departmentItems.map((department) => (
+                      <MenuItem key={department.id} value={department.name}>
+                        {department.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
                   <TextField
                     label="Location"
                     value={resolvedAdminForm.location}
@@ -739,20 +910,22 @@ export default function CompanyDataForm({ mode, role = "superadmin" }) {
         </Stack>
 
         <Stack direction="row" spacing={1.25} sx={{ mt: 3 }}>
-          <Button
-            variant="contained"
-            startIcon={<SaveRoundedIcon />}
-            onClick={handleSave}
-            disabled={createLoading || updateLoading || assignAdminLoading}
-          >
-            {createLoading || updateLoading || assignAdminLoading
-              ? "Saving..."
-              : role === "admin"
-                ? "Update Company"
-                : mode === "edit"
+          {canSubmitForm && (
+            <Button
+              variant="contained"
+              startIcon={<SaveRoundedIcon />}
+              onClick={handleSave}
+              disabled={createLoading || updateLoading || assignAdminLoading}
+            >
+              {createLoading || updateLoading || assignAdminLoading
+                ? "Saving..."
+                : role === "admin"
                   ? "Update Company"
-                  : "Create Company"}
-          </Button>
+                  : mode === "edit"
+                    ? "Update Company"
+                    : "Create Company"}
+            </Button>
+          )}
           <Button variant="outlined" onClick={() => navigate(backPath)}>
             Cancel
           </Button>

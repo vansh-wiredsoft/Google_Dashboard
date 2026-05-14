@@ -35,6 +35,7 @@ import {
 } from "../../store/questionSlice";
 import { fetchThemes } from "../../store/themeSlice";
 import { fetchKpis } from "../../store/kpiSlice";
+import usePermissions from "../../hooks/usePermissions";
 import { getSurfaceBackground } from "../../theme";
 import { downloadTemplateFile } from "../../utils/downloadTemplate";
 
@@ -51,6 +52,12 @@ export default function Questions({ role = "admin" }) {
   const location = useLocation();
   const feedback = location.state?.feedback;
   const fileInputRef = useRef(null);
+  // Spec: questions slug maps to the `kpis` resource codename (questions are
+  // a child of KPIs). The slug→resource map in usePermissions handles this.
+  const { canCreate, canEdit, canDelete } = usePermissions();
+  const canCreateQuestions = canCreate("questions");
+  const canEditQuestions = canEdit("questions");
+  const canDeleteQuestions = canDelete("questions");
   const { items: themeItems } = useSelector((state) => state.theme);
   const { items: kpiItems } = useSelector((state) => state.kpi);
   const {
@@ -296,31 +303,50 @@ export default function Questions({ role = "admin" }) {
                 <PreviewRoundedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Edit">
-              <IconButton
-                size="small"
-                onClick={() => navigate(`/super-admin/questions/${row.id}/edit`)}
-              >
-                <EditRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <span>
+            {canEditQuestions && (
+              <Tooltip title="Edit">
                 <IconButton
                   size="small"
-                  color="error"
-                  disabled={deleteLoading}
-                  onClick={() => handleDelete(row.id, row.question_code)}
+                  onClick={() =>
+                    navigate(
+                      role === "admin"
+                        ? `/admin/questions/${row.id}/edit`
+                        : `/super-admin/questions/${row.id}/edit`,
+                    )
+                  }
                 >
-                  <DeleteOutlineRoundedIcon fontSize="small" />
+                  <EditRoundedIcon fontSize="small" />
                 </IconButton>
-              </span>
-            </Tooltip>
+              </Tooltip>
+            )}
+            {canDeleteQuestions && (
+              <Tooltip title="Delete">
+                <span>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    disabled={deleteLoading}
+                    onClick={() => handleDelete(row.id, row.question_code)}
+                  >
+                    <DeleteOutlineRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
           </Stack>
         ),
       },
     ],
-    [deleteLoading, handleDelete, kpiNameByKey, navigate, role, themeNameByKey],
+    [
+      canDeleteQuestions,
+      canEditQuestions,
+      deleteLoading,
+      handleDelete,
+      kpiNameByKey,
+      navigate,
+      role,
+      themeNameByKey,
+    ],
   );
 
   return (
@@ -369,11 +395,17 @@ export default function Questions({ role = "admin" }) {
             </Box>
 
             <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              {role === "superadmin" && (
+              {canCreateQuestions && (
                 <Button
                   variant="contained"
                   startIcon={<AddRoundedIcon />}
-                  onClick={() => navigate("/super-admin/questions/add")}
+                  onClick={() =>
+                    navigate(
+                      role === "admin"
+                        ? "/admin/questions/add"
+                        : "/super-admin/questions/add",
+                    )
+                  }
                 >
                   Add Question
                 </Button>
@@ -386,7 +418,8 @@ export default function Questions({ role = "admin" }) {
               >
                 Download format
               </Button>
-              {role === "superadmin" && (
+              {/* Bulk upload is a create action — gate on the create codename, not just role. */}
+              {role === "superadmin" && canCreateQuestions && (
                 <Button
                   variant="outlined"
                   startIcon={<UploadFileRoundedIcon />}

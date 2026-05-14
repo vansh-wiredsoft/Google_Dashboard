@@ -27,6 +27,7 @@ import {
   clearCompanyDetailState,
   fetchCompanyById,
 } from "../../store/companySlice";
+import usePermissions from "../../hooks/usePermissions";
 import { getSurfaceBackground } from "../../theme";
 import { formatDateTimeIST } from "../../utils/dateTime";
 
@@ -60,6 +61,8 @@ export default function CompanyDataView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [adminForm, setAdminForm] = useState(emptyAdminForm);
   const currentAdmin = selectedCompany?.admin || assignedAdmin;
+  const { canEdit } = usePermissions();
+  const canEditCompanies = canEdit("company-data");
 
   useEffect(() => {
     dispatch(fetchCompanyById(id));
@@ -147,23 +150,27 @@ export default function CompanyDataView() {
             >
               Back to list
             </Button>
-            <Button
-              variant="outlined"
-              startIcon={<PersonAddAltRoundedIcon />}
-              onClick={() => {
-                dispatch(clearAssignedAdminState());
-                setDialogOpen(true);
-              }}
-            >
-              {currentAdmin ? "Replace Admin" : "Assign Admin"}
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<EditRoundedIcon />}
-              onClick={() => navigate(`/super-admin/company-data/${id}/edit`)}
-            >
-              Edit
-            </Button>
+            {canEditCompanies && (
+              <Button
+                variant="outlined"
+                startIcon={<PersonAddAltRoundedIcon />}
+                onClick={() => {
+                  dispatch(clearAssignedAdminState());
+                  setDialogOpen(true);
+                }}
+              >
+                {currentAdmin ? "Replace Admin" : "Assign Admin"}
+              </Button>
+            )}
+            {canEditCompanies && (
+              <Button
+                variant="contained"
+                startIcon={<EditRoundedIcon />}
+                onClick={() => navigate(`/super-admin/company-data/${id}/edit`)}
+              >
+                Edit
+              </Button>
+            )}
           </Stack>
         </Stack>
 

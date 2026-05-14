@@ -28,6 +28,7 @@ import {
   deleteTheme,
   fetchThemes,
 } from "../../store/themeSlice";
+import usePermissions from "../../hooks/usePermissions";
 import { getSurfaceBackground } from "../../theme";
 import { formatDateTimeIST } from "../../utils/dateTime";
 
@@ -52,6 +53,10 @@ export default function Themes({ role = "admin" }) {
     deleteError,
     deleteMessage,
   } = useSelector((state) => state.theme);
+  const { canCreate, canEdit, canDelete } = usePermissions();
+  const canCreateThemes = canCreate("themes");
+  const canEditThemes = canEdit("themes");
+  const canDeleteThemes = canDelete("themes");
   const [filters, setFilters] = useState({
     search: "",
     status: "all",
@@ -93,7 +98,6 @@ export default function Themes({ role = "admin" }) {
 
   const handleDelete = useCallback(async (themeKey) => {
     try {
-      if (role !== "superadmin") return;
       await dispatch(deleteTheme(themeKey)).unwrap();
       dispatch(
         fetchThemes({
@@ -104,7 +108,7 @@ export default function Themes({ role = "admin" }) {
     } catch {
       // Error is already handled in redux state.
     }
-  }, [appliedFilters.search, dispatch, isActive]);
+  }, [appliedFilters.search, dispatch, isActive, role]);
 
   const handleApplyFilters = () => {
     setAppliedFilters({
@@ -203,37 +207,41 @@ export default function Themes({ role = "admin" }) {
                 <PreviewRoundedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            {role === "superadmin" && (
-              <>
-                <Tooltip title="Edit">
+            {canEditThemes && (
+              <Tooltip title="Edit">
+                <IconButton
+                  size="small"
+                  onClick={() =>
+                    navigate(
+                      role === "admin"
+                        ? `/admin/themes/${row.theme_key}/edit`
+                        : `/super-admin/themes/${row.theme_key}/edit`,
+                    )
+                  }
+                >
+                  <EditRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            {canDeleteThemes && (
+              <Tooltip title="Delete">
+                <span>
                   <IconButton
                     size="small"
-                    onClick={() =>
-                      navigate(`/super-admin/themes/${row.theme_key}/edit`)
-                    }
+                    color="error"
+                    disabled={deleteLoading}
+                    onClick={() => handleDelete(row.theme_key)}
                   >
-                    <EditRoundedIcon fontSize="small" />
+                    <DeleteOutlineRoundedIcon fontSize="small" />
                   </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete">
-                  <span>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      disabled={deleteLoading}
-                      onClick={() => handleDelete(row.theme_key)}
-                    >
-                      <DeleteOutlineRoundedIcon fontSize="small" />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </>
+                </span>
+              </Tooltip>
             )}
           </Stack>
         ),
       },
     ],
-    [deleteLoading, handleDelete, navigate, role],
+    [canDeleteThemes, canEditThemes, deleteLoading, handleDelete, navigate, role],
   );
 
   return (
@@ -270,11 +278,17 @@ export default function Themes({ role = "admin" }) {
             </Box>
 
             <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              {role === "superadmin" && (
+              {canCreateThemes && (
                 <Button
                   variant="contained"
                   startIcon={<AddRoundedIcon />}
-                  onClick={() => navigate("/super-admin/themes/add")}
+                  onClick={() =>
+                    navigate(
+                      role === "admin"
+                        ? "/admin/themes/add"
+                        : "/super-admin/themes/add",
+                    )
+                  }
                 >
                   Add Theme
                 </Button>

@@ -36,6 +36,7 @@ import {
 import { getSurfaceBackground } from "../../theme";
 import { formatDateTimeIST } from "../../utils/dateTime";
 import { downloadTemplateFile } from "../../utils/downloadTemplate";
+import usePermissions from "../../hooks/usePermissions";
 
 export default function CompanyData() {
   const theme = useTheme();
@@ -64,6 +65,10 @@ export default function CompanyData() {
     uploadError,
     uploadStatus,
   } = useSelector((state) => state.company);
+  const { canCreate, canEdit, canDelete } = usePermissions();
+  const canCreateCompanies = canCreate("company-data");
+  const canEditCompanies = canEdit("company-data");
+  const canDeleteCompanies = canDelete("company-data");
 
   const getCompanyListParams = useCallback(
     () => ({
@@ -211,33 +216,37 @@ export default function CompanyData() {
                 <PreviewRoundedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Edit">
-              <IconButton
-                size="small"
-                onClick={() =>
-                  navigate(`/super-admin/company-data/${row.id}/edit`)
-                }
-              >
-                <EditRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <span>
+            {canEditCompanies && (
+              <Tooltip title="Edit">
                 <IconButton
                   size="small"
-                  color="error"
-                  disabled={deleteLoading}
-                  onClick={() => handleDelete(row.id, row.company_name)}
+                  onClick={() =>
+                    navigate(`/super-admin/company-data/${row.id}/edit`)
+                  }
                 >
-                  <DeleteOutlineRoundedIcon fontSize="small" />
+                  <EditRoundedIcon fontSize="small" />
                 </IconButton>
-              </span>
-            </Tooltip>
+              </Tooltip>
+            )}
+            {canDeleteCompanies && (
+              <Tooltip title="Delete">
+                <span>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    disabled={deleteLoading}
+                    onClick={() => handleDelete(row.id, row.company_name)}
+                  >
+                    <DeleteOutlineRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
           </Stack>
         ),
       },
     ],
-    [deleteLoading, handleDelete, navigate],
+    [canDeleteCompanies, canEditCompanies, deleteLoading, handleDelete, navigate],
   );
 
   return (
@@ -286,6 +295,7 @@ export default function CompanyData() {
             </Box>
 
             <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              {canCreateCompanies && (
               <Button
                 variant="contained"
                 startIcon={<AddRoundedIcon />}
@@ -299,6 +309,7 @@ export default function CompanyData() {
               >
                 Add Company
               </Button>
+              )}
               <Button
                 variant="outlined"
                 startIcon={<FileDownloadRoundedIcon />}
@@ -312,20 +323,22 @@ export default function CompanyData() {
               >
                 Download format
               </Button>
-              <Button
-                variant="outlined"
-                startIcon={<UploadFileRoundedIcon />}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadLoading}
-                sx={{
-                  height: 40,
-                  flex: { xs: "1 1 100%", sm: "0 0 auto" },
-                  px: 2,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {uploadLoading ? "Uploading..." : "Import Excel"}
-              </Button>
+              {canCreateCompanies && (
+                <Button
+                  variant="outlined"
+                  startIcon={<UploadFileRoundedIcon />}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadLoading}
+                  sx={{
+                    height: 40,
+                    flex: { xs: "1 1 100%", sm: "0 0 auto" },
+                    px: 2,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {uploadLoading ? "Uploading..." : "Import Excel"}
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 startIcon={<RefreshRoundedIcon />}
